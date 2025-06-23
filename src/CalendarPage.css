@@ -1,0 +1,114 @@
+.calendar-container {
+  padding: 1rem;
+  font-family: sans-serif;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.calendar-day {
+  padding: 1rem;
+  background: #f0f0f0;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.calendar-day:hover {
+  background: #e0e0e0;
+}
+
+.calendar-day.selected {
+  background: #007bff;
+  color: white;
+}
+
+/* ✅ NEW: Today highlight */
+.calendar-day.today {
+  border: 2px solid #34c759;
+  box-shadow: inset 0 0 0 2px #ffffff;
+}
+
+/* Optional: make today's dot green too */
+.calendar-day.today .dot {
+  background: #34c759;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: green;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.event-list {
+  margin-top: 1rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal {
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal h3 {
+  margin-top: 0;
+}
+
+.modal input,
+.modal textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.modal-actions button {
+  background-color: #007aff;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+}

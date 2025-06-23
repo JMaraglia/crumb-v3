@@ -1,0 +1,144 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f8;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Headings */
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #333;
+}
+
+.crumb-logo {
+  font-weight: bold;
+  color: #0077cc;
+}
+
+.crumb-subtitle {
+  font-weight: normal;
+  color: #555;
+}
+
+/* Search */
+.search-bar {
+  display: block;
+  margin: 10px auto;
+  padding: 10px;
+  font-size: 1rem;
+  width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Buttons */
+button {
+  margin: 0 5px 10px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #005fa3;
+}
+
+/* Contact Cards */
+.contact-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  margin: 15px auto;
+  max-width: 700px;
+}
+
+.contact-info {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+
+.info-column {
+  flex: 1;
+  margin-right: 10px;
+}
+
+/* Delivery Days */
+.delivery-days {
+  margin: 10px 0;
+}
+
+.day-button {
+  margin: 2px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  background-color: #ccc;
+  cursor: pointer;
+}
+
+.day-button:hover {
+  opacity: 0.9;
+}
+
+/* Notes Page */
+.notes-page {
+  max-width: 700px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.notes-page ul {
+  list-style: none;
+  padding: 0;
+}
+
+.notes-page li {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-left: 4px solid #0077cc;
+  background-color: #f9f9f9;
+}
+
+/* Homepage Tiles */
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 30px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.tile {
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.3s, background-color 0.2s;
+}
+
+.tile:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.05);
+}
