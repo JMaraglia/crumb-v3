@@ -30,7 +30,7 @@ function CalendarPage({ itinerary }) {
         return <MonthView />;
       case 'week':
       default:
-        return <WeekView itinerary={itinerary} />; // ✅ Pass itinerary here
+        return <WeekView itinerary={itinerary} />; // ✅ No military time prop
     }
   };
 
