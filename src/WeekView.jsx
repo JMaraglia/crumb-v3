@@ -16,17 +16,18 @@ const timeKeys = Array.from({ length: 18 }, (_, i) => {
   return `${hour.toString().padStart(2, '0')}:${minutes}`;
 });
 
-const days = ['Sunday', 'Monday', 'Tuesday'];
+const fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) {
+function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick, currentWeekStart }) {
   const navigate = useNavigate();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [viewMode, setViewMode] = useState(3);
+  const [showGearMenu, setShowGearMenu] = useState(false);
+
+  const days = fullDays.slice(0, viewMode);
 
   const getStartOfWeek = () => {
-    const base = new Date();
-    base.setDate(base.getDate() - base.getDay() + weekOffset * 7);
-    base.setHours(0, 0, 0, 0);
-    return base;
+    return new Date(currentWeekStart);
   };
 
   const getDateOfCurrentWeekday = (weekday) => {
@@ -107,13 +108,22 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
   return (
     <div className="week-view">
-      {/* Top Nav with Back only */}
       <div className="week-back-nav">
         <span className="calendar-nav-arrow" onClick={() => navigate(-1)}>←</span>
         <span className="back-text">Back</span>
+
+        <div className="gear-menu">
+          <button onClick={() => setShowGearMenu(!showGearMenu)}>⚙️</button>
+          {showGearMenu && (
+            <div className="gear-options">
+              <div onClick={() => setViewMode(3)}>3-Day View</div>
+              <div onClick={() => setViewMode(5)}>5-Day View</div>
+              <div onClick={() => setViewMode(7)}>7-Day View</div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Day Headers */}
       <div className="week-header">
         <div className="time-column-header"></div>
         {days.map((day, idx) => {
@@ -128,44 +138,44 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
         })}
       </div>
 
-      {/* Calendar Grid */}
       <div className="week-body">
-        <div className="time-column">
-          {hourLabels.map((label, idx) => (
-            <div key={idx} className="time-slot">
-              {label}
-            </div>
-          ))}
-        </div>
-        {days.map((day, idx) => {
-          const events = getEventsForDay(day);
-          return (
-            <div key={idx} className="day-column">
-              {timeKeys.map((hourKey, i) => {
-                const currentDate = new Date(startOfWeek);
-                currentDate.setDate(currentDate.getDate() + idx);
-                const dateString = currentDate.toISOString().split('T')[0];
+        <div className="week-grid">
+          <div className="time-column">
+            {hourLabels.map((label, idx) => (
+              <div key={idx} className="time-slot">{label}</div>
+            ))}
+          </div>
 
-                return (
-                  <div
-                    key={i}
-                    className="calendar-cell"
-                    onDoubleClick={() =>
-                      onDoubleClick &&
-                      onDoubleClick({
-                        date: dateString,
-                        time: hourKey,
-                        name: '',
-                      })
-                    }
-                  >
-                    {renderEvents(events, hourKey)}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+          {days.map((day, idx) => {
+            const events = getEventsForDay(day);
+            return (
+              <div key={idx} className="day-column">
+                {timeKeys.map((hourKey, i) => {
+                  const currentDate = new Date(startOfWeek);
+                  currentDate.setDate(currentDate.getDate() + idx);
+                  const dateString = currentDate.toISOString().split('T')[0];
+
+                  return (
+                    <div
+                      key={i}
+                      className="calendar-cell"
+                      onDoubleClick={() =>
+                        onDoubleClick &&
+                        onDoubleClick({
+                          date: dateString,
+                          time: hourKey,
+                          name: '',
+                        })
+                      }
+                    >
+                      {renderEvents(events, hourKey)}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-/* --- CalendarPage.css --- */
+/* --- CalendarPage.css (Updated for WeekView.jsx) --- */
 
 .calendar-container {
   padding: 1rem;
@@ -16,7 +16,6 @@
   flex-wrap: wrap;
 }
 
-/* Left: Back button */
 .calendar-back {
   display: flex;
   align-items: center;
@@ -25,7 +24,6 @@
   cursor: pointer;
 }
 
-/* Center: Title with arrows */
 .calendar-center {
   display: flex;
   align-items: center;
@@ -40,7 +38,6 @@
   margin: 0;
 }
 
-/* Arrows next to title */
 .calendar-nav-arrow {
   color: #007bff;
   font-size: 1.5rem;
@@ -53,14 +50,39 @@
   align-items: center;
 }
 
-/* Right: Gear icon */
 .calendar-gear {
   font-size: 1.5rem;
   color: #007bff;
   cursor: pointer;
 }
 
-/* View buttons (Day / Week / Month) */
+.gear-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.gear-options {
+  position: absolute;
+  top: 28px;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  z-index: 100;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.gear-options div {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.gear-options div:hover {
+  background-color: #f5f5f5;
+}
+
+/* View Buttons (Day / Week / Month) */
 .calendar-view-buttons {
   display: flex;
   justify-content: center;
@@ -79,68 +101,96 @@
   cursor: pointer;
 }
 
-/* Calendar grid — kept for possible future use */
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
-  margin-top: 1rem;
+/* Grid Structure for WeekView */
+.week-view {
+  width: 100%;
+  overflow-x: auto;
+  font-family: sans-serif;
 }
 
-.calendar-day {
-  padding: 1rem;
-  background: #f0f0f0;
-  border-radius: 10px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s ease;
-  min-height: 80px;
+.week-back-nav {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px 4px;
+  font-size: 1.1rem;
 }
 
-.calendar-day:hover {
-  background: #e0e0e0;
+.back-text {
+  margin-left: 4px;
+  font-weight: 500;
+  font-size: 1.1rem;
+  color: #007bff;
 }
 
-.calendar-day.selected {
-  background: #007bff;
+.week-header {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+  background-color: #f0f0f0;
+  padding: 8px 0;
+}
+
+.time-column-header {
+  width: 80px;
+}
+
+.day-column-header {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.week-body {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.week-grid {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
+.time-column {
+  width: 80px;
+  flex-shrink: 0;
+  background-color: #f5f5f5;
+  border-right: 1px solid #ccc;
+}
+
+.time-slot {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.day-column {
+  flex: 1;
+  border-left: 1px solid #e0e0e0;
+}
+
+.calendar-cell {
+  height: 52px;
+  border-bottom: 1px solid #eaeaea;
+  position: relative;
+  padding: 2px;
+}
+
+.event-entry {
+  position: relative;
+  margin: 2px;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background-color: #007bff;
   color: white;
-}
-
-.calendar-day.today {
-  border: 2px solid #34c759;
-  box-shadow: inset 0 0 0 2px #ffffff;
-}
-
-.calendar-day.today .dot {
-  background: #34c759;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  background: green;
-  border-radius: 50%;
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Event list */
-.event-list {
-  margin-top: 1rem;
-}
-
-.event-item {
-  background: #f9f9f9;
-  padding: 0.75rem;
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 /* Modal Overlay */
@@ -157,7 +207,6 @@
   z-index: 999;
 }
 
-/* Modal Box */
 .modal {
   background: white;
   padding: 1rem;

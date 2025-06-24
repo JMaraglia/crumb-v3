@@ -1,4 +1,4 @@
-// Final calendar fix - June 24
+// Final calendar fix - June 24 (updated with visual alignment and day nav)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CalendarPage.css';
@@ -172,6 +172,13 @@ function CalendarPage({ itinerary }) {
         <h1 className="calendar-title">Calendar</h1>
         <span className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</span>
         <div className="calendar-gear">⚙️</div>
+      </div>
+
+      {/* Day/Week/Month Toggle */}
+      <div className="calendar-toggle-buttons">
+        <button onClick={() => setView('day')}>Day</button>
+        <button onClick={() => setView('week')} className={view === 'week' ? 'active' : ''}>Week</button>
+        <button onClick={() => setView('month')}>Month</button>
       </div>
 
       {renderView()}
