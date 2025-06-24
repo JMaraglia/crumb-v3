@@ -121,8 +121,8 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
           currentDate.setDate(currentDate.getDate() + idx);
           return (
             <div key={day} className="day-column-header">
-              <div>{day}</div>
-              <div>{`${(currentDate.getMonth() + 1)}/${currentDate.getDate()}/${currentDate.getFullYear()}`}</div>
+              <div className="day-title">{day}</div>
+              <div className="day-date">{`${(currentDate.getMonth() + 1)}/${currentDate.getDate()}/${currentDate.getFullYear()}`}</div>
             </div>
           );
         })}

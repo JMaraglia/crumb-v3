@@ -182,6 +182,7 @@ function CalendarPage({ itinerary }) {
           setShowAddModal(true);
         }}
         className="floating-add-button"
+        style={{ right: '20px', bottom: '20px', position: 'fixed' }}
       >
         +
       </div>
@@ -255,4 +256,5 @@ function CalendarPage({ itinerary }) {
     </div>
   );
 }
+
 export default CalendarPage;

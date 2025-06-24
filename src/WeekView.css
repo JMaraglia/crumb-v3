@@ -6,9 +6,10 @@
   width: 100%;
   overflow-x: auto;
   font-family: sans-serif;
+  background-color: #fff;
 }
 
-/* Back Arrow and Nav Arrows */
+/* Back Button */
 .back-text {
   margin-left: 4px;
   font-weight: 500;
@@ -22,6 +23,7 @@
   text-decoration: underline;
 }
 
+/* Arrows */
 .nav-arrow {
   color: #007bff;
   font-size: 1.5rem;
@@ -33,7 +35,7 @@
   padding: 0 6px;
 }
 
-/* Header */
+/* Sticky Header Row */
 .week-header {
   display: flex;
   background-color: #f8f9fa;
@@ -44,6 +46,7 @@
   overflow-x: auto;
 }
 
+/* Time Column (Far Left) */
 .time-column-header {
   width: 60px;
   background-color: #f0f0f0;
@@ -55,6 +58,7 @@
   color: #555;
 }
 
+/* Each Day Header */
 .day-column-header {
   flex: 1;
   text-align: center;
@@ -67,7 +71,7 @@
   align-items: center;
   justify-content: center;
   line-height: 1.1;
-  min-width: 120px; /* ✅ helps mobile 3-day view stay legible */
+  min-width: 120px;
 }
 
 .day-column-header > div:first-child {
@@ -81,13 +85,14 @@
   color: #444;
 }
 
-/* Body */
+/* Scrollable Body */
 .week-body {
   display: flex;
   height: 600px;
   overflow-x: auto;
 }
 
+/* Time Column with Time Slots */
 .time-column {
   display: flex;
   flex-direction: column;
@@ -108,18 +113,18 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-/* Columns for Each Day */
+/* Individual Day Columns */
 .day-column {
   flex: 1;
   display: flex;
   flex-direction: column;
   border-left: 1px solid #ccc;
   position: relative;
-  min-width: 120px; /* ✅ ensures proper layout for 3-day/5-day view */
+  min-width: 120px;
   flex-shrink: 0;
 }
 
-/* Grid Cells */
+/* Cells for Each Time Slot */
 .calendar-cell {
   height: 50px;
   border-bottom: 1px solid #eee;
@@ -130,7 +135,7 @@
   cursor: pointer;
 }
 
-/* Events */
+/* Event Blocks */
 .event-entry {
   position: absolute;
   left: 2px;
@@ -141,6 +146,8 @@
   font-size: 0.75rem;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #007bff;
+  color: white;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
