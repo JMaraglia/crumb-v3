@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// --- App.jsx ---
+import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import './App.css';
 import NotesPage from './NotesPage';
@@ -126,7 +127,7 @@ function App() {
     localStorage.setItem('crumb_prospects', JSON.stringify(prospects));
   }, [prospects]);
 
-  const itineraryFromStorage = () => {
+  const itinerary = useMemo(() => {
     const saved = localStorage.getItem('visitData');
     if (!saved) return {};
 
@@ -137,7 +138,7 @@ function App() {
       acc[date].push(visit);
       return acc;
     }, {});
-  };
+  }, []);
 
   return (
     <Router>
@@ -156,7 +157,7 @@ function App() {
         <Route path="/notes/:id" element={<NotesWrapper contacts={contacts} setContacts={setContacts} />} />
         <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
         <Route path="/prospect-notes/:id" element={<ProspectNotesWrapper prospects={prospects} setProspects={setProspects} />} />
-        <Route path="/calendar" element={<CalendarPage itinerary={itineraryFromStorage()} />} />
+        <Route path="/calendar" element={<CalendarPage itinerary={itinerary} />} />
         <Route path="/itinerary" element={<ItineraryPage contacts={contacts} itinerary={[]} />} />
       </Routes>
     </Router>
