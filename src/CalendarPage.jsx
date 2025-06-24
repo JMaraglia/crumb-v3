@@ -1,14 +1,7 @@
 // --- CalendarPage.jsx ---
 import React, { useState } from 'react';
 import './CalendarPage.css';
-
-function WeekView() {
-  return (
-    <div className="calendar-placeholder">
-      Week View (Coming Soon)
-    </div>
-  );
-}
+import WeekView from './WeekView'; // ✅ Import the actual WeekView
 
 function DayView() {
   return (
@@ -35,8 +28,9 @@ function CalendarPage({ itinerary }) {
         return <DayView />;
       case 'month':
         return <MonthView />;
+      case 'week':
       default:
-        return <WeekView />;
+        return <WeekView itinerary={itinerary} />; // ✅ Pass itinerary here
     }
   };
 
