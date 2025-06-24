@@ -1,4 +1,3 @@
-// --- CalendarPage.jsx ---
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CalendarPage.css';
@@ -33,6 +32,12 @@ function CalendarPage({ itinerary }) {
     '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
     '#1abc9c', '#34495e', '#e67e22', '#7f8c8d', '#fd79a8'
   ];
+
+  const allLocations = Array.from(
+    new Set(
+      [...customEvents.map(ev => ev.location), eventData.location].filter(Boolean)
+    )
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -124,14 +129,22 @@ function CalendarPage({ itinerary }) {
           <WeekView
             itinerary={itinerary}
             customEvents={customEvents}
-            onEdit={openModalToEdit}
+            onEdit={(event) => {
+              openModalToEdit(event);
+            }}
             onDoubleClick={(day, hour) => {
               const today = new Date();
               const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
               const targetDate = new Date(startOfWeek.setDate(startOfWeek.getDate() + ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(day)));
               const formattedDate = targetDate.toISOString().split('T')[0];
 
-              setEventData(prev => ({ ...prev, date: formattedDate, time: `${hour}:00`, endTime: `${parseInt(hour)+1}:00` }));
+              setEventData(prev => ({
+                ...prev,
+                date: formattedDate,
+                time: `${hour}:00`,
+                endTime: `${parseInt(hour) + 1}:00`
+              }));
+              setEditingEvent(null);
               setShowAddModal(true);
             }}
           />
@@ -171,13 +184,12 @@ function CalendarPage({ itinerary }) {
               list="location-suggestions"
             />
             <datalist id="location-suggestions">
-              <option value="31 W Grove St, Middleborough, MA 02346, USA" />
-              <option value="333 School Street, Pawtucket, RI, USA" />
-              <option value="33 Perry Avenue, Attleboro, MA, USA" />
-              <option value="330 Victor Road, Attleboro, MA, USA" />
-              <option value="33 Staniford Street, Providence, RI, USA" />
+              {allLocations.map((loc, i) => (
+                <option key={i} value={loc} />
+              ))}
             </datalist>
             <textarea name="notes" placeholder="Notes (Optional)" value={eventData.notes} onChange={handleInputChange} />
+
             <label>Repeat</label>
             <select name="repeat" value={eventData.repeat} onChange={handleInputChange}>
               <option value="none">None</option>
@@ -186,6 +198,7 @@ function CalendarPage({ itinerary }) {
               <option value="biweekly">Biweekly</option>
               <option value="monthly">Monthly</option>
             </select>
+
             <label>Color</label>
             <div className="color-options">
               {colorOptions.map((color) => (
@@ -201,6 +214,7 @@ function CalendarPage({ itinerary }) {
                 />
               ))}
             </div>
+
             <div className="modal-buttons">
               <button onClick={addOrUpdateEvent}>{editingEvent ? 'Update' : 'Add'}</button>
               <button onClick={() => {

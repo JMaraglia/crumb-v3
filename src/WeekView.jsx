@@ -14,7 +14,7 @@ const timeKeys = Array.from({ length: 10 }, (_, i) => (i + 8).toString().padStar
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function WeekView({ itinerary = {}, customEvents = [], onEdit }) {
+function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) {
   const navigate = useNavigate();
 
   const getDateOfCurrentWeekday = (weekday) => {
@@ -140,7 +140,11 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit }) {
           return (
             <div key={day} className="day-column">
               {timeKeys.map((hourKey, idx) => (
-                <div key={idx} className="calendar-cell">
+                <div
+                  key={idx}
+                  className="calendar-cell"
+                  onDoubleClick={() => onDoubleClick && onDoubleClick(day, hourKey)}
+                >
                   {renderEvents(events, hourKey)}
                 </div>
               ))}
