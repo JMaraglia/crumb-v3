@@ -2,17 +2,41 @@
 import React, { useState } from 'react';
 import './CalendarPage.css';
 
+function WeekView() {
+  return (
+    <div className="calendar-placeholder">
+      Week View (Coming Soon)
+    </div>
+  );
+}
+
+function DayView() {
+  return (
+    <div className="calendar-placeholder">
+      Day View (Coming Soon)
+    </div>
+  );
+}
+
+function MonthView() {
+  return (
+    <div className="calendar-placeholder">
+      Month View (Coming Soon)
+    </div>
+  );
+}
+
 function CalendarPage({ itinerary }) {
   const [view, setView] = useState('week');
 
   const renderView = () => {
     switch (view) {
       case 'day':
-        return <div className="calendar-placeholder">Day View (Coming Soon)</div>;
+        return <DayView />;
       case 'month':
-        return <div className="calendar-placeholder">Month View (Coming Soon)</div>;
+        return <MonthView />;
       default:
-        return <div className="calendar-placeholder">Week View (Coming Soon)</div>;
+        return <WeekView />;
     }
   };
 
