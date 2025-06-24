@@ -18,7 +18,7 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
   const [weekOffset, setWeekOffset] = useState(0);
 
   const getStartOfWeek = () => {
-    const base = new Date(2025, 5, 22); // June 22, 2025 (Sunday)
+    const base = new Date(2025, 5, 22);
     base.setDate(base.getDate() + weekOffset * 7);
     base.setHours(0, 0, 0, 0);
     return base;
@@ -84,4 +84,65 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
       .map((event, i) => {
         const [startHour] = (event.time || '00:00').split(':');
         const [endHour] = (event.endTime || event.time || '00:00').split(':');
-        const duration =
+        const duration = Math.max(1, parseInt(endHour) - parseInt(startHour));
+
+        return (
+          <div
+            key={i}
+            className="event-entry"
+            style={{ top: `${i * 52}px`, height: `${duration * 48}px`, backgroundColor: event.color || '#007bff', color: 'white' }}
+            onClick={() => handleClick(event)}
+            onDoubleClick={() => onDoubleClick && onDoubleClick(event)}
+          >
+            {event.name || 'Unnamed Event'}
+          </div>
+        );
+      });
+  };
+
+  const startOfWeek = getStartOfWeek();
+
+  return (
+    <div className="week-view">
+      <div className="week-header">
+        <div className="time-column-header"></div>
+        {days.map((day, idx) => {
+          const currentDate = new Date(startOfWeek);
+          currentDate.setDate(currentDate.getDate() + idx);
+          return (
+            <div key={day} className="day-column-header">
+              <div style={{ fontWeight: 'bold' }}>{day}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 'normal' }}>
+                {`${(currentDate.getMonth() + 1)}/${currentDate.getDate()}/${currentDate.getFullYear()}`}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="week-body">
+        <div className="time-column">
+          {hourLabels.map((label, idx) => (
+            <div key={idx} className="time-slot">
+              {label}
+            </div>
+          ))}
+        </div>
+        {days.map((day, idx) => {
+          const events = getEventsForDay(day);
+          return (
+            <div key={idx} className="day-column">
+              {timeKeys.map((hourKey, i) => (
+                <div key={i} className="calendar-cell">
+                  {renderEvents(events, hourKey)}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default WeekView;
