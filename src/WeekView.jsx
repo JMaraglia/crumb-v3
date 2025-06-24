@@ -1,7 +1,7 @@
 // --- WeekView.jsx ---
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import './WeekView.css';
+import { useNavigate } from 'react-router-dom';
 
 const hours = Array.from({ length: 11 }, (_, i) => `${i + 8}:00`);
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -11,9 +11,8 @@ function WeekView({ itinerary }) {
 
   const getDateOfCurrentWeekday = (weekday) => {
     const today = new Date();
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay())); // Sunday
-    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const index = weekdays.indexOf(weekday);
+    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+    const index = days.indexOf(weekday);
     return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + index);
   };
 
@@ -24,11 +23,10 @@ function WeekView({ itinerary }) {
       const [eventHour] = eventTime.split(':');
 
       const calendarDate = getDateOfCurrentWeekday(day);
-
       const matchesHour = hour.startsWith(eventHour.padStart(2, '0'));
-      const repeat = event.repeat || 'none';
-      const diffDays = Math.floor((calendarDate - eventDate) / (1000 * 60 * 60 * 24));
       const sameWeekday = calendarDate.getDay() === eventDate.getDay();
+      const diffDays = Math.floor((calendarDate - eventDate) / (1000 * 60 * 60 * 24));
+      const repeat = event.repeat || 'none';
 
       if (!matchesHour || !sameWeekday) return false;
 
@@ -48,11 +46,9 @@ function WeekView({ itinerary }) {
   };
 
   const handleClick = (event) => {
-    if (event.type === 'customer') {
-      navigate(`/notes/${event.id}`);
-    } else if (event.type === 'prospect') {
-      navigate(`/prospect-notes/${event.id}`);
-    }
+    const type = event.prospect ? 'prospect' : 'customer';
+    const path = `/${type}/${event.accountNumber}`;
+    navigate(path);
   };
 
   return (
@@ -86,12 +82,9 @@ function WeekView({ itinerary }) {
                       key={i}
                       className="event-entry"
                       onClick={() => handleClick(event)}
-                      style={{
-                        cursor: 'pointer',
-                        color: event.type === 'prospect' ? 'red' : 'black',
-                      }}
+                      style={{ cursor: 'pointer' }}
                     >
-                      {event.time ? `${event.time} – ` : ''}{event.title || 'Visit'}
+                      {event.title || 'Visit'}
                     </div>
                   ))}
                 </div>
