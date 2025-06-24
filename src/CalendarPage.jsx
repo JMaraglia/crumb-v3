@@ -1,3 +1,4 @@
+// --- CalendarPage.jsx ---
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CalendarPage.css';
@@ -17,6 +18,7 @@ function CalendarPage({ itinerary }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [customEvents, setCustomEvents] = useState([]);
+  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
   const [eventData, setEventData] = useState({
     name: '',
     notes: '',
@@ -33,6 +35,20 @@ function CalendarPage({ itinerary }) {
     '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
     '#1abc9c', '#34495e', '#e67e22', '#7f8c8d', '#fd79a8'
   ];
+
+  const getStartOfWeek = (date) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const changeWeek = (direction) => {
+    const offset = direction === 'prev' ? -7 : 7;
+    const newStart = new Date(currentWeekStart);
+    newStart.setDate(newStart.getDate() + offset);
+    setCurrentWeekStart(newStart);
+  };
 
   const allLocations = Array.from(
     new Set([
@@ -132,11 +148,10 @@ function CalendarPage({ itinerary }) {
           <WeekView
             itinerary={itinerary}
             customEvents={customEvents}
-            onEdit={(event) => openModalToEdit(event)}
+            onEdit={openModalToEdit}
             onDoubleClick={(day, hour) => {
-              const today = new Date();
-              const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-              const targetDate = new Date(startOfWeek.setDate(startOfWeek.getDate() + ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(day)));
+              const targetDate = new Date(currentWeekStart);
+              targetDate.setDate(currentWeekStart.getDate() + ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(day));
               const formattedDate = targetDate.toISOString().split('T')[0];
 
               setEventData(prev => ({
@@ -148,6 +163,7 @@ function CalendarPage({ itinerary }) {
               setEditingEvent(null);
               setShowAddModal(true);
             }}
+            currentWeekStart={currentWeekStart}
           />
         );
     }
@@ -156,7 +172,12 @@ function CalendarPage({ itinerary }) {
   return (
     <div className="calendar-container">
       <button className="back-arrow" onClick={() => navigate(-1)}>←</button>
-      <h1 className="calendar-title">Calendar</h1>
+      <div className="calendar-header">
+        <button className="nav-arrow" onClick={() => changeWeek('prev')}>←</button>
+        <h1 className="calendar-title">Calendar</h1>
+        <button className="nav-arrow" onClick={() => changeWeek('next')}>→</button>
+      </div>
+
       <div className="calendar-toggle">
         <button className={view === 'day' ? 'active' : ''} onClick={() => setView('day')}>Day</button>
         <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>Week</button>

@@ -1,134 +1,91 @@
-.calendar-container {
-  padding: 1rem;
+/* --- WeekView.css --- */
+
+.week-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: auto;
   font-family: sans-serif;
 }
 
-.calendar-header {
+.week-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.calendar-day {
-  padding: 1rem;
-  background: #f0f0f0;
-  border-radius: 10px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.calendar-day:hover {
-  background: #e0e0e0;
-}
-
-.calendar-day.selected {
-  background: #007bff;
-  color: white;
-}
-
-/* ✅ NEW: Today highlight */
-.calendar-day.today {
-  border: 2px solid #34c759;
-  box-shadow: inset 0 0 0 2px #ffffff;
-}
-
-.calendar-day.today .dot {
-  background: #34c759;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  background: green;
-  border-radius: 50%;
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.event-list {
-  margin-top: 1rem;
-}
-
-.modal-overlay {
-  position: fixed;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ccc;
+  position: sticky;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+.time-column-header {
+  width: 60px;
+  background-color: #f0f0f0;
+  border-right: 1px solid #ccc;
+}
+
+.day-column-header {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font-weight: bold;
+  border-left: 1px solid #ccc;
+  font-size: 0.9rem;
+  white-space: nowrap; /* prevent line wrapping */
+}
+
+.week-body {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
+  height: 600px;
 }
 
-.modal {
-  background: white;
-  padding: 1rem;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.modal h3 {
-  margin-top: 0;
-}
-
-.modal input,
-.modal textarea {
-  width: 100%;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-.modal-actions {
+.time-column {
   display: flex;
+  flex-direction: column;
+  width: 60px;
+  background-color: #f0f0f0;
+  border-right: 1px solid #ccc;
+}
+
+.time-slot {
+  height: 50px;
+  display: flex;
+  align-items: flex-start;
   justify-content: flex-end;
-  gap: 0.5rem;
+  padding-right: 4px;
+  font-size: 0.8rem;
+  color: #555;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.modal-actions button {
-  background-color: #007aff;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
+.day-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #ccc;
+  position: relative;
+}
+
+.calendar-cell {
+  height: 50px;
+  border-bottom: 1px solid #eee;
+  border-right: 1px solid #f3f3f3;
+  position: relative;
+  padding: 2px;
+  overflow: hidden;
+}
+
+.event-entry {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 12px; /* rounder bubbles */
+  padding: 6px 10px;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
   cursor: pointer;
-}
-
-/* ✅ NEW: Back arrow */
-.back-arrow {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  color: #007aff;
-  cursor: pointer;
-  margin-bottom: 1rem;
-  padding: 0;
-}
-
-/* ✅ NEW: Color selector button rounded */
-.color-selector-button {
-  border-radius: 50% !important;
-}
-
-/* ✅ NEW: Color options rounded */
-.color-options-popup span {
-  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }

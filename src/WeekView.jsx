@@ -1,5 +1,5 @@
 // --- WeekView.jsx ---
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WeekView.css';
 
@@ -16,10 +16,16 @@ const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 
 function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) {
   const navigate = useNavigate();
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const getStartOfWeek = () => {
+    const baseSunday = new Date(2024, 5, 22); // Sunday June 22, 2024
+    baseSunday.setDate(baseSunday.getDate() + 7 * weekOffset);
+    return baseSunday;
+  };
 
   const getDateOfCurrentWeekday = (weekday) => {
-    const today = new Date();
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+    const startOfWeek = getStartOfWeek();
     const index = days.indexOf(weekday);
     return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + index);
   };
@@ -111,13 +117,25 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
       });
   };
 
+  const renderDayHeaders = () => {
+    const startOfWeek = getStartOfWeek();
+    return days.map((day, i) => {
+      const date = new Date(startOfWeek);
+      date.setDate(date.getDate() + i);
+      const label = `${day} ${date.getMonth() + 1}/${date.getDate()}`;
+      return (
+        <div key={day} className="day-column-header">{label}</div>
+      );
+    });
+  };
+
   return (
     <div className="week-view">
       <div className="week-header">
         <div className="time-column-header"></div>
-        {days.map(day => (
-          <div key={day} className="day-column-header">{day}</div>
-        ))}
+        <div className="nav-arrow" onClick={() => setWeekOffset(weekOffset - 1)}>←</div>
+        {renderDayHeaders()}
+        <div className="nav-arrow" onClick={() => setWeekOffset(weekOffset + 1)}>→</div>
       </div>
 
       <div className="week-body">

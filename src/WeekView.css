@@ -30,6 +30,7 @@
   font-weight: bold;
   border-left: 1px solid #ccc;
   font-size: 0.9rem;
+  white-space: nowrap; /* prevent line wrapping */
 }
 
 .week-body {
@@ -87,4 +88,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
+}
+
+.nav-arrow {
+  width: 30px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+  padding-top: 10px;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  background-color: #e9ecef;
 }
