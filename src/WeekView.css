@@ -44,6 +44,11 @@
   width: 60px;
   background-color: #f0f0f0;
   border-right: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #555;
 }
 
 .day-column-header {
@@ -89,13 +94,14 @@
   height: 50px;
   display: flex;
   align-items: flex-start;
-  justify-content: flex-end;
-  padding-right: 4px;
+  justify-content: center;
+  padding-top: 4px;
   font-size: 0.8rem;
   color: #555;
   border-bottom: 1px solid #e0e0e0;
 }
 
+/* Columns for Each Day */
 .day-column {
   flex: 1;
   display: flex;
@@ -104,6 +110,7 @@
   position: relative;
 }
 
+/* Grid Cells */
 .calendar-cell {
   height: 50px;
   border-bottom: 1px solid #eee;

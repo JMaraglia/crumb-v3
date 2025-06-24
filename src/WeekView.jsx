@@ -2,16 +2,21 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WeekView.css';
 
-const hourLabels = Array.from({ length: 10 }, (_, i) => {
-  const hour = i + 8;
+const hourLabels = Array.from({ length: 18 }, (_, i) => {
+  const hour = 8 + Math.floor(i / 2);
+  const minutes = i % 2 === 0 ? '00' : '30';
   const suffix = hour >= 12 ? 'PM' : 'AM';
   const displayHour = hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:00 ${suffix}`;
+  return `${displayHour}:${minutes} ${suffix}`;
 });
 
-const timeKeys = Array.from({ length: 10 }, (_, i) => (i + 8).toString().padStart(2, '0'));
+const timeKeys = Array.from({ length: 18 }, (_, i) => {
+  const hour = 8 + Math.floor(i / 2);
+  const minutes = i % 2 === 0 ? '00' : '30';
+  return `${hour.toString().padStart(2, '0')}:${minutes}`;
+});
 
-const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const days = ['Sunday', 'Monday', 'Tuesday'];
 
 function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) {
   const navigate = useNavigate();
@@ -19,7 +24,7 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
   const getStartOfWeek = () => {
     const base = new Date();
-    base.setDate(base.getDate() - base.getDay() + weekOffset * 7); // Start of week logic
+    base.setDate(base.getDate() - base.getDay() + weekOffset * 7);
     base.setHours(0, 0, 0, 0);
     return base;
   };
@@ -77,22 +82,15 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
   const renderEvents = (events, hourKey) => {
     return events
-      .filter((event) => {
-        const [startHour] = (event.time || '00:00').split(':');
-        return startHour === hourKey;
-      })
+      .filter((event) => event.time === hourKey)
       .map((event, i) => {
-        const [startHour] = (event.time || '00:00').split(':');
-        const [endHour] = (event.endTime || event.time || '00:00').split(':');
-        const duration = Math.max(1, parseInt(endHour) - parseInt(startHour));
-
         return (
           <div
             key={i}
             className="event-entry"
             style={{
               top: `${i * 52}px`,
-              height: `${duration * 48}px`,
+              height: `48px`,
               backgroundColor: event.color || '#007bff',
               color: 'white',
             }}
@@ -139,10 +137,8 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
           currentDate.setDate(currentDate.getDate() + idx);
           return (
             <div key={day} className="day-column-header">
-              <div style={{ fontWeight: 'bold' }}>{day}</div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 'normal' }}>
-                {`${(currentDate.getMonth() + 1)}/${currentDate.getDate()}/${currentDate.getFullYear()}`}
-              </div>
+              <div>{day}</div>
+              <div>{`${(currentDate.getMonth() + 1)}/${currentDate.getDate()}/${currentDate.getFullYear()}`}</div>
             </div>
           );
         })}
@@ -161,27 +157,28 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
           const events = getEventsForDay(day);
           return (
             <div key={idx} className="day-column">
-              {timeKeys.map((hourKey, i) => (
-                <div
-                  key={i}
-                  className="calendar-cell"
-                  onDoubleClick={() => {
-                    const currentDate = new Date(startOfWeek);
-                    currentDate.setDate(currentDate.getDate() + idx);
-                    const dateString = currentDate.toISOString().split('T')[0];
-                    const hour = hourKey.padStart(2, '0') + ':00';
+              {timeKeys.map((hourKey, i) => {
+                const currentDate = new Date(startOfWeek);
+                currentDate.setDate(currentDate.getDate() + idx);
+                const dateString = currentDate.toISOString().split('T')[0];
 
-                    onDoubleClick &&
+                return (
+                  <div
+                    key={i}
+                    className="calendar-cell"
+                    onDoubleClick={() =>
+                      onDoubleClick &&
                       onDoubleClick({
                         date: dateString,
-                        time: hour,
+                        time: hourKey,
                         name: '',
-                      });
-                  }}
-                >
-                  {renderEvents(events, hourKey)}
-                </div>
-              ))}
+                      })
+                    }
+                  >
+                    {renderEvents(events, hourKey)}
+                  </div>
+                );
+              })}
             </div>
           );
         })}

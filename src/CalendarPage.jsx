@@ -153,7 +153,7 @@ function CalendarPage({ itinerary }) {
                 ...prev,
                 date: event.date,
                 time: event.time,
-                endTime: `${parseInt(event.time.split(':')[0]) + 1}:00`,
+                endTime: `${String(parseInt(event.time.split(':')[0]) + 1).padStart(2, '0')}:00`,
               }));
               setEditingEvent(null);
               setShowAddModal(true);
@@ -166,23 +166,47 @@ function CalendarPage({ itinerary }) {
 
   return (
     <div className="calendar-container">
-      <div className="calendar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+      {/* Header Row */}
+      <div className="calendar-header">
         <span className="calendar-nav-arrow" onClick={() => changeWeek('prev')}>←</span>
         <h1 className="calendar-title">Calendar</h1>
         <span className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</span>
       </div>
 
-      <div className="calendar-toggle">
+      {/* View Toggle Buttons */}
+      <div className="calendar-view-buttons">
         <button className={view === 'day' ? 'active' : ''} onClick={() => setView('day')}>Day</button>
         <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>Week</button>
         <button className={view === 'month' ? 'active' : ''} onClick={() => setView('month')}>Month</button>
-        <button className="add-event-button" onClick={() => {
-          setEditingEvent(null);
-          setShowAddModal(true);
-        }}>+ Event</button>
       </div>
 
       {renderView()}
+
+      {/* Floating Plus Button */}
+      <div
+        onClick={() => {
+          setEditingEvent(null);
+          setShowAddModal(true);
+        }}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: '#007bff',
+          color: 'white',
+          borderRadius: '50%',
+          width: '48px',
+          height: '48px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '28px',
+          cursor: 'pointer',
+          zIndex: 1000,
+        }}
+      >
+        +
+      </div>
 
       {showAddModal && (
         <div className="modal-overlay">
@@ -190,8 +214,8 @@ function CalendarPage({ itinerary }) {
             <h2>{editingEvent ? 'Edit' : 'Add'} Calendar Event</h2>
             <input name="name" placeholder="Event Title" value={eventData.name} onChange={handleInputChange} />
             <input name="date" type="date" value={eventData.date} onChange={handleInputChange} />
-            <input name="time" type="time" value={eventData.time} onChange={handleInputChange} />
-            <input name="endTime" type="time" value={eventData.endTime} onChange={handleInputChange} />
+            <input name="time" type="time" step="1800" value={eventData.time} onChange={handleInputChange} />
+            <input name="endTime" type="time" step="1800" value={eventData.endTime} onChange={handleInputChange} />
             <input
               name="location"
               placeholder="Location (Optional)"
@@ -221,63 +245,3 @@ function CalendarPage({ itinerary }) {
                 className="color-selector-button"
                 onClick={() => setShowColorPicker(prev => !prev)}
                 style={{
-                  width: '24px',
-                  height: '24px',
-                  backgroundColor: eventData.color,
-                  border: '2px solid black',
-                  cursor: 'pointer',
-                  display: 'inline-block',
-                  marginLeft: '8px',
-                  borderRadius: '50%',
-                }}
-              />
-              {showColorPicker && (
-                <div className="color-options-popup" style={{
-                  position: 'absolute',
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  background: '#fff',
-                  border: '1px solid #ccc',
-                  padding: '5px',
-                  zIndex: 999,
-                  top: '30px'
-                }}>
-                  {colorOptions.map(color => (
-                    <span
-                      key={color}
-                      title={color}
-                      onClick={() => {
-                        setEventData(prev => ({ ...prev, color }));
-                        setShowColorPicker(false);
-                      }}
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        backgroundColor: color,
-                        border: color === eventData.color ? '3px solid black' : '1px solid #aaa',
-                        margin: '2px',
-                        borderRadius: '50%',
-                        cursor: 'pointer',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="modal-buttons">
-              <button onClick={addOrUpdateEvent}>{editingEvent ? 'Update' : 'Add'}</button>
-              <button onClick={() => {
-                setShowAddModal(false);
-                setEditingEvent(null);
-                setShowColorPicker(false);
-              }}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default CalendarPage;
