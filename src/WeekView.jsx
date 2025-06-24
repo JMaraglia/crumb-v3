@@ -1,184 +1,117 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './WeekView.css';
+import './CalendarPage.css';
+import { FiArrowLeftCircle, FiArrowRightCircle, FiPlusCircle, FiSettings } from 'react-icons/fi';
 
-const hourLabels = Array.from({ length: 18 }, (_, i) => {
-  const hour = 8 + Math.floor(i / 2);
-  const minutes = i % 2 === 0 ? '00' : '30';
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:${minutes} ${suffix}`;
-});
+const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const timeKeys = Array.from({ length: 18 }, (_, i) => {
-  const hour = 8 + Math.floor(i / 2);
-  const minutes = i % 2 === 0 ? '00' : '30';
-  return `${hour.toString().padStart(2, '0')}:${minutes}`;
-});
-
-const fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick, currentWeekStart }) {
-  const navigate = useNavigate();
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [viewMode, setViewMode] = useState(3);
+const WeekView = () => {
+  const [viewDays, setViewDays] = useState(3); // Default to 3-day view
+  const [startIndex, setStartIndex] = useState(0);
   const [showGearMenu, setShowGearMenu] = useState(false);
 
-  const days = fullDays.slice(0, viewMode);
-
-  const getStartOfWeek = () => {
-    return new Date(currentWeekStart);
+  const handleNext = () => {
+    setStartIndex((prev) => Math.min(prev + 1, 7 - viewDays));
   };
 
-  const getDateOfCurrentWeekday = (weekday) => {
-    const startOfWeek = getStartOfWeek();
-    const index = days.indexOf(weekday);
-    return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + index);
+  const handlePrev = () => {
+    setStartIndex((prev) => Math.max(prev - 1, 0));
   };
 
-  const getEventsForDay = (day) => {
-    const calendarDate = getDateOfCurrentWeekday(day);
-
-    const filterEvents = (events) => {
-      return events.filter((event) => {
-        const eventDate = new Date(event.date);
-        const diffDays = Math.floor((calendarDate - eventDate) / (1000 * 60 * 60 * 24));
-        const sameWeekday = calendarDate.getDay() === eventDate.getDay();
-        const repeat = event.repeat || 'none';
-
-        if (!sameWeekday) return false;
-
-        switch (repeat) {
-          case 'none':
-            return calendarDate.toDateString() === eventDate.toDateString();
-          case 'weekly':
-            return diffDays % 7 === 0 && diffDays >= 0;
-          case 'biweekly':
-            return diffDays % 14 === 0 && diffDays >= 0;
-          case 'monthly':
-            return calendarDate.getDate() === eventDate.getDate();
-          case 'daily':
-            return diffDays >= 0;
-          default:
-            return false;
-        }
-      });
-    };
-
-    return [
-      ...filterEvents(Object.values(itinerary).flat()),
-      ...filterEvents(customEvents)
-    ];
+  const handleGearClick = () => {
+    setShowGearMenu((prev) => !prev);
   };
 
-  const handleClick = (event) => {
-    if (event.type === 'customer') {
-      navigate(`/notes/${event.id}`);
-    } else if (event.type === 'prospect') {
-      navigate(`/prospect-notes/${event.id}`);
-    } else {
-      onEdit && onEdit(event);
+  const handleGearOption = (days) => {
+    setViewDays(days);
+    setStartIndex(0);
+    setShowGearMenu(false);
+  };
+
+  const renderHourLabels = () => {
+    const hours = [];
+    for (let i = 0; i < 24; i++) {
+      hours.push(
+        <div key={i} className="time-slot">
+          {`${i % 12 === 0 ? 12 : i % 12}:00 ${i < 12 ? 'AM' : 'PM'}`}
+        </div>
+      );
+      hours.push(<div key={`half-${i}`} className="time-slot" />);
     }
+    return hours;
   };
 
-  const renderEvents = (events, hourKey) => {
-    return events
-      .filter((event) => event.time === hourKey)
-      .map((event, i) => {
-        return (
-          <div
-            key={i}
-            className="event-entry"
-            style={{
-              top: `${i * 52}px`,
-              height: `48px`,
-              backgroundColor: event.color || '#007bff',
-              color: 'white',
-            }}
-            onClick={() => handleClick(event)}
-            onDoubleClick={() => onDoubleClick && onDoubleClick(event)}
-          >
-            {event.name || 'Unnamed Event'}
-          </div>
-        );
-      });
+  const renderDayColumns = () => {
+    return daysOfWeek.slice(startIndex, startIndex + viewDays).map((day, index) => (
+      <div key={index} className="day-column">
+        <div className="day-column-header">
+          <div>{day}</div>
+          <div>{new Date().toLocaleDateString()}</div>
+        </div>
+        {Array.from({ length: 48 }, (_, i) => (
+          <div key={i} className="calendar-cell" />
+        ))}
+      </div>
+    ));
   };
-
-  const startOfWeek = getStartOfWeek();
 
   return (
-    <div className="week-view">
-      <div className="week-back-nav">
-        <span className="calendar-nav-arrow" onClick={() => navigate(-1)}>←</span>
-        <span className="back-text">Back</span>
+    <div className="calendar-container">
+      <div className="calendar-header">
+        <div className="calendar-back">
+          <FiArrowLeftCircle size={20} />
+          <span className="back-text">Back</span>
+        </div>
+
+        <div className="calendar-center">
+          <button className="calendar-nav-arrow" onClick={handlePrev}>
+            <FiArrowLeftCircle />
+          </button>
+          <h2 className="calendar-title">Calendar</h2>
+          <button className="calendar-nav-arrow" onClick={handleNext}>
+            <FiArrowRightCircle />
+          </button>
+        </div>
 
         <div className="gear-menu">
-          <button onClick={() => setShowGearMenu(!showGearMenu)}>⚙️</button>
+          <FiSettings className="calendar-gear" onClick={handleGearClick} />
           {showGearMenu && (
             <div className="gear-options">
-              <div onClick={() => setViewMode(3)}>3-Day View</div>
-              <div onClick={() => setViewMode(5)}>5-Day View</div>
-              <div onClick={() => setViewMode(7)}>7-Day View</div>
+              <div onClick={() => handleGearOption(3)}>3-Day View</div>
+              <div onClick={() => handleGearOption(5)}>5-Day View</div>
+              <div onClick={() => handleGearOption(7)}>7-Day View</div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="week-header">
-        <div className="time-column-header"></div>
-        {days.map((day, idx) => {
-          const currentDate = new Date(startOfWeek);
-          currentDate.setDate(currentDate.getDate() + idx);
-          return (
-            <div key={day} className="day-column-header">
-              <div className="day-title">{day}</div>
-              <div className="day-date">{`${(currentDate.getMonth() + 1)}/${currentDate.getDate()}/${currentDate.getFullYear()}`}</div>
-            </div>
-          );
-        })}
+      <div className="calendar-view-buttons">
+        <button>Day</button>
+        <button>Week</button>
+        <button>Month</button>
       </div>
 
-      <div className="week-body">
-        <div className="week-grid">
-          <div className="time-column">
-            {hourLabels.map((label, idx) => (
-              <div key={idx} className="time-slot">{label}</div>
-            ))}
-          </div>
+      <div className="week-view">
+        <div className="week-header">
+          <div className="time-column-header">Time</div>
+          {daysOfWeek.slice(startIndex, startIndex + viewDays).map((day, i) => (
+            <div key={i} className="day-column-header">
+              <div>{day}</div>
+              <div>{new Date().toLocaleDateString()}</div>
+            </div>
+          ))}
+        </div>
 
-          {days.map((day, idx) => {
-            const events = getEventsForDay(day);
-            return (
-              <div key={idx} className="day-column">
-                {timeKeys.map((hourKey, i) => {
-                  const currentDate = new Date(startOfWeek);
-                  currentDate.setDate(currentDate.getDate() + idx);
-                  const dateString = currentDate.toISOString().split('T')[0];
-
-                  return (
-                    <div
-                      key={i}
-                      className="calendar-cell"
-                      onDoubleClick={() =>
-                        onDoubleClick &&
-                        onDoubleClick({
-                          date: dateString,
-                          time: hourKey,
-                          name: '',
-                        })
-                      }
-                    >
-                      {renderEvents(events, hourKey)}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+        <div className="week-body">
+          <div className="time-column">{renderHourLabels()}</div>
+          {renderDayColumns()}
         </div>
       </div>
+
+      <button className="plus-button">
+        <FiPlusCircle size={32} />
+      </button>
     </div>
   );
-}
+};
 
 export default WeekView;
