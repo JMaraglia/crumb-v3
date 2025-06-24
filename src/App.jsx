@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from '
 import './App.css';
 import NotesPage from './NotesPage';
 import HomePage from './HomePage';
-import ContactsPage from './ContactsPage';
+import CustomersPage from './CustomersPage'; // Renamed
 import ItineraryPage from './ItineraryPage';
 import ProspectsPage from './ProspectsPage';
 import ProspectNotesPage from './ProspectNotesPage';
@@ -49,7 +49,7 @@ function NotesWrapper({ contacts, setContacts }) {
   return (
     <NotesPage
       contact={contact}
-      goBack={() => navigate('/contacts')}
+      goBack={() => navigate('/customers')} // Updated
       onAddNote={handleAddNote}
       onDeleteNote={handleDeleteNote}
     />
@@ -152,7 +152,7 @@ function App() {
             />
           }
         />
-        <Route path="/contacts" element={<ContactsPage contacts={contacts} setContacts={setContacts} />} />
+        <Route path="/customers" element={<CustomersPage contacts={contacts} setContacts={setContacts} />} /> {/* Updated */}
         <Route path="/notes/:id" element={<NotesWrapper contacts={contacts} setContacts={setContacts} />} />
         <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
         <Route path="/prospect-notes/:id" element={<ProspectNotesWrapper prospects={prospects} setProspects={setProspects} />} />

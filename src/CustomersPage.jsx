@@ -1,8 +1,8 @@
-// --- ContactsPage.jsx ---
+// --- CustomersPage.jsx ---
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function ContactsPage({ contacts, setContacts }) {
+function CustomersPage({ contacts, setContacts }) {
   const [editMode, setEditMode] = useState(false);
   const [sortAZ, setSortAZ] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,7 +89,7 @@ function ContactsPage({ contacts, setContacts }) {
 
   return (
     <div>
-      <h1 style={{ textAlign: 'center', fontSize: '2.5rem' }}>Customer Contacts</h1>
+      <h1 style={{ textAlign: 'center', fontSize: '2.5rem' }}>Customers</h1>
       <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
         <input
           placeholder="Search by name or account #"
@@ -229,4 +229,4 @@ function ContactsPage({ contacts, setContacts }) {
   );
 }
 
-export default ContactsPage;
+export default CustomersPage;
