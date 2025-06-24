@@ -14,7 +14,7 @@ const timeKeys = Array.from({ length: 10 }, (_, i) => (i + 8).toString().padStar
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function WeekView({ itinerary = {}, customEvents = [] }) {
+function WeekView({ itinerary = {}, customEvents = [], onEdit }) {
   const navigate = useNavigate();
 
   const getDateOfCurrentWeekday = (weekday) => {
@@ -66,6 +66,8 @@ function WeekView({ itinerary = {}, customEvents = [] }) {
       navigate(`/notes/${event.id}`);
     } else if (event.type === 'prospect') {
       navigate(`/prospect-notes/${event.id}`);
+    } else {
+      onEdit && onEdit(event);
     }
   };
 
@@ -103,11 +105,24 @@ function WeekView({ itinerary = {}, customEvents = [] }) {
                         padding: '2px 6px',
                         marginBottom: '2px',
                         fontSize: '0.75rem',
-                        cursor: event.type ? 'pointer' : 'default',
+                        cursor: 'pointer',
                       }}
                       title={event.notes || ''}
                     >
                       {event.time} – {event.name || event.title || 'Visit'}
+                      {event.location && (
+                        <div>
+                          <a
+                            href={`https://www.google.com/maps/search/?q=${encodeURIComponent(event.location)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: '0.65rem', color: '#007bff', textDecoration: 'underline' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {event.location}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

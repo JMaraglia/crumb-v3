@@ -1,27 +1,22 @@
 // --- CalendarPage.jsx ---
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './CalendarPage.css';
 import WeekView from './WeekView';
 
 function DayView() {
-  return (
-    <div className="calendar-placeholder">
-      Day View (Coming Soon)
-    </div>
-  );
+  return <div className="calendar-placeholder">Day View (Coming Soon)</div>;
 }
 
 function MonthView() {
-  return (
-    <div className="calendar-placeholder">
-      Month View (Coming Soon)
-    </div>
-  );
+  return <div className="calendar-placeholder">Month View (Coming Soon)</div>;
 }
 
 function CalendarPage({ itinerary }) {
+  const navigate = useNavigate();
   const [view, setView] = useState('week');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [customEvents, setCustomEvents] = useState([]);
   const [eventData, setEventData] = useState({
     name: '',
@@ -31,6 +26,7 @@ function CalendarPage({ itinerary }) {
     repeat: 'none',
     date: '',
     time: '08:00',
+    endTime: '09:00',
   });
 
   const colorOptions = [
@@ -43,30 +39,44 @@ function CalendarPage({ itinerary }) {
     setEventData(prev => ({ ...prev, [name]: value }));
   };
 
-  const addEvent = () => {
-    const baseEvent = { ...eventData };
-    const addedEvents = [];
-    const dateObj = new Date(baseEvent.date);
-    const repeatType = baseEvent.repeat;
+  const openModalToEdit = (event) => {
+    setEditingEvent(event);
+    setEventData(event);
+    setShowAddModal(true);
+  };
 
-    for (let i = 0; i < (repeatType === 'none' ? 1 : 12); i++) {
-      const newDate = new Date(dateObj);
-      if (repeatType === 'weekly') newDate.setDate(dateObj.getDate() + 7 * i);
-      else if (repeatType === 'biweekly') newDate.setDate(dateObj.getDate() + 14 * i);
-      else if (repeatType === 'monthly') newDate.setMonth(dateObj.getMonth() + i);
-      else if (repeatType === 'daily') newDate.setDate(dateObj.getDate() + i);
+  const addOrUpdateEvent = () => {
+    if (editingEvent) {
+      setCustomEvents(prev =>
+        prev.map(ev => (ev.id === editingEvent.id ? { ...eventData, id: ev.id } : ev))
+      );
+    } else {
+      const baseEvent = { ...eventData };
+      const addedEvents = [];
+      const dateObj = new Date(baseEvent.date);
+      const repeatType = baseEvent.repeat;
 
-      addedEvents.push({
-        ...baseEvent,
-        id: Date.now() + i,
-        date: newDate.toISOString().split('T')[0]
-      });
+      for (let i = 0; i < (repeatType === 'none' ? 1 : 12); i++) {
+        const newDate = new Date(dateObj);
+        if (repeatType === 'weekly') newDate.setDate(dateObj.getDate() + 7 * i);
+        else if (repeatType === 'biweekly') newDate.setDate(dateObj.getDate() + 14 * i);
+        else if (repeatType === 'monthly') newDate.setMonth(dateObj.getMonth() + i);
+        else if (repeatType === 'daily') newDate.setDate(dateObj.getDate() + i);
 
-      if (repeatType === 'none') break;
+        addedEvents.push({
+          ...baseEvent,
+          id: Date.now() + i,
+          date: newDate.toISOString().split('T')[0]
+        });
+
+        if (repeatType === 'none') break;
+      }
+
+      setCustomEvents(prev => [...prev, ...addedEvents]);
     }
 
-    setCustomEvents(prev => [...prev, ...addedEvents]);
     setShowAddModal(false);
+    setEditingEvent(null);
     setEventData({
       name: '',
       notes: '',
@@ -75,6 +85,7 @@ function CalendarPage({ itinerary }) {
       repeat: 'none',
       date: '',
       time: '08:00',
+      endTime: '09:00',
     });
   };
 
@@ -86,18 +97,28 @@ function CalendarPage({ itinerary }) {
         return <MonthView />;
       case 'week':
       default:
-        return <WeekView itinerary={itinerary} customEvents={customEvents} />;
+        return (
+          <WeekView
+            itinerary={itinerary}
+            customEvents={customEvents}
+            onEdit={openModalToEdit}
+          />
+        );
     }
   };
 
   return (
     <div className="calendar-container">
+      <button className="back-arrow" onClick={() => navigate(-1)}>←</button>
       <h1 className="calendar-title">Calendar</h1>
       <div className="calendar-toggle">
         <button className={view === 'day' ? 'active' : ''} onClick={() => setView('day')}>Day</button>
         <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>Week</button>
         <button className={view === 'month' ? 'active' : ''} onClick={() => setView('month')}>Month</button>
-        <button className="add-event-button" onClick={() => setShowAddModal(true)}>+ Event</button>
+        <button className="add-event-button" onClick={() => {
+          setEditingEvent(null);
+          setShowAddModal(true);
+        }}>+ Event</button>
       </div>
 
       {renderView()}
@@ -105,11 +126,17 @@ function CalendarPage({ itinerary }) {
       {showAddModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h2>Add Calendar Event</h2>
+            <h2>{editingEvent ? 'Edit' : 'Add'} Calendar Event</h2>
             <input name="name" placeholder="Event Title" value={eventData.name} onChange={handleInputChange} />
             <input name="date" type="date" value={eventData.date} onChange={handleInputChange} />
             <input name="time" type="time" value={eventData.time} onChange={handleInputChange} />
-            <input name="location" placeholder="Location (Optional)" value={eventData.location} onChange={handleInputChange} />
+            <input name="endTime" type="time" value={eventData.endTime} onChange={handleInputChange} />
+            <input
+              name="location"
+              placeholder="Location (Optional)"
+              value={eventData.location}
+              onChange={handleInputChange}
+            />
             <textarea name="notes" placeholder="Notes (Optional)" value={eventData.notes} onChange={handleInputChange} />
             <label>Repeat</label>
             <select name="repeat" value={eventData.repeat} onChange={handleInputChange}>
@@ -134,8 +161,11 @@ function CalendarPage({ itinerary }) {
               ))}
             </div>
             <div className="modal-buttons">
-              <button onClick={addEvent}>Add</button>
-              <button onClick={() => setShowAddModal(false)}>Cancel</button>
+              <button onClick={addOrUpdateEvent}>{editingEvent ? 'Update' : 'Add'}</button>
+              <button onClick={() => {
+                setShowAddModal(false);
+                setEditingEvent(null);
+              }}>Cancel</button>
             </div>
           </div>
         </div>
