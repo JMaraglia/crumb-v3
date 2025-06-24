@@ -18,12 +18,10 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
   const [weekOffset, setWeekOffset] = useState(0);
 
   const getStartOfWeek = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + weekOffset * 7;
-    const start = new Date(now.setDate(diff));
-    start.setHours(0, 0, 0, 0);
-    return start;
+    const base = new Date(2025, 5, 22); // June 22, 2025 (Sunday)
+    base.setDate(base.getDate() + weekOffset * 7);
+    base.setHours(0, 0, 0, 0);
+    return base;
   };
 
   const getDateOfCurrentWeekday = (weekday) => {
@@ -86,94 +84,4 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
       .map((event, i) => {
         const [startHour] = (event.time || '00:00').split(':');
         const [endHour] = (event.endTime || event.time || '00:00').split(':');
-        const duration = Math.max(1, parseInt(endHour) - parseInt(startHour));
-
-        return (
-          <div
-            key={i}
-            className="event-entry"
-            onClick={() => handleClick(event)}
-            style={{
-              backgroundColor: event.color || '#f0f0f0',
-              color: event.type === 'prospect' ? 'red' : 'black',
-              height: `${duration * 100}%`,
-            }}
-            title={event.notes || ''}
-          >
-            {event.time} – {event.name || event.title || 'Visit'}
-            {event.location && (
-              <div>
-                <a
-                  href={`https://www.google.com/maps/search/?q=${encodeURIComponent(event.location)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ fontSize: '0.65rem', color: '#007bff', textDecoration: 'underline' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {event.location}
-                </a>
-              </div>
-            )}
-          </div>
-        );
-      });
-  };
-
-  const formatMMDDYYYY = (date) => {
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    return `${mm}/${dd}/${yyyy}`;
-  };
-
-  const renderDayHeaders = () => {
-    const startOfWeek = getStartOfWeek();
-    return days.map((day, i) => {
-      const date = new Date(startOfWeek);
-      date.setDate(date.getDate() + i);
-      const label = `${day} ${formatMMDDYYYY(date)}`;
-      return (
-        <div key={day} className="day-column-header">{label}</div>
-      );
-    });
-  };
-
-  return (
-    <div className="week-view">
-      <div className="week-header">
-        <div className="time-column-header"></div>
-        <div className="nav-arrow" onClick={() => setWeekOffset(weekOffset - 1)}>←</div>
-        {renderDayHeaders()}
-        <div className="nav-arrow" onClick={() => setWeekOffset(weekOffset + 1)}>→</div>
-      </div>
-
-      <div className="week-body">
-        <div className="time-column">
-          {hourLabels.map((label) => (
-            <div key={label} className="time-slot">{label}</div>
-          ))}
-        </div>
-
-        {days.map((day) => {
-          const events = getEventsForDay(day);
-
-          return (
-            <div key={day} className="day-column">
-              {timeKeys.map((hourKey, idx) => (
-                <div
-                  key={idx}
-                  className="calendar-cell"
-                  onDoubleClick={() => onDoubleClick && onDoubleClick(day, hourKey)}
-                >
-                  {renderEvents(events, hourKey)}
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export default WeekView;
+        const duration =

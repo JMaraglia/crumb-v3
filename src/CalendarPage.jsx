@@ -11,7 +11,7 @@ function MonthView() {
   return <div className="calendar-placeholder">Month View (Coming Soon)</div>;
 }
 
-// 🔁 Moved this up to fix ReferenceError
+// 🔁 Fix ReferenceError
 const getStartOfWeek = (date) => {
   const d = new Date(date);
   d.setDate(d.getDate() - d.getDay());
@@ -171,11 +171,10 @@ function CalendarPage({ itinerary }) {
 
   return (
     <div className="calendar-container">
-      <button className="back-arrow" onClick={() => navigate(-1)}>←</button>
-      <div className="calendar-header">
-        <button className="nav-arrow" onClick={() => changeWeek('prev')}>←</button>
+      <div className="calendar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+        <span className="calendar-nav-arrow" onClick={() => changeWeek('prev')}>←</span>
         <h1 className="calendar-title">Calendar</h1>
-        <button className="nav-arrow" onClick={() => changeWeek('next')}>→</button>
+        <span className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</span>
       </div>
 
       <div className="calendar-toggle">

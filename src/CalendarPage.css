@@ -7,16 +7,26 @@
 
 .calendar-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.calendar-header h2 {
+.calendar-header h2,
+.calendar-header h1,
+.calendar-title {
   margin: 0;
   font-size: 1.5rem;
 }
 
+.calendar-nav-arrow {
+  color: #007bff;
+  font-size: 2rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 🔽 KEEPING YOUR ORIGINAL BUTTONS IN CASE YOU REUSE THEM ELSEWHERE */
 .calendar-header button {
   background-color: #007bff;
   color: white;

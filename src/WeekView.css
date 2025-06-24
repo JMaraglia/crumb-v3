@@ -26,11 +26,26 @@
 .day-column-header {
   flex: 1;
   text-align: center;
-  padding: 10px 0;
-  font-weight: bold;
+  padding: 6px 0;
   border-left: 1px solid #ccc;
   font-size: 0.9rem;
-  white-space: nowrap; /* prevent line wrapping */
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+}
+
+.day-column-header > div:first-child {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.day-column-header > div:last-child {
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: #444;
 }
 
 .week-body {
@@ -78,7 +93,7 @@
   position: absolute;
   left: 2px;
   right: 2px;
-  border-radius: 12px; /* rounder bubbles */
+  border-radius: 12px;
   padding: 6px 10px;
   margin-bottom: 2px;
   font-size: 0.75rem;
@@ -88,18 +103,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
-}
-
-.nav-arrow {
-  width: 30px;
-  text-align: center;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #333;
-  cursor: pointer;
-  user-select: none;
-  padding-top: 10px;
-  border-left: 1px solid #ccc;
-  border-right: 1px solid #ccc;
-  background-color: #e9ecef;
 }
