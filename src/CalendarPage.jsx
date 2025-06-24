@@ -252,8 +252,8 @@ function CalendarPage({ itinerary }) {
           </div>
         </div>
       )}
-    </div>
-  );
+     </div>
+); 
 }
 
 export default CalendarPage;
