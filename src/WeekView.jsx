@@ -1,4 +1,3 @@
-// --- WeekView.jsx ---
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WeekView.css';
@@ -19,9 +18,12 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
   const [weekOffset, setWeekOffset] = useState(0);
 
   const getStartOfWeek = () => {
-    const baseSunday = new Date(2024, 5, 22); // Sunday June 22, 2024
-    baseSunday.setDate(baseSunday.getDate() + 7 * weekOffset);
-    return baseSunday;
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + weekOffset * 7;
+    const start = new Date(now.setDate(diff));
+    start.setHours(0, 0, 0, 0);
+    return start;
   };
 
   const getDateOfCurrentWeekday = (weekday) => {
@@ -117,12 +119,19 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
       });
   };
 
+  const formatMMDDYYYY = (date) => {
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  };
+
   const renderDayHeaders = () => {
     const startOfWeek = getStartOfWeek();
     return days.map((day, i) => {
       const date = new Date(startOfWeek);
       date.setDate(date.getDate() + i);
-      const label = `${day} ${date.getMonth() + 1}/${date.getDate()}`;
+      const label = `${day} ${formatMMDDYYYY(date)}`;
       return (
         <div key={day} className="day-column-header">{label}</div>
       );

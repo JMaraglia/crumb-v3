@@ -1,4 +1,3 @@
-// --- CalendarPage.jsx ---
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CalendarPage.css';
@@ -11,6 +10,14 @@ function DayView() {
 function MonthView() {
   return <div className="calendar-placeholder">Month View (Coming Soon)</div>;
 }
+
+// 🔁 Moved this up to fix ReferenceError
+const getStartOfWeek = (date) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
 function CalendarPage({ itinerary }) {
   const navigate = useNavigate();
@@ -35,13 +42,6 @@ function CalendarPage({ itinerary }) {
     '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
     '#1abc9c', '#34495e', '#e67e22', '#7f8c8d', '#fd79a8'
   ];
-
-  const getStartOfWeek = (date) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() - d.getDay());
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
 
   const changeWeek = (direction) => {
     const offset = direction === 'prev' ? -7 : 7;
