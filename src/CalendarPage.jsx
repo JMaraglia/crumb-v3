@@ -45,7 +45,30 @@ function CalendarPage({ itinerary }) {
     setShowAddModal(true);
   };
 
+  const checkOverlap = (startTime, endTime, date, ignoreId = null) => {
+    const toMinutes = (time) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
+    const newStart = toMinutes(startTime);
+    const newEnd = toMinutes(endTime);
+
+    return customEvents.some(ev => {
+      if (ignoreId && ev.id === ignoreId) return false;
+      if (ev.date !== date) return false;
+
+      const evStart = toMinutes(ev.time);
+      const evEnd = toMinutes(ev.endTime);
+
+      return newStart < evEnd && newEnd > evStart;
+    });
+  };
+
   const addOrUpdateEvent = () => {
+    const isOverlap = checkOverlap(eventData.time, eventData.endTime, eventData.date, editingEvent?.id);
+
+    if (isOverlap && !window.confirm("You already have a meeting scheduled for that time. Proceed anyway?")) return;
+
     if (editingEvent) {
       setCustomEvents(prev =>
         prev.map(ev => (ev.id === editingEvent.id ? { ...eventData, id: ev.id } : ev))
@@ -102,6 +125,15 @@ function CalendarPage({ itinerary }) {
             itinerary={itinerary}
             customEvents={customEvents}
             onEdit={openModalToEdit}
+            onDoubleClick={(day, hour) => {
+              const today = new Date();
+              const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+              const targetDate = new Date(startOfWeek.setDate(startOfWeek.getDate() + ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(day)));
+              const formattedDate = targetDate.toISOString().split('T')[0];
+
+              setEventData(prev => ({ ...prev, date: formattedDate, time: `${hour}:00`, endTime: `${parseInt(hour)+1}:00` }));
+              setShowAddModal(true);
+            }}
           />
         );
     }
@@ -136,7 +168,15 @@ function CalendarPage({ itinerary }) {
               placeholder="Location (Optional)"
               value={eventData.location}
               onChange={handleInputChange}
+              list="location-suggestions"
             />
+            <datalist id="location-suggestions">
+              <option value="31 W Grove St, Middleborough, MA 02346, USA" />
+              <option value="333 School Street, Pawtucket, RI, USA" />
+              <option value="33 Perry Avenue, Attleboro, MA, USA" />
+              <option value="330 Victor Road, Attleboro, MA, USA" />
+              <option value="33 Staniford Street, Providence, RI, USA" />
+            </datalist>
             <textarea name="notes" placeholder="Notes (Optional)" value={eventData.notes} onChange={handleInputChange} />
             <label>Repeat</label>
             <select name="repeat" value={eventData.repeat} onChange={handleInputChange}>
@@ -151,6 +191,7 @@ function CalendarPage({ itinerary }) {
               {colorOptions.map((color) => (
                 <span
                   key={color}
+                  title={color}
                   style={{
                     backgroundColor: color,
                     border: eventData.color === color ? '3px solid black' : '1px solid #ccc'

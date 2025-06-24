@@ -19,12 +19,12 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit }) {
 
   const getDateOfCurrentWeekday = (weekday) => {
     const today = new Date();
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay())); // Sunday
+    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
     const index = days.indexOf(weekday);
     return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + index);
   };
 
-  const getEventsForDayAndTime = (day, hourKey) => {
+  const getEventsForDay = (day) => {
     const calendarDate = getDateOfCurrentWeekday(day);
 
     const filterEvents = (events) => {
@@ -36,7 +36,7 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit }) {
         const sameWeekday = calendarDate.getDay() === eventDate.getDay();
         const repeat = event.repeat || 'none';
 
-        if (eventHour !== hourKey || !sameWeekday) return false;
+        if (!sameWeekday) return false;
 
         switch (repeat) {
           case 'none':
@@ -71,6 +71,53 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit }) {
     }
   };
 
+  const renderEvents = (events, hourKey) => {
+    return events
+      .filter((event) => {
+        const [startHour] = (event.time || '00:00').split(':');
+        return startHour === hourKey;
+      })
+      .map((event, i) => {
+        const [startHour] = (event.time || '00:00').split(':');
+        const [endHour] = (event.endTime || event.time || '00:00').split(':');
+        const duration = Math.max(1, parseInt(endHour) - parseInt(startHour));
+
+        return (
+          <div
+            key={i}
+            className="event-entry"
+            onClick={() => handleClick(event)}
+            style={{
+              backgroundColor: event.color || '#f0f0f0',
+              color: event.type === 'prospect' ? 'red' : 'black',
+              borderRadius: '5px',
+              padding: '2px 6px',
+              marginBottom: '2px',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              height: `${duration * 100}%`,
+            }}
+            title={event.notes || ''}
+          >
+            {event.time} – {event.name || event.title || 'Visit'}
+            {event.location && (
+              <div>
+                <a
+                  href={`https://www.google.com/maps/search/?q=${encodeURIComponent(event.location)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '0.65rem', color: '#007bff', textDecoration: 'underline' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {event.location}
+                </a>
+              </div>
+            )}
+          </div>
+        );
+      });
+  };
+
   return (
     <div className="week-view">
       <div className="week-header">
@@ -87,49 +134,19 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit }) {
           ))}
         </div>
 
-        {days.map((day) => (
-          <div key={day} className="day-column">
-            {timeKeys.map((hourKey, idx) => {
-              const events = getEventsForDayAndTime(day, hourKey);
-              return (
+        {days.map((day) => {
+          const events = getEventsForDay(day);
+
+          return (
+            <div key={day} className="day-column">
+              {timeKeys.map((hourKey, idx) => (
                 <div key={idx} className="calendar-cell">
-                  {events.map((event, i) => (
-                    <div
-                      key={i}
-                      className="event-entry"
-                      onClick={() => handleClick(event)}
-                      style={{
-                        backgroundColor: event.color || '#f0f0f0',
-                        color: event.type === 'prospect' ? 'red' : 'black',
-                        borderRadius: '5px',
-                        padding: '2px 6px',
-                        marginBottom: '2px',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
-                      title={event.notes || ''}
-                    >
-                      {event.time} – {event.name || event.title || 'Visit'}
-                      {event.location && (
-                        <div>
-                          <a
-                            href={`https://www.google.com/maps/search/?q=${encodeURIComponent(event.location)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ fontSize: '0.65rem', color: '#007bff', textDecoration: 'underline' }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {event.location}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {renderEvents(events, hourKey)}
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
