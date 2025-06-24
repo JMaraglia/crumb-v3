@@ -14,7 +14,7 @@ const timeKeys = Array.from({ length: 10 }, (_, i) => (i + 8).toString().padStar
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function WeekView({ itinerary }) {
+function WeekView({ itinerary = {}, customEvents = [] }) {
   const navigate = useNavigate();
 
   const getDateOfCurrentWeekday = (weekday) => {
@@ -25,30 +25,40 @@ function WeekView({ itinerary }) {
   };
 
   const getEventsForDayAndTime = (day, hourKey) => {
-    return Object.values(itinerary).flat().filter((event) => {
-      const eventDate = new Date(event.date);
-      const [eventHour] = (event.time || '00:00').split(':');
+    const calendarDate = getDateOfCurrentWeekday(day);
 
-      const calendarDate = getDateOfCurrentWeekday(day);
-      const diffDays = Math.floor((calendarDate - eventDate) / (1000 * 60 * 60 * 24));
-      const sameWeekday = calendarDate.getDay() === eventDate.getDay();
-      const repeat = event.repeat || 'none';
+    const filterEvents = (events) => {
+      return events.filter((event) => {
+        const eventDate = new Date(event.date);
+        const [eventHour] = (event.time || '00:00').split(':');
 
-      if (eventHour !== hourKey || !sameWeekday) return false;
+        const diffDays = Math.floor((calendarDate - eventDate) / (1000 * 60 * 60 * 24));
+        const sameWeekday = calendarDate.getDay() === eventDate.getDay();
+        const repeat = event.repeat || 'none';
 
-      switch (repeat) {
-        case 'none':
-          return calendarDate.toDateString() === eventDate.toDateString();
-        case 'weekly':
-          return diffDays % 7 === 0 && diffDays >= 0;
-        case 'biweekly':
-          return diffDays % 14 === 0 && diffDays >= 0;
-        case 'monthly':
-          return calendarDate.getDate() === eventDate.getDate();
-        default:
-          return false;
-      }
-    });
+        if (eventHour !== hourKey || !sameWeekday) return false;
+
+        switch (repeat) {
+          case 'none':
+            return calendarDate.toDateString() === eventDate.toDateString();
+          case 'weekly':
+            return diffDays % 7 === 0 && diffDays >= 0;
+          case 'biweekly':
+            return diffDays % 14 === 0 && diffDays >= 0;
+          case 'monthly':
+            return calendarDate.getDate() === eventDate.getDate();
+          case 'daily':
+            return diffDays >= 0;
+          default:
+            return false;
+        }
+      });
+    };
+
+    return [
+      ...filterEvents(Object.values(itinerary).flat()),
+      ...filterEvents(customEvents)
+    ];
   };
 
   const handleClick = (event) => {
@@ -87,11 +97,17 @@ function WeekView({ itinerary }) {
                       className="event-entry"
                       onClick={() => handleClick(event)}
                       style={{
+                        backgroundColor: event.color || '#f0f0f0',
                         color: event.type === 'prospect' ? 'red' : 'black',
-                        cursor: 'pointer',
+                        borderRadius: '5px',
+                        padding: '2px 6px',
+                        marginBottom: '2px',
+                        fontSize: '0.75rem',
+                        cursor: event.type ? 'pointer' : 'default',
                       }}
+                      title={event.notes || ''}
                     >
-                      {event.time} – {event.title || 'Visit'}
+                      {event.time} – {event.name || event.title || 'Visit'}
                     </div>
                   ))}
                 </div>
