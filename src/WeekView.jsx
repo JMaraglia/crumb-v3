@@ -104,6 +104,18 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
   return (
     <div className="week-view">
+      {/* Back Arrow */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', gap: '10px' }}>
+        <span
+          style={{ fontSize: '1.5rem', color: '#007bff', cursor: 'pointer', userSelect: 'none' }}
+          onClick={() => navigate(-1)}
+        >
+          ←
+        </span>
+        <h2 style={{ margin: 0 }}>Calendar</h2>
+      </div>
+
+      {/* Day Headers */}
       <div className="week-header">
         <div className="time-column-header"></div>
         {days.map((day, idx) => {
@@ -120,6 +132,7 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
         })}
       </div>
 
+      {/* Calendar Grid */}
       <div className="week-body">
         <div className="time-column">
           {hourLabels.map((label, idx) => (
@@ -133,7 +146,23 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
           return (
             <div key={idx} className="day-column">
               {timeKeys.map((hourKey, i) => (
-                <div key={i} className="calendar-cell">
+                <div
+                  key={i}
+                  className="calendar-cell"
+                  onDoubleClick={() => {
+                    const currentDate = new Date(startOfWeek);
+                    currentDate.setDate(currentDate.getDate() + idx);
+                    const dateString = currentDate.toISOString().split('T')[0];
+                    const hour = hourKey.padStart(2, '0') + ':00';
+
+                    onDoubleClick &&
+                      onDoubleClick({
+                        date: dateString,
+                        time: hour,
+                        name: '',
+                      });
+                  }}
+                >
                   {renderEvents(events, hourKey)}
                 </div>
               ))}
