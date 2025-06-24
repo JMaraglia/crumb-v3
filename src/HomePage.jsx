@@ -18,7 +18,7 @@ function HomePage({ onNavigate }) {
   };
 
   const tiles = [
-    { label: 'Customers', icon: <FaUsers />, onClick: () => onNavigate('contacts') },
+    { label: 'Customers', icon: <FaUsers />, onClick: () => onNavigate('customers') }, // <- FIXED
     { label: 'Prospects', icon: <FaUserPlus />, onClick: () => onNavigate('prospects') },
     { label: 'Itinerary', icon: <FaClipboardList />, onClick: () => onNavigate('itinerary') },
     { label: 'Calendar', icon: <FaCalendarAlt />, onClick: () => onNavigate('calendar') },
