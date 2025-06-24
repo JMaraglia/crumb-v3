@@ -170,12 +170,7 @@ function CalendarPage({ itinerary }) {
         <span className="calendar-nav-arrow" onClick={() => changeWeek('prev')}>←</span>
         <h1 className="calendar-title">Calendar</h1>
         <span className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</span>
-      </div>
-
-      <div className="calendar-view-buttons">
-        <button className={view === 'day' ? 'active' : ''} onClick={() => setView('day')}>Day</button>
-        <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>Week</button>
-        <button className={view === 'month' ? 'active' : ''} onClick={() => setView('month')}>Month</button>
+        <div className="calendar-gear">⚙️</div>
       </div>
 
       {renderView()}
@@ -185,22 +180,7 @@ function CalendarPage({ itinerary }) {
           setEditingEvent(null);
           setShowAddModal(true);
         }}
-        style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          backgroundColor: '#007bff',
-          color: 'white',
-          borderRadius: '50%',
-          width: '48px',
-          height: '48px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '28px',
-          cursor: 'pointer',
-          zIndex: 1000,
-        }}
+        className="floating-add-button"
       >
         +
       </div>

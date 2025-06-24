@@ -107,26 +107,10 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
   return (
     <div className="week-view">
-      {/* Top Nav with Arrows and Back */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px' }}>
-        <span className="calendar-nav-arrow" onClick={() => navigate(-1)}>
-          ← <span style={{ fontSize: '1rem', marginLeft: '4px' }}>Back</span>
-        </span>
-        <div>
-          <span
-            className="calendar-nav-arrow"
-            onClick={() => setWeekOffset(prev => prev - 1)}
-            style={{ marginRight: '20px' }}
-          >
-            ←
-          </span>
-          <span
-            className="calendar-nav-arrow"
-            onClick={() => setWeekOffset(prev => prev + 1)}
-          >
-            →
-          </span>
-        </div>
+      {/* Top Nav with Back only */}
+      <div className="week-back-nav">
+        <span className="calendar-nav-arrow" onClick={() => navigate(-1)}>←</span>
+        <span className="back-text">Back</span>
       </div>
 
       {/* Day Headers */}
