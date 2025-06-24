@@ -90,7 +90,12 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
           <div
             key={i}
             className="event-entry"
-            style={{ top: `${i * 52}px`, height: `${duration * 48}px`, backgroundColor: event.color || '#007bff', color: 'white' }}
+            style={{
+              top: `${i * 52}px`,
+              height: `${duration * 48}px`,
+              backgroundColor: event.color || '#007bff',
+              color: 'white',
+            }}
             onClick={() => handleClick(event)}
             onDoubleClick={() => onDoubleClick && onDoubleClick(event)}
           >
@@ -104,15 +109,14 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
   return (
     <div className="week-view">
-      {/* Back Arrow */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', gap: '10px' }}>
+      {/* ← Back Arrow */}
+      <div style={{ padding: '10px 20px' }}>
         <span
-          style={{ fontSize: '1.5rem', color: '#007bff', cursor: 'pointer', userSelect: 'none' }}
+          className="nav-arrow"
           onClick={() => navigate(-1)}
         >
-          ←
+          ← <span className="back-text">Back</span>
         </span>
-        <h2 style={{ margin: 0 }}>Calendar</h2>
       </div>
 
       {/* Day Headers */}
