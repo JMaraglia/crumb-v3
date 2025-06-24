@@ -102,7 +102,7 @@ function ContactsPage({ contacts, setContacts }) {
             {editMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}
           </button>
           <button onClick={() => setSortAZ(prev => !prev)} style={{ marginLeft: '1rem' }}>
-            Sort {sortAZ ? 'Z-A' : 'A-Z'}
+            Sort {sortAZ ? 'A–Z' : 'Z–A'}
           </button>
           <button onClick={handleAddAccount} style={{ marginLeft: '1rem' }}>
             Add Account
