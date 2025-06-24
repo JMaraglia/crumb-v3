@@ -1,9 +1,17 @@
 // --- WeekView.jsx ---
 import React from 'react';
-import './WeekView.css';
 import { useNavigate } from 'react-router-dom';
+import './WeekView.css';
 
-const hours = Array.from({ length: 11 }, (_, i) => `${i + 8}:00`);
+const hourLabels = Array.from({ length: 10 }, (_, i) => {
+  const hour = i + 8;
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour > 12 ? hour - 12 : hour;
+  return `${displayHour}:00 ${suffix}`;
+});
+
+const timeKeys = Array.from({ length: 10 }, (_, i) => (i + 8).toString().padStart(2, '0')); // '08', '09', ..., '17'
+
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function WeekView({ itinerary }) {
@@ -11,24 +19,22 @@ function WeekView({ itinerary }) {
 
   const getDateOfCurrentWeekday = (weekday) => {
     const today = new Date();
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay())); // Sunday
     const index = days.indexOf(weekday);
     return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + index);
   };
 
-  const getEventsForDayAndTime = (day, hour) => {
+  const getEventsForDayAndTime = (day, hourKey) => {
     return Object.values(itinerary).flat().filter((event) => {
       const eventDate = new Date(event.date);
-      const eventTime = event.time || "00:00";
-      const [eventHour] = eventTime.split(':');
+      const [eventHour] = (event.time || '00:00').split(':');
 
       const calendarDate = getDateOfCurrentWeekday(day);
-      const matchesHour = hour.startsWith(eventHour.padStart(2, '0'));
-      const sameWeekday = calendarDate.getDay() === eventDate.getDay();
       const diffDays = Math.floor((calendarDate - eventDate) / (1000 * 60 * 60 * 24));
+      const sameWeekday = calendarDate.getDay() === eventDate.getDay();
       const repeat = event.repeat || 'none';
 
-      if (!matchesHour || !sameWeekday) return false;
+      if (eventHour !== hourKey || !sameWeekday) return false;
 
       switch (repeat) {
         case 'none':
@@ -46,9 +52,11 @@ function WeekView({ itinerary }) {
   };
 
   const handleClick = (event) => {
-    const type = event.prospect ? 'prospect' : 'customer';
-    const path = `/${type}/${event.accountNumber}`;
-    navigate(path);
+    if (event.type === 'customer') {
+      navigate(`/notes/${event.id}`);
+    } else if (event.type === 'prospect') {
+      navigate(`/prospect-notes/${event.id}`);
+    }
   };
 
   return (
@@ -56,35 +64,34 @@ function WeekView({ itinerary }) {
       <div className="week-header">
         <div className="time-column-header"></div>
         {days.map(day => (
-          <div key={day} className="day-column-header">
-            {day}
-          </div>
+          <div key={day} className="day-column-header">{day}</div>
         ))}
       </div>
 
       <div className="week-body">
         <div className="time-column">
-          {hours.map(hour => (
-            <div key={hour} className="time-slot">
-              {hour}
-            </div>
+          {hourLabels.map((label) => (
+            <div key={label} className="time-slot">{label}</div>
           ))}
         </div>
 
-        {days.map(day => (
+        {days.map((day) => (
           <div key={day} className="day-column">
-            {hours.map(hour => {
-              const events = getEventsForDayAndTime(day, hour);
+            {timeKeys.map((hourKey, idx) => {
+              const events = getEventsForDayAndTime(day, hourKey);
               return (
-                <div key={hour} className="calendar-cell">
+                <div key={idx} className="calendar-cell">
                   {events.map((event, i) => (
                     <div
                       key={i}
                       className="event-entry"
                       onClick={() => handleClick(event)}
-                      style={{ cursor: 'pointer' }}
+                      style={{
+                        color: event.type === 'prospect' ? 'red' : 'black',
+                        cursor: 'pointer',
+                      }}
                     >
-                      {event.title || 'Visit'}
+                      {event.time} – {event.title || 'Visit'}
                     </div>
                   ))}
                 </div>
