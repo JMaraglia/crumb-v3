@@ -1,258 +1,161 @@
-// Final calendar fix - June 24
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CalendarPage.css';
-import WeekView from './WeekView';
-
-function DayView() {
-  return <div className="calendar-placeholder">Day View (Coming Soon)</div>;
-}
-
-function MonthView() {
-  return <div className="calendar-placeholder">Month View (Coming Soon)</div>;
-}
-
-const getStartOfWeek = (date) => {
-  const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
 
 function CalendarPage({ itinerary }) {
-  const navigate = useNavigate();
-  const [view, setView] = useState('week');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [dailyNotes, setDailyNotes] = useState({});
+  const [newNote, setNewNote] = useState('');
+  const [customEvents, setCustomEvents] = useState({});
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newEventName, setNewEventName] = useState('');
+  const [newEventNotes, setNewEventNotes] = useState('');
+  const [newEventTime, setNewEventTime] = useState('');
   const [editingEvent, setEditingEvent] = useState(null);
-  const [customEvents, setCustomEvents] = useState([]);
-  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
-  const [eventData, setEventData] = useState({
-    name: '',
-    notes: '',
-    location: '',
-    color: '#3498db',
-    repeat: 'none',
-    date: '',
-    time: '08:00',
-    endTime: '09:00',
-  });
-  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  const colorOptions = [
-    '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
-    '#1abc9c', '#34495e', '#e67e22', '#7f8c8d', '#fd79a8'
-  ];
+  const navigate = useNavigate();
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
 
-  const changeWeek = (direction) => {
-    const offset = direction === 'prev' ? -7 : 7;
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() + offset);
-    setCurrentWeekStart(newStart);
+  const startOfMonth = new Date(year, month, 1);
+  const endOfMonth = new Date(year, month + 1, 0);
+  const startDay = startOfMonth.getDay();
+  const totalDays = endOfMonth.getDate();
+
+  const calendarDays = [];
+  for (let i = 0; i < startDay; i++) {
+    calendarDays.push(null);
+  }
+  for (let i = 1; i <= totalDays; i++) {
+    calendarDays.push(new Date(year, month, i));
+  }
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
   };
 
-  const allLocations = Array.from(
-    new Set([
-      ...customEvents.map(ev => ev.location),
-      eventData.location
-    ].filter(Boolean))
-  );
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEventData(prev => ({ ...prev, [name]: value }));
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
   };
 
-  const openModalToEdit = (event) => {
-    setEditingEvent(event);
-    setEventData(event);
+  const handleDayClick = (day) => {
+    setSelectedDate(day);
+    setShowAddModal(true);
+    setEditingEvent(null);
+    setNewEventName('');
+    setNewEventNotes('');
+    setNewEventTime('');
+  };
+
+  const handleEditEvent = (event, date) => {
+    setEditingEvent({ ...event, date });
+    setNewEventName(event.name);
+    setNewEventNotes(event.notes);
+    setNewEventTime(event.time || '');
+    setSelectedDate(date);
     setShowAddModal(true);
   };
 
-  const checkOverlap = (startTime, endTime, date, ignoreId = null) => {
-    const toMinutes = (time) => {
-      const [h, m] = time.split(':').map(Number);
-      return h * 60 + m;
-    };
-    const newStart = toMinutes(startTime);
-    const newEnd = toMinutes(endTime);
-
-    return customEvents.some(ev => {
-      if (ignoreId && ev.id === ignoreId) return false;
-      if (ev.date !== date) return false;
-
-      const evStart = toMinutes(ev.time);
-      const evEnd = toMinutes(ev.endTime);
-
-      return newStart < evEnd && newEnd > evStart;
-    });
-  };
-
   const addOrUpdateEvent = () => {
-    const isOverlap = checkOverlap(eventData.time, eventData.endTime, eventData.date, editingEvent?.id);
+    if (!newEventName.trim()) return;
 
-    if (isOverlap && !window.confirm("You already have a meeting scheduled for that time. Proceed anyway?")) return;
+    const dateKey = selectedDate.toDateString();
+    const newEvent = {
+      name: newEventName,
+      notes: newEventNotes,
+      time: newEventTime,
+    };
 
-    if (editingEvent) {
-      setCustomEvents(prev =>
-        prev.map(ev => (ev.id === editingEvent.id ? { ...eventData, id: ev.id } : ev))
-      );
-    } else {
-      const baseEvent = { ...eventData };
-      const addedEvents = [];
-      const dateObj = new Date(baseEvent.date);
-      const repeatType = baseEvent.repeat;
+    setCustomEvents((prev) => {
+      const updated = { ...prev };
+      const events = updated[dateKey] || [];
 
-      for (let i = 0; i < (repeatType === 'none' ? 1 : 12); i++) {
-        const newDate = new Date(dateObj);
-        if (repeatType === 'weekly') newDate.setDate(dateObj.getDate() + 7 * i);
-        else if (repeatType === 'biweekly') newDate.setDate(dateObj.getDate() + 14 * i);
-        else if (repeatType === 'monthly') newDate.setMonth(dateObj.getMonth() + i);
-        else if (repeatType === 'daily') newDate.setDate(dateObj.getDate() + i);
-
-        addedEvents.push({
-          ...baseEvent,
-          id: Date.now() + i,
-          date: newDate.toISOString().split('T')[0]
-        });
-
-        if (repeatType === 'none') break;
+      if (editingEvent) {
+        events[editingEvent.index] = newEvent;
+      } else {
+        events.push(newEvent);
       }
 
-      setCustomEvents(prev => [...prev, ...addedEvents]);
-    }
+      updated[dateKey] = events;
+      return updated;
+    });
 
     setShowAddModal(false);
+    setNewEventName('');
+    setNewEventNotes('');
+    setNewEventTime('');
     setEditingEvent(null);
-    setEventData({
-      name: '',
-      notes: '',
-      location: '',
-      color: '#3498db',
-      repeat: 'none',
-      date: '',
-      time: '08:00',
-      endTime: '09:00',
-    });
-    setShowColorPicker(false);
-  };
-
-  const renderView = () => {
-    switch (view) {
-      case 'day':
-        return <DayView />;
-      case 'month':
-        return <MonthView />;
-      case 'week':
-      default:
-        return (
-          <WeekView
-            itinerary={itinerary}
-            customEvents={customEvents}
-            onEdit={openModalToEdit}
-            onDoubleClick={(event) => {
-              setEventData(prev => ({
-                ...prev,
-                date: event.date,
-                time: event.time,
-                endTime: `${String(parseInt(event.time.split(':')[0]) + 1).padStart(2, '0')}:00`,
-              }));
-              setEditingEvent(null);
-              setShowAddModal(true);
-            }}
-            currentWeekStart={currentWeekStart}
-          />
-        );
-    }
   };
 
   return (
-    <div className="calendar-container">
+    <div className="calendar-page">
       <div className="calendar-header">
-        <span className="calendar-nav-arrow" onClick={() => changeWeek('prev')}>←</span>
-        <h1 className="calendar-title">Calendar</h1>
-        <span className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</span>
-        <div className="calendar-gear">⚙️</div>
+        <button onClick={handlePrevMonth}>&lt;</button>
+        <h2>{currentDate.toLocaleString('default', { month: 'long' })} {year}</h2>
+        <button onClick={handleNextMonth}>&gt;</button>
       </div>
 
-      {renderView()}
+      <div className="calendar-grid">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+          <div key={day} className="calendar-day-header">{day}</div>
+        ))}
 
-      <div
-        onClick={() => {
-          setEditingEvent(null);
-          setShowAddModal(true);
-        }}
-        className="floating-add-button"
-      >
-        +
+        {calendarDays.map((day, index) => (
+          <div
+            key={index}
+            className={`calendar-day ${day ? '' : 'empty-day'}`}
+            onClick={() => day && handleDayClick(day)}
+          >
+            {day && <div>{day.getDate()}</div>}
+            {day && customEvents[day.toDateString()]?.map((event, i) => (
+              <div
+                key={i}
+                className="calendar-event"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditEvent({ ...event, index: i }, day);
+                }}
+              >
+                <strong>{event.name}</strong> {event.time && <em>({event.time})</em>}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
 
       {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>{editingEvent ? 'Edit' : 'Add'} Calendar Event</h2>
-            <input name="name" placeholder="Event Title" value={eventData.name} onChange={handleInputChange} />
-            <input name="date" type="date" value={eventData.date} onChange={handleInputChange} />
-            <input name="time" type="time" step="1800" value={eventData.time} onChange={handleInputChange} />
-            <input name="endTime" type="time" step="1800" value={eventData.endTime} onChange={handleInputChange} />
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{editingEvent ? 'Edit Event' : 'Add Event'} - {selectedDate?.toDateString()}</h3>
             <input
-              name="location"
-              placeholder="Location (Optional)"
-              value={eventData.location}
-              onChange={handleInputChange}
-              list="location-suggestions"
+              type="text"
+              placeholder="Event Name"
+              value={newEventName}
+              onChange={(e) => setNewEventName(e.target.value)}
             />
-            <datalist id="location-suggestions">
-              {allLocations.map((loc, i) => (
-                <option key={i} value={loc} />
-              ))}
-            </datalist>
-            <textarea name="notes" placeholder="Notes (Optional)" value={eventData.notes} onChange={handleInputChange} />
-
-            <label>Repeat</label>
-            <select name="repeat" value={eventData.repeat} onChange={handleInputChange}>
-              <option value="none">None</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="biweekly">Biweekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
-
-            <label>Color</label>
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <div
-                className="color-selector-button"
-                onClick={() => setShowColorPicker(prev => !prev)}
-                style={{
-                  backgroundColor: eventData.color,
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  cursor: 'pointer',
-                }}
-              />
-              {showColorPicker && (
-                <div className="color-options">
-                  {colorOptions.map((color, idx) => (
-                    <span
-                      key={idx}
-                      className="color-swatch"
-                      style={{ backgroundColor: color }}
-                      onClick={() => {
-                        setEventData(prev => ({ ...prev, color }));
-                        setShowColorPicker(false);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
+            <input
+              type="text"
+              placeholder="Time (e.g. 2:30 PM)"
+              value={newEventTime}
+              onChange={(e) => setNewEventTime(e.target.value)}
+            />
+            <textarea
+              placeholder="Notes"
+              value={newEventNotes}
+              onChange={(e) => setNewEventNotes(e.target.value)}
+            />
+            <div className="modal-actions">
+              <button onClick={addOrUpdateEvent}>
+                {editingEvent ? 'Update' : 'Add'} Event
+              </button>
+              <button onClick={() => setShowAddModal(false)}>Cancel</button>
             </div>
-
-            <button onClick={addOrUpdateEvent}>{editingEvent ? 'Update' : 'Add'} Event</button>
-            <button onClick={() => setShowAddModal(false)}>Cancel</button>
           </div>
         </div>
       )}
     </div>
   );
 }
+
 export default CalendarPage;
