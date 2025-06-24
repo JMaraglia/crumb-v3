@@ -10,7 +10,7 @@ const hourLabels = Array.from({ length: 10 }, (_, i) => {
   return `${displayHour}:00 ${suffix}`;
 });
 
-const timeKeys = Array.from({ length: 10 }, (_, i) => (i + 8).toString().padStart(2, '0')); // '08', '09', ..., '17'
+const timeKeys = Array.from({ length: 10 }, (_, i) => (i + 8).toString().padStart(2, '0'));
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -88,11 +88,6 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
             style={{
               backgroundColor: event.color || '#f0f0f0',
               color: event.type === 'prospect' ? 'red' : 'black',
-              borderRadius: '5px',
-              padding: '2px 6px',
-              marginBottom: '2px',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
               height: `${duration * 100}%`,
             }}
             title={event.notes || ''}

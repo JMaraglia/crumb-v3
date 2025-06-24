@@ -213,6 +213,7 @@ function CalendarPage({ itinerary }) {
                   cursor: 'pointer',
                   display: 'inline-block',
                   marginLeft: '8px',
+                  borderRadius: '50%',
                 }}
               />
               {showColorPicker && (
