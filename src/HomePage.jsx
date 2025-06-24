@@ -28,7 +28,7 @@ function HomePage({ onNavigate }) {
     <div className="home-container">
       <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem' }}>Crumb.</h1>
       <h2 style={{ textAlign: 'center', marginBottom: '40px' }}>
-        Tracking every last Crumb.
+        Taking every last Crumb.
       </h2>
       <div className="tile-grid">
         {tiles.map((tile, i) => (
