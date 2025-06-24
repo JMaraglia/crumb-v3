@@ -27,6 +27,7 @@ function CalendarPage({ itinerary }) {
     time: '08:00',
     endTime: '09:00',
   });
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const colorOptions = [
     '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
@@ -34,9 +35,10 @@ function CalendarPage({ itinerary }) {
   ];
 
   const allLocations = Array.from(
-    new Set(
-      [...customEvents.map(ev => ev.location), eventData.location].filter(Boolean)
-    )
+    new Set([
+      ...customEvents.map(ev => ev.location),
+      eventData.location
+    ].filter(Boolean))
   );
 
   const handleInputChange = (e) => {
@@ -115,6 +117,7 @@ function CalendarPage({ itinerary }) {
       time: '08:00',
       endTime: '09:00',
     });
+    setShowColorPicker(false);
   };
 
   const renderView = () => {
@@ -129,9 +132,7 @@ function CalendarPage({ itinerary }) {
           <WeekView
             itinerary={itinerary}
             customEvents={customEvents}
-            onEdit={(event) => {
-              openModalToEdit(event);
-            }}
+            onEdit={(event) => openModalToEdit(event)}
             onDoubleClick={(day, hour) => {
               const today = new Date();
               const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
@@ -200,19 +201,52 @@ function CalendarPage({ itinerary }) {
             </select>
 
             <label>Color</label>
-            <div className="color-options">
-              {colorOptions.map((color) => (
-                <span
-                  key={color}
-                  title={color}
-                  style={{
-                    backgroundColor: color,
-                    border: eventData.color === color ? '3px solid black' : '1px solid #ccc'
-                  }}
-                  className="color-dot"
-                  onClick={() => setEventData(prev => ({ ...prev, color }))}
-                />
-              ))}
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div
+                className="color-selector-button"
+                onClick={() => setShowColorPicker(prev => !prev)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  backgroundColor: eventData.color,
+                  border: '2px solid black',
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                  marginLeft: '8px',
+                }}
+              />
+              {showColorPicker && (
+                <div className="color-options-popup" style={{
+                  position: 'absolute',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  background: '#fff',
+                  border: '1px solid #ccc',
+                  padding: '5px',
+                  zIndex: 999,
+                  top: '30px'
+                }}>
+                  {colorOptions.map(color => (
+                    <span
+                      key={color}
+                      title={color}
+                      onClick={() => {
+                        setEventData(prev => ({ ...prev, color }));
+                        setShowColorPicker(false);
+                      }}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        backgroundColor: color,
+                        border: color === eventData.color ? '3px solid black' : '1px solid #aaa',
+                        margin: '2px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="modal-buttons">
@@ -220,6 +254,7 @@ function CalendarPage({ itinerary }) {
               <button onClick={() => {
                 setShowAddModal(false);
                 setEditingEvent(null);
+                setShowColorPicker(false);
               }}>Cancel</button>
             </div>
           </div>

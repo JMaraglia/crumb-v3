@@ -30,8 +30,6 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
     const filterEvents = (events) => {
       return events.filter((event) => {
         const eventDate = new Date(event.date);
-        const [eventHour] = (event.time || '00:00').split(':');
-
         const diffDays = Math.floor((calendarDate - eventDate) / (1000 * 60 * 60 * 24));
         const sameWeekday = calendarDate.getDay() === eventDate.getDay();
         const repeat = event.repeat || 'none';

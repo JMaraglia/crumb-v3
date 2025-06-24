@@ -19,6 +19,8 @@
 
 .time-column-header {
   width: 60px;
+  background-color: #f0f0f0;
+  border-right: 1px solid #ccc;
 }
 
 .day-column-header {
@@ -27,6 +29,7 @@
   padding: 10px 0;
   font-weight: bold;
   border-left: 1px solid #ccc;
+  font-size: 0.9rem;
 }
 
 .week-body {
@@ -58,10 +61,29 @@
   display: flex;
   flex-direction: column;
   border-left: 1px solid #ccc;
+  position: relative;
 }
 
 .calendar-cell {
   height: 50px;
   border-bottom: 1px solid #eee;
   border-right: 1px solid #f3f3f3;
+  position: relative;
+  padding: 2px;
+  overflow: hidden;
+}
+
+.event-entry {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 5px;
+  padding: 2px 6px;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
