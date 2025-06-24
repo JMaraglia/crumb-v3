@@ -166,14 +166,12 @@ function CalendarPage({ itinerary }) {
 
   return (
     <div className="calendar-container">
-      {/* Header Row */}
       <div className="calendar-header">
         <span className="calendar-nav-arrow" onClick={() => changeWeek('prev')}>←</span>
         <h1 className="calendar-title">Calendar</h1>
         <span className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</span>
       </div>
 
-      {/* View Toggle Buttons */}
       <div className="calendar-view-buttons">
         <button className={view === 'day' ? 'active' : ''} onClick={() => setView('day')}>Day</button>
         <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>Week</button>
@@ -182,7 +180,6 @@ function CalendarPage({ itinerary }) {
 
       {renderView()}
 
-      {/* Floating Plus Button */}
       <div
         onClick={() => {
           setEditingEvent(null);
@@ -245,3 +242,53 @@ function CalendarPage({ itinerary }) {
                 className="color-selector-button"
                 onClick={() => setShowColorPicker(prev => !prev)}
                 style={{
+                  backgroundColor: eventData.color,
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '2px solid #ccc',
+                  cursor: 'pointer',
+                  marginBottom: '0.5rem'
+                }}
+              ></div>
+              {showColorPicker && (
+                <div className="color-picker-dropdown">
+                  {colorOptions.map(color => (
+                    <div
+                      key={color}
+                      onClick={() => {
+                        setEventData(prev => ({ ...prev, color }));
+                        setShowColorPicker(false);
+                      }}
+                      style={{
+                        backgroundColor: color,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        margin: '4px',
+                        display: 'inline-block',
+                        cursor: 'pointer',
+                        border: color === eventData.color ? '2px solid black' : '1px solid #ccc'
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button onClick={addOrUpdateEvent}>{editingEvent ? 'Update' : 'Add'}</button>
+              <button onClick={() => {
+                setShowAddModal(false);
+                setEditingEvent(null);
+                setShowColorPicker(false);
+              }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default CalendarPage;
