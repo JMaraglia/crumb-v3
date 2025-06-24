@@ -255,5 +255,4 @@ function CalendarPage({ itinerary }) {
     </div>
   );
 }
-
 export default CalendarPage;
