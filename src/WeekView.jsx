@@ -18,8 +18,8 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
   const [weekOffset, setWeekOffset] = useState(0);
 
   const getStartOfWeek = () => {
-    const base = new Date(2025, 5, 22);
-    base.setDate(base.getDate() + weekOffset * 7);
+    const base = new Date();
+    base.setDate(base.getDate() - base.getDay() + weekOffset * 7); // Start of week logic
     base.setHours(0, 0, 0, 0);
     return base;
   };
@@ -109,14 +109,26 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
   return (
     <div className="week-view">
-      {/* ← Back Arrow */}
-      <div style={{ padding: '10px 20px' }}>
-        <span
-          className="nav-arrow"
-          onClick={() => navigate(-1)}
-        >
-          ← <span className="back-text">Back</span>
+      {/* Top Nav with Arrows and Back */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px' }}>
+        <span className="calendar-nav-arrow" onClick={() => navigate(-1)}>
+          ← <span style={{ fontSize: '1rem', marginLeft: '4px' }}>Back</span>
         </span>
+        <div>
+          <span
+            className="calendar-nav-arrow"
+            onClick={() => setWeekOffset(prev => prev - 1)}
+            style={{ marginRight: '20px' }}
+          >
+            ←
+          </span>
+          <span
+            className="calendar-nav-arrow"
+            onClick={() => setWeekOffset(prev => prev + 1)}
+          >
+            →
+          </span>
+        </div>
       </div>
 
       {/* Day Headers */}

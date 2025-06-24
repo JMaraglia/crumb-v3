@@ -11,7 +11,6 @@ function MonthView() {
   return <div className="calendar-placeholder">Month View (Coming Soon)</div>;
 }
 
-// 🔁 Fix ReferenceError
 const getStartOfWeek = (date) => {
   const d = new Date(date);
   d.setDate(d.getDate() - d.getDay());
@@ -149,16 +148,12 @@ function CalendarPage({ itinerary }) {
             itinerary={itinerary}
             customEvents={customEvents}
             onEdit={openModalToEdit}
-            onDoubleClick={(day, hour) => {
-              const targetDate = new Date(currentWeekStart);
-              targetDate.setDate(currentWeekStart.getDate() + ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(day));
-              const formattedDate = targetDate.toISOString().split('T')[0];
-
+            onDoubleClick={(event) => {
               setEventData(prev => ({
                 ...prev,
-                date: formattedDate,
-                time: `${hour}:00`,
-                endTime: `${parseInt(hour) + 1}:00`
+                date: event.date,
+                time: event.time,
+                endTime: `${parseInt(event.time.split(':')[0]) + 1}:00`,
               }));
               setEditingEvent(null);
               setShowAddModal(true);
