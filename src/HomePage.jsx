@@ -1,33 +1,48 @@
+// --- HomePage.jsx ---
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt } from 'react-icons/fa';
 
 function HomePage({ onNavigate }) {
-  const navigate = useNavigate();
-
-  const handleClick = (path) => {
-    if (onNavigate) {
-      onNavigate(path);
-    } else {
-      navigate(`/${path}`);
-    }
+  const iconStyle = {
+    fontSize: '3rem',
+    marginBottom: '10px',
+    transition: 'transform 0.3s',
   };
 
+  const handleHover = (e) => {
+    e.currentTarget.style.transform = 'scale(1.2)';
+  };
+
+  const handleLeave = (e) => {
+    e.currentTarget.style.transform = 'scale(1)';
+  };
+
+  const tiles = [
+    { label: 'Customers', icon: <FaUsers />, onClick: () => onNavigate('contacts') },
+    { label: 'Prospects', icon: <FaUserPlus />, onClick: () => onNavigate('prospects') },
+    { label: 'Itinerary', icon: <FaClipboardList />, onClick: () => onNavigate('itinerary') },
+    { label: 'Calendar', icon: <FaCalendarAlt />, onClick: () => onNavigate('calendar') },
+  ];
+
   return (
-    <div className="homepage">
-      <h1 className="app-title">Crumb</h1>
-      <div className="tile-container">
-        <div className="tile" onClick={() => handleClick('customers')}>
-          <h2>Customers</h2>
-        </div>
-        <div className="tile" onClick={() => handleClick('prospects')}>
-          <h2>Prospects</h2>
-        </div>
-        <div className="tile" onClick={() => handleClick('calendar')}>
-          <h2>Calendar</h2>
-        </div>
-        <div className="tile" onClick={() => handleClick('itinerary')}>
-          <h2>Itinerary</h2>
-        </div>
+    <div className="home-container">
+      <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem' }}>Crumb.</h1>
+      <h2 style={{ textAlign: 'center', marginBottom: '40px' }}>
+        Tracking every last Crumb.
+      </h2>
+      <div className="tile-grid">
+        {tiles.map((tile, i) => (
+          <div
+            key={i}
+            className="tile"
+            onClick={tile.onClick}
+            onMouseEnter={handleHover}
+            onMouseLeave={handleLeave}
+          >
+            <div style={iconStyle}>{tile.icon}</div>
+            <span>{tile.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
