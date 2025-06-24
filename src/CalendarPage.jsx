@@ -49,7 +49,12 @@ function CalendarPage({ itinerary }) {
     setCurrentWeekStart(newStart);
   };
 
-  const allLocations = Array.from(new Set([...customEvents.map(ev => ev.location), eventData.location].filter(Boolean)));
+  const allLocations = Array.from(
+    new Set([
+      ...customEvents.map(ev => ev.location),
+      eventData.location
+    ].filter(Boolean))
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,18 +78,23 @@ function CalendarPage({ itinerary }) {
     return customEvents.some(ev => {
       if (ignoreId && ev.id === ignoreId) return false;
       if (ev.date !== date) return false;
+
       const evStart = toMinutes(ev.time);
       const evEnd = toMinutes(ev.endTime);
+
       return newStart < evEnd && newEnd > evStart;
     });
   };
 
   const addOrUpdateEvent = () => {
     const isOverlap = checkOverlap(eventData.time, eventData.endTime, eventData.date, editingEvent?.id);
+
     if (isOverlap && !window.confirm("You already have a meeting scheduled for that time. Proceed anyway?")) return;
 
     if (editingEvent) {
-      setCustomEvents(prev => prev.map(ev => (ev.id === editingEvent.id ? { ...eventData, id: ev.id } : ev)));
+      setCustomEvents(prev =>
+        prev.map(ev => (ev.id === editingEvent.id ? { ...eventData, id: ev.id } : ev))
+      );
     } else {
       const baseEvent = { ...eventData };
       const addedEvents = [];
@@ -98,24 +108,39 @@ function CalendarPage({ itinerary }) {
         else if (repeatType === 'monthly') newDate.setMonth(dateObj.getMonth() + i);
         else if (repeatType === 'daily') newDate.setDate(dateObj.getDate() + i);
 
-        addedEvents.push({ ...baseEvent, id: Date.now() + i, date: newDate.toISOString().split('T')[0] });
+        addedEvents.push({
+          ...baseEvent,
+          id: Date.now() + i,
+          date: newDate.toISOString().split('T')[0]
+        });
+
         if (repeatType === 'none') break;
       }
+
       setCustomEvents(prev => [...prev, ...addedEvents]);
     }
 
     setShowAddModal(false);
     setEditingEvent(null);
     setEventData({
-      name: '', notes: '', location: '', color: '#3498db', repeat: 'none', date: '', time: '08:00', endTime: '09:00'
+      name: '',
+      notes: '',
+      location: '',
+      color: '#3498db',
+      repeat: 'none',
+      date: '',
+      time: '08:00',
+      endTime: '09:00',
     });
     setShowColorPicker(false);
   };
 
   const renderView = () => {
     switch (view) {
-      case 'day': return <DayView />;
-      case 'month': return <MonthView />;
+      case 'day':
+        return <DayView />;
+      case 'month':
+        return <MonthView />;
       case 'week':
       default:
         return (
@@ -155,8 +180,28 @@ function CalendarPage({ itinerary }) {
 
       {renderView()}
 
-      <div onClick={() => { setEditingEvent(null); setShowAddModal(true); }}
-        style={{ position: 'fixed', bottom: '20px', right: '20px', backgroundColor: '#007bff', color: 'white', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', cursor: 'pointer', zIndex: 1000 }}>
+      <div
+        onClick={() => {
+          setEditingEvent(null);
+          setShowAddModal(true);
+        }}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: '#007bff',
+          color: 'white',
+          borderRadius: '50%',
+          width: '48px',
+          height: '48px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '28px',
+          cursor: 'pointer',
+          zIndex: 1000,
+        }}
+      >
         +
       </div>
 
@@ -168,9 +213,17 @@ function CalendarPage({ itinerary }) {
             <input name="date" type="date" value={eventData.date} onChange={handleInputChange} />
             <input name="time" type="time" step="1800" value={eventData.time} onChange={handleInputChange} />
             <input name="endTime" type="time" step="1800" value={eventData.endTime} onChange={handleInputChange} />
-            <input name="location" placeholder="Location (Optional)" value={eventData.location} onChange={handleInputChange} list="location-suggestions" />
+            <input
+              name="location"
+              placeholder="Location (Optional)"
+              value={eventData.location}
+              onChange={handleInputChange}
+              list="location-suggestions"
+            />
             <datalist id="location-suggestions">
-              {allLocations.map((loc, i) => <option key={i} value={loc} />)}
+              {allLocations.map((loc, i) => (
+                <option key={i} value={loc} />
+              ))}
             </datalist>
             <textarea name="notes" placeholder="Notes (Optional)" value={eventData.notes} onChange={handleInputChange} />
 
@@ -185,15 +238,34 @@ function CalendarPage({ itinerary }) {
 
             <label>Color</label>
             <div style={{ position: 'relative', display: 'inline-block' }}>
-              <div className="color-selector-button" onClick={() => setShowColorPicker(prev => !prev)} style={{ backgroundColor: eventData.color }}></div>
+              <div
+                className="color-selector-button"
+                onClick={() => setShowColorPicker(prev => !prev)}
+                style={{
+                  backgroundColor: eventData.color,
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                }}
+              />
               {showColorPicker && (
-                <div className="color-picker">
-                  {colorOptions.map(color => (
-                    <div key={color} className="color-option" style={{ backgroundColor: color }} onClick={() => setEventData(prev => ({ ...prev, color }))} />
+                <div className="color-options">
+                  {colorOptions.map((color, idx) => (
+                    <span
+                      key={idx}
+                      className="color-swatch"
+                      style={{ backgroundColor: color }}
+                      onClick={() => {
+                        setEventData(prev => ({ ...prev, color }));
+                        setShowColorPicker(false);
+                      }}
+                    />
                   ))}
                 </div>
               )}
             </div>
+
             <button onClick={addOrUpdateEvent}>{editingEvent ? 'Update' : 'Add'} Event</button>
             <button onClick={() => setShowAddModal(false)}>Cancel</button>
           </div>
