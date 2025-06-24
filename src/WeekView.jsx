@@ -66,7 +66,7 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
 
     return [
       ...filterEvents(Object.values(itinerary).flat()),
-      ...filterEvents(customEvents)
+      ...filterEvents(customEvents),
     ];
   };
 
@@ -83,37 +83,33 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
   const renderEvents = (events, hourKey) => {
     return events
       .filter((event) => event.time === hourKey)
-      .map((event, i) => {
-        return (
-          <div
-            key={i}
-            className="event-entry"
-            style={{
-              top: `${i * 52}px`,
-              height: `48px`,
-              backgroundColor: event.color || '#007bff',
-              color: 'white',
-            }}
-            onClick={() => handleClick(event)}
-            onDoubleClick={() => onDoubleClick && onDoubleClick(event)}
-          >
-            {event.name || 'Unnamed Event'}
-          </div>
-        );
-      });
+      .map((event, i) => (
+        <div
+          key={i}
+          className="event-entry"
+          style={{
+            top: `${i * 52}px`,
+            height: `48px`,
+            backgroundColor: event.color || '#007bff',
+            color: 'white',
+          }}
+          onClick={() => handleClick(event)}
+          onDoubleClick={() => onDoubleClick && onDoubleClick(event)}
+        >
+          {event.name || 'Unnamed Event'}
+        </div>
+      ));
   };
 
   const startOfWeek = getStartOfWeek();
 
   return (
     <div className="week-view">
-      {/* Top Nav with Back only */}
       <div className="week-back-nav">
         <span className="calendar-nav-arrow" onClick={() => navigate(-1)}>←</span>
         <span className="back-text">Back</span>
       </div>
 
-      {/* Day Headers */}
       <div className="week-header">
         <div className="time-column-header"></div>
         {days.map((day, idx) => {
@@ -128,7 +124,6 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
         })}
       </div>
 
-      {/* Calendar Grid */}
       <div className="week-body">
         <div className="time-column">
           {hourLabels.map((label, idx) => (
@@ -137,6 +132,7 @@ function WeekView({ itinerary = {}, customEvents = [], onEdit, onDoubleClick }) 
             </div>
           ))}
         </div>
+
         {days.map((day, idx) => {
           const events = getEventsForDay(day);
           return (
