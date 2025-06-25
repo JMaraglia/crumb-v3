@@ -1,4 +1,5 @@
-.week-view {
+/* file: src/WeekView.css */
+.wv-container {
   display: flex;
   flex-direction: column;
   font-family: sans-serif;
@@ -9,30 +10,53 @@
   position: relative;
 }
 
-.scroll-container {
+.wv-header {
   display: flex;
-  flex-direction: row;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  align-items: center;
+  gap: 10px;
+  padding: 5px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #ccc;
 }
 
-.week-block {
-  flex: 0 0 100%;
-  scroll-snap-align: start;
-  display: flex;
-  justify-content: center;
-  padding: 1rem;
+.wv-back,
+.wv-prev,
+.wv-next,
+.wv-add {
+  background: #3498db;
+  border: none;
+  color: #fff;
+  padding: 5px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.week-inner {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 1000px;
+.wv-modes button {
+  margin: 0 2px;
+  padding: 5px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
-.time-column {
+.wv-modes .active {
+  background: #2980b9;
+  color: #fff;
+}
+
+.wv-title {
+  flex-grow: 1;
+  text-align: center;
+  font-weight: bold;
+}
+
+.wv-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.wv-times {
   flex-shrink: 0;
   width: 60px;
   background-color: #f0f0f0;
@@ -40,10 +64,11 @@
   position: sticky;
   left: 0;
   z-index: 5;
+  overflow: hidden;
 }
 
-.time-label-cell {
-  height: 30px;
+.wv-time-cell {
+  height: 20px;
   font-size: 0.75rem;
   text-align: center;
   border-bottom: 1px solid #eee;
@@ -52,81 +77,57 @@
   justify-content: center;
 }
 
-.time-label-cell.empty {
-  background: #f0f0f0;
-}
-
-/* Content beside sticky time column */
-.week-content {
-  flex: 1;
-  overflow: hidden;
-}
-
-.day-headers {
+.wv-days {
   display: flex;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ccc;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  flex: 1;
 }
 
-.day-header {
-  flex: 1;
+.wv-day-col {
+  position: relative;
+  flex: 0 0 calc((100% - 60px) / 3);
   min-width: 120px;
-  text-align: center;
-  padding: 6px 0;
   border-left: 1px solid #ccc;
+  scroll-snap-align: start;
+}
+
+.wv-day-header {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+  padding: 6px 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   font-size: 0.9rem;
+  z-index: 1;
 }
 
-.day-header:first-child {
-  border-left: none;
-}
-
-.day-header > div:first-child {
+.wv-day-header > div:first-child {
   font-weight: bold;
   font-size: 1rem;
 }
 
-.day-header > div:last-child {
+.wv-day-header > div:last-child {
   font-size: 0.75rem;
   color: #444;
 }
 
-.time-grid {
-  display: flex;
-  flex-direction: column;
-}
-
-.time-row {
-  display: flex;
-  height: 30px;
+.wv-slot {
+  height: 20px;
   border-bottom: 1px solid #eee;
-}
-
-.time-slot {
-  flex: 1;
-  min-width: 120px;
-  border-left: 1px solid #eee;
-}
-
-/* Floating + button */
-.add-event-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #007bff;
-  color: white;
-  font-size: 2rem;
-  border: none;
-  border-radius: 50%;
-  width: 56px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  z-index: 10;
+}
+
+.wv-event {
+  position: absolute;
+  left: 0;
+  right: 0;
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 2px;
+  box-sizing: border-box;
 }

@@ -1,141 +1,139 @@
+// file: src/WeekView.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { FaArrowLeft, FaRegCalendarPlus } from 'react-icons/fa';
 import './WeekView.css';
 
-function WeekView() {
-  const [weeks, setWeeks] = useState(() => generateWeeks(new Date(), 10));
-  const [currentMonth, setCurrentMonth] = useState(getMonthName(new Date()));
-  const containerRef = useRef(null);
+export default function WeekView({ onBack }) {
+  // 1. View start defaults to Monday, June 23, 2025
+  const initialStart = new Date(2025, 5, 23);
+  const [viewStart, setViewStart] = useState(initialStart);
+  const [events, setEvents] = useState([]);
+  const scrollRef = useRef(null);
+  const [currentMonth, setCurrentMonth] = useState('');
 
+  // 2. Generate visible days (3-day window)
+  const visibleDays = Array.from({ length: 3 }, (_, i) => {
+    const d = new Date(viewStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  // 3. Time slots array for 5-minute increments
+  const timeSlots = Array.from({ length: 24 * 12 }, (_, i) => i * 5);
+
+  // 4. Update month label when viewStart changes
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollLeft = containerRef.current.scrollLeft;
-      const weekWidth = containerRef.current.offsetWidth;
-      const currentWeekIndex = Math.floor(scrollLeft / weekWidth);
-      const referenceDate = new Date();
-      referenceDate.setDate(referenceDate.getDate() + (currentWeekIndex * 7));
-      setCurrentMonth(getMonthName(referenceDate));
+    setCurrentMonth(
+      viewStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    );
+    // reset scroll to leftmost
+    if (scrollRef.current) scrollRef.current.scrollLeft = 0;
+  }, [viewStart]);
 
-      if (currentWeekIndex >= weeks.length - 2) {
-        const lastWeekDate = new Date(weeks[weeks.length - 1]);
-        lastWeekDate.setDate(lastWeekDate.getDate() + 7);
-        setWeeks(prev => [...prev, ...generateWeeks(lastWeekDate, 5)]);
-      }
+  // 5. Navigation handlers
+  const handlePrev = () => {
+    const d = new Date(viewStart);
+    d.setDate(d.getDate() - 3);
+    setViewStart(d);
+  };
+  const handleNext = () => {
+    const d = new Date(viewStart);
+    d.setDate(d.getDate() + 3);
+    setViewStart(d);
+  };
 
-      if (currentWeekIndex < 2) {
-        const firstWeekDate = new Date(weeks[0]);
-        firstWeekDate.setDate(firstWeekDate.getDate() - (7 * 5));
-        setWeeks(prev => [...generateWeeks(firstWeekDate, 5), ...prev]);
+  // 6. Add event (prompt-based)
+  const handleAddEvent = (day, startMin) => {
+    const title = prompt('Event title:');
+    if (!title) return;
+    const dur = parseInt(prompt('Duration (minutes, multiple of 5):'), 10);
+    if (!dur || dur % 5 !== 0) return;
+    const colorOptions = ['#1abc9c','#2ecc71','#3498db','#9b59b6','#34495e','#f1c40f','#e67e22','#e74c3c','#95a5a6','#d35400'];
+    const idx = parseInt(prompt('Color option 1-10:'), 10) - 1;
+    const color = colorOptions[idx] || colorOptions[0];
 
-        requestAnimationFrame(() => {
-          containerRef.current.scrollLeft += weekWidth * 5;
-        });
-      }
+    const dateKey = day.toDateString();
+    const dayEvents = events.filter(e => e.date === dateKey);
+    const overlap = dayEvents.some(e => !(startMin + dur <= e.start || e.start + e.duration <= startMin));
+    if (overlap && !window.confirm('Overlap detected. Proceed?')) return;
+
+    const newEvent = {
+      id: Date.now(),
+      date: dateKey,
+      start: startMin,
+      duration: dur,
+      title,
+      color,
     };
-
-    const ref = containerRef.current;
-    if (ref) {
-      ref.addEventListener('scroll', handleScroll);
-
-      // Scroll to middle week on mount
-      const weekWidth = ref.offsetWidth;
-      ref.scrollLeft = weekWidth * 5;
-    }
-
-    return () => ref.removeEventListener('scroll', handleScroll);
-  }, [weeks]);
+    setEvents(prev => [...prev, newEvent]);
+  };
 
   return (
-    <div className="week-view">
-      <div className="scroll-container" ref={containerRef}>
-        {weeks.map((weekStart, index) => (
-          <div key={index} className="week-block">
-            <div className="week-inner">
-              <div className="time-column">
-                {renderTimeLabels()}
-              </div>
-              <div className="week-content">
-                <div className="day-headers">
-                  {renderDayHeaders(weekStart)}
-                </div>
-                <div className="time-grid">
-                  {renderTimeGrid()}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="wv-container">
+      <header className="wv-header">
+        <button className="wv-back" onClick={onBack}><FaArrowLeft /></button>
+        <div className="wv-modes">
+          <button disabled>Day</button>
+          <button className="active">Week</button>
+          <button disabled>Month</button>
+        </div>
+        <div className="wv-title">{currentMonth}</div>
+        <button className="wv-prev" onClick={handlePrev}>&lt;</button>
+        <button className="wv-next" onClick={handleNext}>&gt;</button>
+        <button className="wv-add" onClick={() => handleAddEvent(visibleDays[0], 0)}><FaRegCalendarPlus /></button>
+      </header>
 
-      <button className="add-event-button">+</button>
+      <div className="wv-body">
+        {/* Time labels column */}
+        <div className="wv-times">
+          {timeSlots.map(min => {
+            const h = Math.floor(min / 60);
+            const m = min % 60;
+            const label = m === 0 ?
+              `${h === 0 ? 12 : h > 12 ? h - 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`
+              : '';
+            return (
+              <div key={min} className="wv-time-cell">
+                {label}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Days grid, scrollable */}
+        <div className="wv-days" ref={scrollRef}>
+          {visibleDays.map(day => {
+            const dateKey = day.toDateString();
+            const dayEvents = events.filter(e => e.date === dateKey);
+            return (
+              <div key={dateKey} className="wv-day-col">
+                <div className="wv-day-header">
+                  <div>{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                  <div>{day.getMonth()+1}/{day.getDate()}</div>
+                </div>
+                {timeSlots.map(min => (
+                  <div
+                    key={min}
+                    className="wv-slot"
+                    onClick={() => handleAddEvent(day, min)}
+                  />
+                ))}
+                {dayEvents.map(ev => (
+                  <div
+                    key={ev.id}
+                    className="wv-event"
+                    style={{
+                      top: (ev.start / 5) * 20 + 'px',
+                      height: (ev.duration / 5) * 20 + 'px',
+                      backgroundColor: ev.color,
+                    }}
+                  >{ev.title}</div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
-
-function generateWeeks(startDate, count = 5) {
-  const weeks = [];
-  const date = new Date(startDate);
-  date.setDate(date.getDate() - (date.getDay() % 7));
-  for (let i = 0; i < count; i++) {
-    const weekStart = new Date(date);
-    weekStart.setDate(date.getDate() + i * 7);
-    weeks.push(new Date(weekStart));
-  }
-  return weeks;
-}
-
-function renderDayHeaders(startDate) {
-  const headers = [];
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
-    headers.push(
-      <div key={i} className="day-header">
-        <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-        <div>{date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</div>
-      </div>
-    );
-  }
-  return headers;
-}
-
-function renderTimeLabels() {
-  const labels = [];
-  for (let hour = 0; hour < 24; hour++) {
-    labels.push(
-      <div key={`${hour}-full`} className="time-label-cell">
-        {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`}
-      </div>
-    );
-    labels.push(<div key={`${hour}-half`} className="time-label-cell empty" />);
-  }
-  return labels;
-}
-
-function renderTimeGrid() {
-  const rows = [];
-
-  for (let hour = 0; hour < 24; hour++) {
-    rows.push(
-      <div key={`${hour}-full`} className="time-row">
-        {[...Array(7)].map((_, i) => (
-          <div key={i} className="time-slot" />
-        ))}
-      </div>
-    );
-    rows.push(
-      <div key={`${hour}-half`} className="time-row">
-        {[...Array(7)].map((_, i) => (
-          <div key={i} className="time-slot" />
-        ))}
-      </div>
-    );
-  }
-
-  return rows;
-}
-
-function getMonthName(date) {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
-
-export default WeekView;
