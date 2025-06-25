@@ -1,111 +1,105 @@
 // file: src/WeekView.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { FaArrowLeft, FaRegCalendarPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaCog } from 'react-icons/fa';
 import './WeekView.css';
 
 export default function WeekView({ onBack }) {
-  // Start on Sunday, June 22, 2025 for a 3-day view
-  const initialStart = new Date(2025, 5, 22);
+  const initialStart = new Date(2025, 5, 22); // Sunday, June 22, 2025
   const [viewStart, setViewStart] = useState(initialStart);
   const [events, setEvents] = useState([]);
   const scrollRef = useRef(null);
-  const [currentMonth, setCurrentMonth] = useState('');
 
-  // Build 3-day window
-  const visibleDays = Array.from({ length: 3 }, (_, i) => {
+  // build 3-day window
+  const days = Array.from({ length: 3 }, (_, i) => {
     const d = new Date(viewStart);
     d.setDate(d.getDate() + i);
     return d;
   });
 
-  // 5-minute increments
-  const timeSlots = Array.from({ length: 24 * 12 }, (_, i) => i * 5);
+  // 5-min slots
+  const slots = Array.from({ length: 24 * 12 }, (_, i) => i * 5);
 
-  // Update header month and reset scroll
+  // update scroll reset on viewStart
   useEffect(() => {
-    setCurrentMonth(
-      viewStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    );
     if (scrollRef.current) scrollRef.current.scrollLeft = 0;
   }, [viewStart]);
 
-  // Shift view by 3 days
-  const handlePrev = () => {
-    const d = new Date(viewStart);
-    d.setDate(d.getDate() - 3);
-    setViewStart(d);
-  };
-  const handleNext = () => {
-    const d = new Date(viewStart);
-    d.setDate(d.getDate() + 3);
-    setViewStart(d);
-  };
+  const prev3 = () => setViewStart(d => { d = new Date(d); d.setDate(d.getDate() - 3); return d; });
+  const next3 = () => setViewStart(d => { d = new Date(d); d.setDate(d.getDate() + 3); return d; });
 
-  // Create event via prompt (later replace modal)
-  const handleAddEvent = (day, startMin) => {
-    const title = prompt('Title:'); if (!title) return;
-    const dur = parseInt(prompt('Duration (min, multiple of 5):'), 10); if (!dur || dur % 5) return;
+  const addEvent = (day, start) => {
+    const title = prompt('Event title:'); if (!title) return;
+    const dur = parseInt(prompt('Duration minutes (5-min increments):'), 10);
     const colors = ['#1abc9c','#2ecc71','#3498db','#9b59b6','#34495e','#f1c40f','#e67e22','#e74c3c','#95a5a6','#d35400'];
     const idx = parseInt(prompt('Color 1-10:'),10) - 1;
     const color = colors[idx] || colors[0];
-    const dayKey = day.toDateString();
-    const dayEv = events.filter(e => e.date === dayKey);
-    const overlap = dayEv.some(e => !(startMin + dur <= e.start || e.start + e.duration <= startMin));
-    if (overlap && !window.confirm('Overlap detected. Continue?')) return;
-    setEvents(prev => [...prev, { id:Date.now(), date:dayKey, start:startMin, duration:dur, title, color }]);
+    const dateKey = day.toDateString();
+    const dayEvents = events.filter(e => e.date===dateKey);
+    const overlap = dayEvents.some(e => !(start+dur <= e.start || e.start+e.duration <= start));
+    if (overlap && !window.confirm('Overlap detected. Proceed?')) return;
+    setEvents(prev => [...prev, { id: Date.now(), date: dateKey, start, duration: dur, title, color }]);
   };
 
   return (
-    <div className="wv-container">
-      <header className="wv-header">
+    <div className="week-view">
+      <div className="wv-topbar">
         <button className="wv-back" onClick={onBack}><FaArrowLeft/></button>
-        <div className="wv-modes">
-          <button disabled>Day</button>
-          <button className="active">Week</button>
-          <button disabled>Month</button>
-        </div>
-        <div className="wv-title">{currentMonth}</div>
-        <button className="wv-prev" onClick={handlePrev}>&lt;</button>
-        <button className="wv-next" onClick={handleNext}>&gt;</button>
-        <button className="wv-add" onClick={() => handleAddEvent(visibleDays[0], 0)}><FaRegCalendarPlus/></button>
-      </header>
+        <h2 className="wv-title-main">Calendar</h2>
+        <button className="wv-settings"><FaCog/></button>
+      </div>
+
+      <div className="wv-toggles">
+        <button className="">Day</button>
+        <button className="active">Week</button>
+        <button className="">Month</button>
+      </div>
+
+      <div className="wv-subheader">
+        <button className="wv-prev" onClick={prev3}>&lt;</button>
+        {days.map(day => (
+          <div key={day} className="wv-day-label">
+            <div>{day.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+            <div>{day.toLocaleDateString('en-US')}</div>
+          </div>
+        ))}
+        <button className="wv-next" onClick={next3}>&gt;</button>
+      </div>
 
       <div className="wv-body">
-        {/* Time labels fixed on left */}
-        <div className="wv-times">
-          {timeSlots.map(min => {
-            const h = Math.floor(min/60);
-            const m = min%60;
+        <div className="time-column">
+          {slots.map(min => {
+            const h=Math.floor(min/60), m=min%60;
             const label = m===0 ? `${h===0?12:h>12?h-12:h}:00 ${h<12?'AM':'PM'}` : '';
-            return <div key={min} className="wv-time-cell">{label}</div>;
+            return <div key={min} className="time-label-cell">{label}</div>;
           })}
         </div>
-
-        {/* 3-day scrollable columns */}
-        <div className="wv-days" ref={scrollRef}>
-          {visibleDays.map(day => {
-            const key = day.toDateString();
-            const dayEv = events.filter(e => e.date===key);
-            return (
-              <div key={key} className="wv-day-col">
-                <div className="wv-day-header">
-                  <div>{day.toLocaleDateString('en-US',{weekday:'short'})}</div>
-                  <div>{day.getMonth()+1}/{day.getDate()}</div>
-                </div>
-                {timeSlots.map(min => (
-                  <div key={min} className="wv-slot" onClick={()=>handleAddEvent(day,min)} />
-                ))}
-                {dayEv.map(ev=>(
-                  <div key={ev.id} className="wv-event"
-                    style={{ top:(ev.start/5)*20+'px', height:(ev.duration/5)*20+'px', backgroundColor:ev.color }}>
-                    {ev.title}
+        <div className="scroll-container" ref={scrollRef}>
+          {days.map(day => (
+            <div key={day} className="week-block">
+              <div className="week-inner">
+                <div className="week-content">
+                  <div className="day-headers"></div>
+                  <div className="time-grid">
+                    {slots.map(min => (
+                      <div key={min} className="time-slot" onClick={()=>addEvent(day,min)} />
+                    ))}
+                    {events
+                      .filter(e=>e.date===day.toDateString())
+                      .map(ev=> (
+                        <div key={ev.id} className="time-slot event"
+                          style={{ top:(ev.start/5)*30+'px', height:(ev.duration/5)*30+'px', backgroundColor:ev.color }}>
+                          {ev.title}
+                        </div>
+                      ))}
                   </div>
-                ))}
+                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
+
+      <button className="add-event-button" onClick={()=>addEvent(days[0],0)}>+</button>
     </div>
   );
 }

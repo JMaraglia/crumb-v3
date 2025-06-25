@@ -1,15 +1,28 @@
-// file: src/WeekView.css
-.wv-container { display:flex; flex-direction:column; font-family:sans-serif; position:relative; height:100vh; }
-.wv-header { display:flex; align-items:center; padding:5px; background:#f8f9fa; border-bottom:1px solid #ccc; gap:8px; }
-.wv-back,.wv-prev,.wv-next,.wv-add { background:#3498db; border:none; color:#fff; padding:5px; border-radius:4px; cursor:pointer; }
-.wv-modes button { margin:0 2px; padding:5px 10px; border:none; background:transparent; cursor:pointer; }
-.wv-modes .active { background:#2980b9; color:#fff; }
-.wv-title { flex:1; text-align:center; font-weight:bold; }
-.wv-body { display:flex; flex:1; overflow:hidden; }
-.wv-times { flex-shrink:0; width:60px; background:#f0f0f0; border-right:1px solid #ccc; position:sticky; left:0; z-index:5; overflow:hidden; }
-.wv-time-cell { height:20px; font-size:0.75rem; text-align:center; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:center; }
-.wv-days { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; flex:1; }
-.wv-day-col { position:relative; flex:0 0 calc((100% - 60px)/3); border-left:1px solid #ccc; scroll-snap-align:start; }
-.wv-day-header { position:sticky; top:0; background:#f8f9fa; border-bottom:1px solid #ccc; display:flex; flex-direction:column; align-items:center; padding:6px 0; font-size:0.9rem; z-index:1; }
-.wv-slot { height:20px; border-bottom:1px solid #eee; cursor:pointer; }
-.wv-event { position:absolute; left:0; right:0; color:#fff; font-size:0.75rem; padding:2px; box-sizing:border-box; }
+/* file: src/WeekView.css */
+.week-view { display:flex; flex-direction:column; height:100vh; font-family:sans-serif; }
+.wv-topbar { display:flex; align-items:center; justify-content:space-between; padding:8px; border-bottom:1px solid #ccc; }
+.wv-back, .wv-settings { background:none; border:none; font-size:1.2rem; cursor:pointer; }
+.wv-title-main { margin:0; font-size:1.2rem; }
+
+.wv-toggles { display:flex; justify-content:center; padding:8px; gap:8px; background:#f0f0f0; }
+.wv-toggles button { padding:6px 16px; border:none; background:#007bff; color:#fff; border-radius:4px; cursor:pointer; }
+.wv-toggles .active { background:#fff; color:#007bff; border:1px solid #007bff; }
+
+.wv-subheader { display:flex; align-items:center; padding:4px 8px; border-bottom:1px solid #ccc; }
+.wv-prev, .wv-next { background:none; border:none; font-size:1.2rem; cursor:pointer; }
+.wv-day-label { flex:1; text-align:center; }
+.wv-day-label div:first-child { font-weight:bold; }
+
+.wv-body { display:flex; flex:1; }
+.time-column { width:60px; background:#f8f8f8; border-right:1px solid #ccc; overflow-y:auto; }
+.time-label-cell { height:30px; line-height:30px; text-align:right; padding-right:4px; font-size:0.75rem; border-bottom:1px solid #eee; }
+
+.scroll-container { flex:1; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; }
+.week-block { flex:0 0 33.3333%; scroll-snap-align:start; }
+.week-inner { position:relative; }
+.week-content { position:relative; }
+.time-grid { position:relative; }
+.time-slot { height:30px; border-bottom:1px solid #eee; cursor:pointer; }
+.time-slot.event { position:absolute; left:0; right:0; color:#fff; padding:2px; box-sizing:border-box; }
+
+.add-event-button { position:fixed; bottom:20px; right:20px; width:50px; height:50px; border-radius:50%; background:#007bff; color:#fff; font-size:2rem; border:none; cursor:pointer; }
