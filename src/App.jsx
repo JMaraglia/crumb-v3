@@ -69,12 +69,6 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
   );
 }
 
-// Wrap homepage to provide navigate prop
-function HomeWrapper() {
-  const navigate = useNavigate();
-  return <HomePage onNavigate={page => navigate(`/${page}`)} />;
-}
-
 export default function App() {
   // Persisted contacts, prospects, and itinerary
   const [contacts, setContacts] = usePersistedState('crumb_contacts', [
@@ -101,7 +95,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomeWrapper />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/customers" element={<CustomersPage contacts={contacts} setContacts={setContacts} />} />
         <Route
           path="/notes/:id"

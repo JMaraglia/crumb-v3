@@ -1,41 +1,39 @@
-// --- HomePage.jsx ---
+// file: src/HomePage.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt } from 'react-icons/fa';
 
-function HomePage({ onNavigate }) {
-  const iconStyle = {
-    fontSize: '3rem',
-    marginBottom: '10px',
-    transition: 'transform 0.3s',
-  };
+export default function HomePage() {
+  const navigate = useNavigate();
+  const iconStyle = { fontSize: '3rem', marginBottom: '10px', transition: 'transform 0.3s' };
 
-  const handleHover = (e) => {
-    e.currentTarget.style.transform = 'scale(1.2)';
-  };
-
-  const handleLeave = (e) => {
-    e.currentTarget.style.transform = 'scale(1)';
-  };
+  const handleHover = e => e.currentTarget.style.transform = 'scale(1.2)';
+  const handleLeave = e => e.currentTarget.style.transform = 'scale(1)';
 
   const tiles = [
-    { label: 'Customers', icon: <FaUsers />, onClick: () => onNavigate('customers') }, // <- FIXED
-    { label: 'Prospects', icon: <FaUserPlus />, onClick: () => onNavigate('prospects') },
-    { label: 'Itinerary', icon: <FaClipboardList />, onClick: () => onNavigate('itinerary') },
-    { label: 'Calendar', icon: <FaCalendarAlt />, onClick: () => onNavigate('calendar') },
+    { label: 'Customers', icon: <FaUsers />, path: '/customers' },
+    { label: 'Prospects', icon: <FaUserPlus />, path: '/prospects' },
+    { label: 'Itinerary', icon: <FaClipboardList />, path: '/itinerary' },
+    { label: 'Calendar', icon: <FaCalendarAlt />, path: '/calendar' },
   ];
 
   return (
     <div className="home-container">
-      <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem', marginBottom: '10px' }}>Crumb.</h1>
+      <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem', marginBottom: '10px' }}>
+        Crumb.
+      </h1>
       <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
         Taking every last Crumb.
       </h2>
       <div className="tile-grid">
-        {tiles.map((tile, i) => (
+        {tiles.map(tile => (
           <div
-            key={i}
+            key={tile.label}
             className="tile"
-            onClick={tile.onClick}
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(tile.path)}  // directly navigate
+            onKeyPress={e => { if (e.key === 'Enter') navigate(tile.path); }}
             onMouseEnter={handleHover}
             onMouseLeave={handleLeave}
           >
@@ -47,5 +45,3 @@ function HomePage({ onNavigate }) {
     </div>
   );
 }
-
-export default HomePage;
