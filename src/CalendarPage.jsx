@@ -167,14 +167,14 @@ function CalendarPage({ itinerary }) {
 
   return (
     <div className="calendar-container">
+      {/* Main Header */}
       <div className="calendar-header">
-        <span className="calendar-nav-arrow" onClick={() => changeWeek('prev')}>←</span>
+        <button className="calendar-nav-arrow" onClick={() => changeWeek('prev')}>←</button>
         <h1 className="calendar-title">Calendar</h1>
-        <span className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</span>
-        <div className="calendar-gear">⚙️</div>
+        <button className="calendar-nav-arrow" onClick={() => changeWeek('next')}>→</button>
       </div>
 
-      {/* Day/Week/Month Toggle */}
+      {/* View Mode Switch */}
       <div className="calendar-toggle-buttons">
         <button onClick={() => setView('day')}>Day</button>
         <button onClick={() => setView('week')} className={view === 'week' ? 'active' : ''}>Week</button>
@@ -183,6 +183,7 @@ function CalendarPage({ itinerary }) {
 
       {renderView()}
 
+      {/* Floating Add Button */}
       <div
         onClick={() => {
           setEditingEvent(null);
