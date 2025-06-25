@@ -1,4 +1,4 @@
-/* --- WeekView.css (Updated for continuous scroll) --- */
+/* --- WeekView.css (Updated for horizontal scroll) --- */
 
 .week-view {
   display: flex;
@@ -58,14 +58,19 @@
 /* Scrollable week container */
 .scroll-container {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  overflow-x: auto;              /* ✅ changed from vertical to horizontal scroll */
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
 }
 
 /* Each week block */
 .week-block {
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 1rem;
+  flex: 0 0 100%;                 /* ✅ snap by full screen width */
+  scroll-snap-align: start;
+  margin-right: 2rem;
+  border-right: 1px solid #ddd;
+  padding-right: 1rem;
 }
 
 /* Day Headers Row */

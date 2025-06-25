@@ -8,9 +8,9 @@ function WeekView() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = containerRef.current.scrollTop;
-      const weekHeight = 48 * 24; // Assuming 48px per hour (2 rows per hour)
-      const currentWeekIndex = Math.floor(scrollTop / weekHeight);
+      const scrollLeft = containerRef.current.scrollLeft;
+      const weekWidth = containerRef.current.offsetWidth;
+      const currentWeekIndex = Math.floor(scrollLeft / weekWidth);
       const referenceDate = new Date();
       referenceDate.setDate(referenceDate.getDate() + (currentWeekIndex * 7));
       setCurrentMonth(getMonthName(referenceDate));
@@ -25,7 +25,11 @@ function WeekView() {
         const firstWeekDate = new Date(weeks[0]);
         firstWeekDate.setDate(firstWeekDate.getDate() - (7 * 5));
         setWeeks(prev => [...generateWeeks(firstWeekDate, 5), ...prev]);
-        containerRef.current.scrollTop += weekHeight * 5;
+
+        // Maintain horizontal scroll position
+        requestAnimationFrame(() => {
+          containerRef.current.scrollLeft += weekWidth * 5;
+        });
       }
     };
 

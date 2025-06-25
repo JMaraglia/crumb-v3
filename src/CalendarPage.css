@@ -45,10 +45,10 @@
 /* Grid Layout */
 .calendar-grid {
   display: flex;
-  flex-direction: column;         /* ✅ CHANGED: column instead of row */
-  height: calc(100vh - 210px);    /* ✅ CHANGED: allow scrolling space */
-  overflow-y: auto;               /* ✅ CHANGED: vertical scroll enabled */
-  overflow-x: hidden;
+  flex-direction: row;          /* ✅ switched from column to row */
+  overflow-x: auto;             /* ✅ horizontal scroll enabled */
+  overflow-y: hidden;
+  width: 100%;
 }
 
 /* These below are still here to avoid breaking any other layout */

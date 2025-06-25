@@ -8,8 +8,8 @@ import CustomersPage from './CustomersPage'; // Renamed
 import ItineraryPage from './ItineraryPage';
 import ProspectsPage from './ProspectsPage';
 import ProspectNotesPage from './ProspectNotesPage';
-// import CalendarPage from './CalendarPage'; // Temporarily disabled
-import WeekView from './WeekView'; // ✅ NEW: using this for testing scroll calendar
+import CalendarPage from './CalendarPage'; // ✅ Restored CalendarPage
+// import WeekView from './WeekView'; // ❌ No longer needed directly here
 
 function NotesWrapper({ contacts, setContacts }) {
   const { id } = useParams();
@@ -158,7 +158,7 @@ function App() {
         <Route path="/notes/:id" element={<NotesWrapper contacts={contacts} setContacts={setContacts} />} />
         <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
         <Route path="/prospect-notes/:id" element={<ProspectNotesWrapper prospects={prospects} setProspects={setProspects} />} />
-        <Route path="/calendar" element={<WeekView />} /> {/* ✅ Updated to use scrollable WeekView */}
+        <Route path="/calendar" element={<CalendarPage />} /> {/* ✅ Using full calendar page again */}
         <Route path="/itinerary" element={<ItineraryPage contacts={contacts} itinerary={[]} />} />
       </Routes>
     </Router>
