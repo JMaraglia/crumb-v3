@@ -1,117 +1,16 @@
-.calendar-page {
-  font-family: sans-serif;
-  padding: 0;
-  position: relative;
-}
-
-/* Title */
-.calendar-title {
-  text-align: center;
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-top: 1rem;
-}
-
-/* View Buttons */
-.view-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 12px 0 4px;
-}
-
-.view-buttons button {
-  padding: 8px 14px;
-  font-size: 1rem;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.view-buttons .active {
-  background-color: #0056b3;
-}
-
-/* Month Label */
-.month-label {
-  text-align: center;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-/* Grid Layout */
-.calendar-grid {
-  display: flex;
-  flex-direction: row;          /* ✅ switched from column to row */
-  overflow-x: auto;             /* ✅ horizontal scroll enabled */
-  overflow-y: hidden;
-  width: 100%;
-}
-
-/* These below are still here to avoid breaking any other layout */
-.time-column {
-  width: 75px;
-  background: #f0f0f0;
-  border-right: 1px solid #ccc;
-  font-size: 0.75rem;
-}
-
-.time-cell {
-  height: 60px;
-  padding: 2px 6px;
-  border-bottom: 1px solid #ddd;
-  box-sizing: border-box;
-}
-
-/* Each Day Column */
-.day-column {
-  min-width: 130px;
-  border-right: 1px solid #ccc;
-  display: flex;
-  flex-direction: column;
-}
-
-.day-header {
-  text-align: center;
-  font-weight: bold;
-  background: #f9f9f9;
-  padding: 6px 0;
-  border-bottom: 1px solid #ccc;
-  font-size: 0.9rem;
-}
-
-.hour-block {
-  height: 60px;
-  border-bottom: 1px solid #eee;
-  position: relative;
-}
-
-.half-hour-line {
-  height: 0;
-  border-bottom: 1px dashed #ddd;
-  position: relative;
-  top: -1px;
-}
-
-/* Add Button */
-.add-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 100px;
-  font-size: 2rem;
-  padding: 0 18px;
-  height: 60px;
-  width: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  cursor: pointer;
-}
+/* file: src/CalendarPage.css */
+.calendar-page { display:flex; flex-direction:column; height:100vh; background:#fff; font-family:sans-serif; }
+.cal-header { display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid #ddd; }
+.cal-btn { background:none; border:none; font-size:1.2rem; cursor:pointer; }
+.cal-title { margin:0; font-size:1.5rem; }
+.cal-toggles { display:flex; justify-content:center; gap:10px; padding:10px; }
+.cal-toggles button { padding:6px 16px; border:none; border-radius:4px; background:#f0f0f0; cursor:pointer; }
+.cal-toggles .active { background:#007bff; color:#fff; }
+.cal-month-label { text-align:center; font-weight:bold; margin-bottom:8px; }
+.cal-subheader { display:flex; align-items:center; justify-content:center; gap:10px; padding:4px 0; border-bottom:1px solid #ddd; }
+.cal-nav { background:none; border:none; font-size:1.2rem; cursor:pointer; }
+.cal-day-label { text-align:center; min-width:100px; }
+.cal-day-label div:first-child { font-weight:bold; }
+.cal-body { flex:1; overflow:hidden; position:relative; }
+.placeholder { display:flex; align-items:center; justify-content:center; height:100%; color:#666; }
+.cal-add { position:fixed; bottom:20px; right:20px; width:50px; height:50px; border-radius:50%; background:#007bff; color:#fff; font-size:2rem; border:none; cursor:pointer; }
