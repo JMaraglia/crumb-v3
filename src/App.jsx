@@ -69,6 +69,12 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
   );
 }
 
+// Wrap homepage to provide navigate prop
+function HomeWrapper() {
+  const navigate = useNavigate();
+  return <HomePage onNavigate={page => navigate(`/${page}`)} />;
+}
+
 export default function App() {
   // Persisted contacts, prospects, and itinerary
   const [contacts, setContacts] = usePersistedState('crumb_contacts', [
@@ -95,16 +101,8 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route
-          path="/"
-          element={<HomePage onNavigate={page => navigate(`/${page}`)} />}
-        />
-
-        <Route
-          path="/customers"
-          element={<CustomersPage contacts={contacts} setContacts={setContacts} />}
-        />
-
+        <Route path="/" element={<HomeWrapper />} />
+        <Route path="/customers" element={<CustomersPage contacts={contacts} setContacts={setContacts} />} />
         <Route
           path="/notes/:id"
           element={
@@ -116,12 +114,7 @@ export default function App() {
             />
           }
         />
-
-        <Route
-          path="/prospects"
-          element={<ProspectsPage prospects={prospects} setProspects={setProspects} />}
-        />
-
+        <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
         <Route
           path="/prospect-notes/:id"
           element={
@@ -133,12 +126,8 @@ export default function App() {
             />
           }
         />
-
         <Route path="/calendar" element={<CalendarPage />} />
-        <Route
-          path="/itinerary"
-          element={<ItineraryPage contacts={contacts} itinerary={itinerary} />}
-        />
+        <Route path="/itinerary" element={<ItineraryPage contacts={contacts} itinerary={itinerary} />} />
       </Routes>
     </Router>
   );
