@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './WeekView.css';
 
 function WeekView() {
-  const [weeks, setWeeks] = useState(() => generateWeeks(new Date()));
+  const [weeks, setWeeks] = useState(() => generateWeeks(new Date(), 10));
   const [currentMonth, setCurrentMonth] = useState(getMonthName(new Date()));
   const containerRef = useRef(null);
 
@@ -26,7 +26,6 @@ function WeekView() {
         firstWeekDate.setDate(firstWeekDate.getDate() - (7 * 5));
         setWeeks(prev => [...generateWeeks(firstWeekDate, 5), ...prev]);
 
-        // Maintain horizontal scroll position
         requestAnimationFrame(() => {
           containerRef.current.scrollLeft += weekWidth * 5;
         });
@@ -34,30 +33,34 @@ function WeekView() {
     };
 
     const ref = containerRef.current;
-    if (ref) ref.addEventListener('scroll', handleScroll);
+    if (ref) {
+      ref.addEventListener('scroll', handleScroll);
+
+      // Scroll to middle week on mount
+      const weekWidth = ref.offsetWidth;
+      ref.scrollLeft = weekWidth * 5;
+    }
+
     return () => ref.removeEventListener('scroll', handleScroll);
   }, [weeks]);
 
   return (
     <div className="week-view">
-      <div className="calendar-header">
-        <h2 className="calendar-title">{currentMonth}</h2>
-      </div>
-
-      <div className="view-switcher">
-        <button>Day</button>
-        <button className="active">Week</button>
-        <button>Month</button>
-      </div>
-
       <div className="scroll-container" ref={containerRef}>
         {weeks.map((weekStart, index) => (
           <div key={index} className="week-block">
-            <div className="day-headers">
-              {renderDayHeaders(weekStart)}
-            </div>
-            <div className="time-grid">
-              {renderTimeGrid()}
+            <div className="week-inner">
+              <div className="time-column">
+                {renderTimeLabels()}
+              </div>
+              <div className="week-content">
+                <div className="day-headers">
+                  {renderDayHeaders(weekStart)}
+                </div>
+                <div className="time-grid">
+                  {renderTimeGrid()}
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -95,24 +98,32 @@ function renderDayHeaders(startDate) {
   return headers;
 }
 
+function renderTimeLabels() {
+  const labels = [];
+  for (let hour = 0; hour < 24; hour++) {
+    labels.push(
+      <div key={`${hour}-full`} className="time-label-cell">
+        {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`}
+      </div>
+    );
+    labels.push(<div key={`${hour}-half`} className="time-label-cell empty" />);
+  }
+  return labels;
+}
+
 function renderTimeGrid() {
   const rows = [];
 
   for (let hour = 0; hour < 24; hour++) {
     rows.push(
       <div key={`${hour}-full`} className="time-row">
-        <div className="time-label">
-          {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`}
-        </div>
         {[...Array(7)].map((_, i) => (
           <div key={i} className="time-slot" />
         ))}
       </div>
     );
-
     rows.push(
       <div key={`${hour}-half`} className="time-row">
-        <div className="time-label"></div>
         {[...Array(7)].map((_, i) => (
           <div key={i} className="time-slot" />
         ))}
