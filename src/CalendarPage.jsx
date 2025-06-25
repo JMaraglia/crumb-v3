@@ -183,18 +183,6 @@ function CalendarPage({ itinerary }) {
 
       {renderView()}
 
-      {/* Floating Add Button */}
-      <div
-        onClick={() => {
-          setEditingEvent(null);
-          setShowAddModal(true);
-        }}
-        className="floating-add-button"
-        style={{ right: '20px', bottom: '20px', position: 'fixed' }}
-      >
-        +
-      </div>
-
       {showAddModal && (
         <div className="modal-overlay">
           <div className="modal">
