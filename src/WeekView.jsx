@@ -19,7 +19,7 @@ function WeekView() {
   const renderDayHeaders = () => {
     const headers = [];
     const startDate = new Date(currentDate);
-    startDate.setDate(startDate.getDate() - startDate.getDay()); // start at Sunday
+    startDate.setDate(startDate.getDate() - startDate.getDay());
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(startDate);
@@ -38,8 +38,9 @@ function WeekView() {
     const rows = [];
 
     for (let hour = 0; hour < 24; hour++) {
-      const row = (
-        <div key={hour} className="time-row">
+      // Full hour row
+      rows.push(
+        <div key={`${hour}-full`} className="time-row">
           <div className="time-label">
             {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`}
           </div>
@@ -48,7 +49,16 @@ function WeekView() {
           ))}
         </div>
       );
-      rows.push(row);
+
+      // Half hour line
+      rows.push(
+        <div key={`${hour}-half`} className="time-row">
+          <div className="time-label"></div>
+          {[...Array(7)].map((_, dayIndex) => (
+            <div key={dayIndex} className="time-slot" />
+          ))}
+        </div>
+      );
     }
 
     return rows;
@@ -56,27 +66,28 @@ function WeekView() {
 
   return (
     <div className="week-view">
-      {/* Top Nav */}
+      {/* Header Nav */}
       <div className="calendar-header">
         <button onClick={handlePrev} className="nav-arrow">←</button>
         <h2 className="calendar-title">Calendar</h2>
         <button onClick={handleNext} className="nav-arrow">→</button>
-        <button className="settings-icon">⚙️</button>
       </div>
 
-      {/* View Switch */}
+      {/* View Mode Switch */}
       <div className="view-switcher">
         <button>Day</button>
         <button className="active">Week</button>
         <button>Month</button>
       </div>
 
-      {/* Week Grid */}
+      {/* Calendar Grid */}
       <div className="calendar-grid">
-        <div className="time-column-spacer" />
         <div className="day-headers">{renderDayHeaders()}</div>
         <div className="time-grid">{renderTimeGrid()}</div>
       </div>
+
+      {/* Add Event Button */}
+      <button className="add-event-button">+</button>
     </div>
   );
 }
