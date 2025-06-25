@@ -6,46 +6,57 @@ function WeekView() {
 
   const handlePrev = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 1);
+    newDate.setDate(currentDate.getDate() - 7);
     setCurrentDate(newDate);
   };
 
   const handleNext = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 1);
+    newDate.setDate(currentDate.getDate() + 7);
     setCurrentDate(newDate);
   };
 
-  const renderDays = () => {
-    const days = [];
-    const baseDate = new Date(currentDate);
-    baseDate.setDate(baseDate.getDate() - baseDate.getDay()); // start at Sunday
+  const renderDayHeaders = () => {
+    const headers = [];
+    const startDate = new Date(currentDate);
+    startDate.setDate(startDate.getDate() - startDate.getDay()); // start at Sunday
 
     for (let i = 0; i < 7; i++) {
-      const date = new Date(baseDate);
-      date.setDate(baseDate.getDate() + i);
-      days.push(
-        <div key={i} className="day-column">
-          <div className="day-header">
-            <div>{date.toLocaleDateString('en-US', { weekday: 'long' })}</div>
-            <div>{date.toLocaleDateString()}</div>
-          </div>
-          <div className="day-body">
-            {[...Array(24)].map((_, hour) => (
-              <div key={hour} className="time-slot">
-                {/* empty slot */}
-              </div>
-            ))}
-          </div>
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      headers.push(
+        <div key={i} className="day-header">
+          <div>{date.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+          <div>{date.toLocaleDateString()}</div>
         </div>
       );
     }
-    return days;
+    return headers;
+  };
+
+  const renderTimeGrid = () => {
+    const rows = [];
+
+    for (let hour = 0; hour < 24; hour++) {
+      const row = (
+        <div key={hour} className="time-row">
+          <div className="time-label">
+            {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`}
+          </div>
+          {[...Array(7)].map((_, dayIndex) => (
+            <div key={dayIndex} className="time-slot" />
+          ))}
+        </div>
+      );
+      rows.push(row);
+    }
+
+    return rows;
   };
 
   return (
     <div className="week-view">
-      {/* Header Bar */}
+      {/* Top Nav */}
       <div className="calendar-header">
         <button onClick={handlePrev} className="nav-arrow">←</button>
         <h2 className="calendar-title">Calendar</h2>
@@ -53,23 +64,18 @@ function WeekView() {
         <button className="settings-icon">⚙️</button>
       </div>
 
-      {/* View Switcher */}
+      {/* View Switch */}
       <div className="view-switcher">
         <button>Day</button>
         <button className="active">Week</button>
         <button>Month</button>
       </div>
 
-      {/* Time Labels + Days */}
+      {/* Week Grid */}
       <div className="calendar-grid">
-        <div className="time-column">
-          {[...Array(24)].map((_, hour) => (
-            <div key={hour} className="time-label">
-              {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`}
-            </div>
-          ))}
-        </div>
-        <div className="days-container">{renderDays()}</div>
+        <div className="time-column-spacer" />
+        <div className="day-headers">{renderDayHeaders()}</div>
+        <div className="time-grid">{renderTimeGrid()}</div>
       </div>
     </div>
   );
