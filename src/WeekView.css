@@ -1,4 +1,4 @@
-/* --- WeekView.css (Cleaned to match mock) --- */
+/* --- WeekView.css (Updated for continuous scroll) --- */
 
 .week-view {
   display: flex;
@@ -6,35 +6,25 @@
   font-family: sans-serif;
   background-color: #fff;
   width: 100%;
-  overflow-x: auto;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
 }
 
-/* Header Bar */
+/* Sticky Header Bar */
 .calendar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: #fff;
   padding: 1rem 1rem 0.5rem;
-  position: relative;
+  z-index: 20;
+  border-bottom: 1px solid #ccc;
+  text-align: center;
 }
 
 .calendar-title {
   font-size: 1.5rem;
   font-weight: bold;
-  margin: 0 auto;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.nav-arrow {
-  font-size: 1.5rem;
-  color: #007bff;
-  background: none;
-  border: none;
-  cursor: pointer;
-  user-select: none;
-  z-index: 1;
 }
 
 /* View Switch Buttons */
@@ -42,7 +32,13 @@
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin: 0.5rem 0;
+  background-color: #fff;
+  z-index: 15;
+  position: sticky;
+  top: 60px;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
 }
 
 .view-switcher button {
@@ -59,11 +55,17 @@
   background-color: #005dc1;
 }
 
-/* Grid Layout */
-.calendar-grid {
-  display: flex;
-  flex-direction: column;
-  overflow-x: auto;
+/* Scrollable week container */
+.scroll-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Each week block */
+.week-block {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1rem;
 }
 
 /* Day Headers Row */
@@ -116,7 +118,7 @@
 
 /* Time Labels on the left */
 .time-label {
-  width: 58px; /* Shifted slightly left */
+  width: 58px;
   background-color: #f0f0f0;
   text-align: center;
   font-size: 0.75rem;
