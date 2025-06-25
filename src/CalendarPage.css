@@ -45,9 +45,13 @@
 /* Grid Layout */
 .calendar-grid {
   display: flex;
-  overflow-x: auto;
+  flex-direction: column;         /* ✅ CHANGED: column instead of row */
+  height: calc(100vh - 210px);    /* ✅ CHANGED: allow scrolling space */
+  overflow-y: auto;               /* ✅ CHANGED: vertical scroll enabled */
+  overflow-x: hidden;
 }
 
+/* These below are still here to avoid breaking any other layout */
 .time-column {
   width: 75px;
   background: #f0f0f0;

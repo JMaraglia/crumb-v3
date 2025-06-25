@@ -1,5 +1,7 @@
+// --- CalendarPage.jsx ---
 import React, { useState } from 'react';
 import './CalendarPage.css';
+import WeekView from './WeekView'; // ✅ Use real scrollable calendar
 
 function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -40,29 +42,9 @@ function CalendarPage() {
       {/* Month Label */}
       <div className="month-label">{getMonthYear()}</div>
 
-      {/* Calendar Grid */}
+      {/* Calendar Grid (replaced with real scrollable week view) */}
       <div className="calendar-grid">
-        {/* Time Column */}
-        <div className="time-column">
-          {[...Array(24)].map((_, hour) => (
-            <div key={hour} className="time-cell">
-              {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`}
-            </div>
-          ))}
-        </div>
-
-        {/* Day Columns */}
-        {getWeekDates().map((day, i) => (
-          <div key={i} className="day-column">
-            <div className="day-header">{day.day} {day.number}</div>
-            {[...Array(24)].map((_, h) => (
-              <React.Fragment key={h}>
-                <div className="hour-block"></div>
-                <div className="half-hour-line"></div>
-              </React.Fragment>
-            ))}
-          </div>
-        ))}
+        <WeekView />
       </div>
 
       {/* Big Blue + Button */}

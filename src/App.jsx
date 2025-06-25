@@ -8,7 +8,8 @@ import CustomersPage from './CustomersPage'; // Renamed
 import ItineraryPage from './ItineraryPage';
 import ProspectsPage from './ProspectsPage';
 import ProspectNotesPage from './ProspectNotesPage';
-import CalendarPage from './CalendarPage';
+// import CalendarPage from './CalendarPage'; // Temporarily disabled
+import WeekView from './WeekView'; // ✅ NEW: using this for testing scroll calendar
 
 function NotesWrapper({ contacts, setContacts }) {
   const { id } = useParams();
@@ -153,11 +154,11 @@ function App() {
             />
           }
         />
-        <Route path="/customers" element={<CustomersPage contacts={contacts} setContacts={setContacts} />} /> {/* Updated */}
+        <Route path="/customers" element={<CustomersPage contacts={contacts} setContacts={setContacts} />} />
         <Route path="/notes/:id" element={<NotesWrapper contacts={contacts} setContacts={setContacts} />} />
         <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
         <Route path="/prospect-notes/:id" element={<ProspectNotesWrapper prospects={prospects} setProspects={setProspects} />} />
-        <Route path="/calendar" element={<CalendarPage itinerary={itinerary} />} />
+        <Route path="/calendar" element={<WeekView />} /> {/* ✅ Updated to use scrollable WeekView */}
         <Route path="/itinerary" element={<ItineraryPage contacts={contacts} itinerary={[]} />} />
       </Routes>
     </Router>
