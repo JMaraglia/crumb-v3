@@ -2,10 +2,9 @@
 import React, { useState } from 'react';
 import './WeekView.css';
 
-export default function WeekView() {
-  const start = new Date(2025,5,22); // Sunday 6/22/2025
+export default function WeekView({ viewStart }) {
   const days = Array.from({ length:3 }, (_,i) => {
-    const d = new Date(start);
+    const d = new Date(viewStart);
     d.setDate(d.getDate() + i);
     return d;
   });
@@ -31,8 +30,8 @@ export default function WeekView() {
       </div>
       <div className="wv-days">
         {days.map(day=>{
-          const key=day.toDateString();
-          const dayEv=events.filter(e=>e.date===key);
+          const key = day.toDateString();
+          const dayEv = events.filter(e=>e.date===key);
           return (
             <div key={key} className="wv-day-col">
               <div className="wv-day-header">
@@ -51,4 +50,4 @@ export default function WeekView() {
       </div>
     </div>
   );
-}  
+}
