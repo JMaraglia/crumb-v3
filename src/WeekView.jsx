@@ -148,7 +148,7 @@ export default function WeekView() {
 
   return (
     <div ref={scrollRef} className="p-4 min-h-screen bg-white overflow-x-auto">
-      <div className="w-[1000px] grid grid-cols-[60px_repeat(3,minmax(250px,1fr))] border-t border-l">
+      <div className="min-w-[900px] grid grid-cols-[60px_repeat(3,250px)] border-t border-l">
         <div className="bg-gray-100 border-r z-10">
           {HOURS.map((slot, i) => (
             <div key={i} className="h-20 text-[10px] px-1 border-b">
