@@ -52,6 +52,7 @@ export default function WeekView() {
   };
 
   const handleCreateOrUpdateEvent = () => {
+    if (!modalInfo) return;
     const dateStr = modalInfo.day.format("YYYY-MM-DD");
     const slotIndex = modalInfo.slotIndex;
     if (!titleInput || !durationInput || !colorInput || !dateStr) return;
@@ -104,18 +105,22 @@ export default function WeekView() {
 
   useEffect(() => {
     const el = scrollRef.current;
+    const handleTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+    const handleTouchEnd = (e) => {
+      const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+      if (deltaX > 50) handlePrev();
+      else if (deltaX < -50) handleNext();
+    };
     if (el) {
-      el.addEventListener("touchstart", (e) => touchStartX.current = e.touches[0].clientX);
-      el.addEventListener("touchend", (e) => {
-        const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-        if (deltaX > 50) handlePrev();
-        else if (deltaX < -50) handleNext();
-      });
+      el.addEventListener("touchstart", handleTouchStart);
+      el.addEventListener("touchend", handleTouchEnd);
     }
     return () => {
       if (el) {
-        el.removeEventListener("touchstart", () => {});
-        el.removeEventListener("touchend", () => {});
+        el.removeEventListener("touchstart", handleTouchStart);
+        el.removeEventListener("touchend", handleTouchEnd);
       }
     };
   }, []);
