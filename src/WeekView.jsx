@@ -74,7 +74,7 @@ export default function WeekView() {
   const downloadICS = (event) => {
     const dt = dayjs(event.date).add(event.start * 5, "minute");
     const dtEnd = dt.add(event.duration, "minute");
-    const content = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${event.title}\nDTSTART:${dt.format("YYYYMMDDTHHmmss\")}Z\nDTEND:${dtEnd.format("YYYYMMDDTHHmmss\")}Z\nDESCRIPTION:Created from CRM\nEND:VEVENT\nEND:VCALENDAR`;
+    const content = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${event.title}\nDTSTART:${dt.format("YYYYMMDDTHHmmss")}Z\nDTEND:${dtEnd.format("YYYYMMDDTHHmmss")}Z\nDESCRIPTION:Created from CRM\nEND:VEVENT\nEND:VCALENDAR`;
     const blob = new Blob([content], { type: "text/calendar" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -89,7 +89,7 @@ export default function WeekView() {
     const dtEnd = dt.add(event.duration, "minute");
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
       event.title
-    )}&dates=${dt.format("YYYYMMDDTHHmmss\")}Z/${dtEnd.format("YYYYMMDDTHHmmss\")}Z&details=Created+from+CRM`;
+    )}&dates=${dt.format("YYYYMMDDTHHmmss")}Z/${dtEnd.format("YYYYMMDDTHHmmss")}Z&details=Created+from+CRM`;
     window.open(url, "_blank");
   };
 
