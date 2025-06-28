@@ -2,8 +2,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import dayjs from "dayjs";
 
-const TIME_SLOTS = Array.from({ length: (22 - 7) * 12 }, (_, i) =>
-  dayjs().startOf("day").add(7 * 60 + i * 5, "minute")
+const HOURS = Array.from({ length: 24 }, (_, i) =>
+  dayjs().startOf("day").add(i, "hour")
 );
 
 const COLOR_OPTIONS = [
@@ -133,10 +133,25 @@ export default function WeekView() {
 
   return (
     <div ref={scrollRef} className="p-2 sm:p-4 min-h-screen bg-white overflow-x-auto">
+      <div className="flex items-center justify-between mb-2">
+        <button onClick={handlePrev} className="text-lg px-2">←</button>
+        <h1 className="text-xl font-bold">Calendar</h1>
+        <button onClick={handleNext} className="text-lg px-2">→</button>
+      </div>
+      <div className="flex justify-center gap-2 mb-2">
+        {['Day', 'Week', 'Month'].map((label) => (
+          <button
+            key={label}
+            className={`border rounded px-2 py-1 text-sm ${label === 'Week' ? 'bg-blue-500 text-white' : ''}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="grid grid-cols-[60px_repeat(3,minmax(200px,1fr))] border-t border-l relative min-w-[700px]">
         <div className="bg-gray-100 border-r z-10">
-          {TIME_SLOTS.map((slot, i) => (
-            <div key={i} className="h-6 text-[10px] px-1 border-b">
+          {HOURS.map((slot, i) => (
+            <div key={i} className="h-16 text-[10px] px-1 border-b">
               {slot.format("h:mm A")}
             </div>
           ))}
@@ -149,13 +164,14 @@ export default function WeekView() {
           return (
             <div key={i} className="border-r relative">
               <div className="text-center text-xs sm:text-sm font-semibold py-1 border-b bg-white sticky top-0 z-10">
-                {day.format("ddd M/D/YYYY")}
+                <div className="font-bold">{day.format("dddd")}</div>
+                <div className="text-xs">{day.format("M/D/YYYY")}</div>
               </div>
-              {TIME_SLOTS.map((_, j) => (
+              {HOURS.map((_, j) => (
                 <div
                   key={j}
-                  className="h-6 border-b cursor-pointer hover:bg-blue-50"
-                  onClick={() => openModal(day, j)}
+                  className="h-16 border-b cursor-pointer hover:bg-blue-50"
+                  onClick={() => openModal(day, j * 12)}
                 ></div>
               ))}
               {dayEvents.map((ev) => (
@@ -164,8 +180,8 @@ export default function WeekView() {
                   onClick={() => openModal(day, ev.start, ev)}
                   className="absolute left-0 right-0 px-1 text-[10px] text-white cursor-pointer"
                   style={{
-                    top: `${ev.start * 24}px`,
-                    height: `${(ev.duration / 5) * 24}px`,
+                    top: `${(ev.start / 12) * 64}px`,
+                    height: `${(ev.duration / 60) * 64}px`,
                     backgroundColor: ev.color,
                   }}
                   title="Click to edit"
@@ -177,6 +193,13 @@ export default function WeekView() {
           );
         })}
       </div>
+
+      <button
+        onClick={() => openModal(startDate, 96)}
+        className="fixed bottom-4 right-4 w-12 h-12 rounded-full bg-blue-500 text-white text-3xl flex items-center justify-center shadow-lg"
+      >
+        +
+      </button>
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 transition-opacity duration-300">
