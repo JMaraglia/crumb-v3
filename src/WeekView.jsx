@@ -148,7 +148,8 @@ export default function WeekView() {
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-[60px_repeat(3,minmax(200px,1fr))] border-t border-l relative min-w-[700px]">
+
+      <div className="grid grid-cols-[60px_repeat(3,1fr)] border-t border-l relative min-w-[1000px]">
         <div className="bg-gray-100 border-r">
           {HOURS.map((slot, i) => (
             <div key={i} className="h-16 text-xs px-2 border-b text-gray-500">
@@ -170,7 +171,7 @@ export default function WeekView() {
               {HOURS.map((_, j) => (
                 <div
                   key={j}
-                  className="h-16 border-b cursor-pointer hover:bg-blue-50"
+                  className="h-16 border-b border-gray-200 cursor-pointer hover:bg-blue-50"
                   onClick={() => openModal(day, j * 12)}
                 ></div>
               ))}
