@@ -132,26 +132,26 @@ export default function WeekView() {
     .slice(0, 5);
 
   return (
-    <div ref={scrollRef} className="p-2 sm:p-4 min-h-screen bg-white overflow-x-auto">
-      <div className="flex items-center justify-between mb-2">
-        <button onClick={handlePrev} className="text-lg px-2">←</button>
-        <h1 className="text-xl font-bold">Calendar</h1>
-        <button onClick={handleNext} className="text-lg px-2">→</button>
+    <div ref={scrollRef} className="p-4 min-h-screen bg-white overflow-x-auto">
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={handlePrev} className="text-xl">←</button>
+        <h1 className="text-2xl font-bold">Calendar</h1>
+        <button onClick={handleNext} className="text-xl">→</button>
       </div>
-      <div className="flex justify-center gap-2 mb-2">
+      <div className="flex justify-center gap-2 mb-4">
         {['Day', 'Week', 'Month'].map((label) => (
           <button
             key={label}
-            className={`border rounded px-2 py-1 text-sm ${label === 'Week' ? 'bg-blue-500 text-white' : ''}`}
+            className={`border rounded px-3 py-1 text-sm font-medium ${label === 'Week' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700'}`}
           >
             {label}
           </button>
         ))}
       </div>
       <div className="grid grid-cols-[60px_repeat(3,minmax(200px,1fr))] border-t border-l relative min-w-[700px]">
-        <div className="bg-gray-100 border-r z-10">
+        <div className="bg-gray-100 border-r">
           {HOURS.map((slot, i) => (
-            <div key={i} className="h-16 text-[10px] px-1 border-b">
+            <div key={i} className="h-16 text-xs px-2 border-b text-gray-500">
               {slot.format("h:mm A")}
             </div>
           ))}
@@ -163,9 +163,9 @@ export default function WeekView() {
 
           return (
             <div key={i} className="border-r relative">
-              <div className="text-center text-xs sm:text-sm font-semibold py-1 border-b bg-white sticky top-0 z-10">
-                <div className="font-bold">{day.format("dddd")}</div>
-                <div className="text-xs">{day.format("M/D/YYYY")}</div>
+              <div className="text-center text-sm font-bold py-2 border-b bg-white sticky top-0 z-20 shadow-sm">
+                <div>{day.format("dddd")}</div>
+                <div className="text-xs font-normal">{day.format("M/D/YYYY")}</div>
               </div>
               {HOURS.map((_, j) => (
                 <div
@@ -178,7 +178,7 @@ export default function WeekView() {
                 <div
                   key={ev.id}
                   onClick={() => openModal(day, ev.start, ev)}
-                  className="absolute left-0 right-0 px-1 text-[10px] text-white cursor-pointer"
+                  className="absolute left-0 right-0 px-1 text-xs text-white cursor-pointer rounded-sm overflow-hidden"
                   style={{
                     top: `${(ev.start / 12) * 64}px`,
                     height: `${(ev.duration / 60) * 64}px`,
@@ -196,7 +196,7 @@ export default function WeekView() {
 
       <button
         onClick={() => openModal(startDate, 96)}
-        className="fixed bottom-4 right-4 w-12 h-12 rounded-full bg-blue-500 text-white text-3xl flex items-center justify-center shadow-lg"
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-blue-500 text-white text-3xl flex items-center justify-center shadow-lg"
       >
         +
       </button>
