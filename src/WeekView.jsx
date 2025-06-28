@@ -20,6 +20,9 @@ export default function WeekView() {
   const [showModal, setShowModal] = useState(false);
   const [modalInfo, setModalInfo] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [titleInput, setTitleInput] = useState("");
+  const [durationInput, setDurationInput] = useState("30");
+  const [colorInput, setColorInput] = useState(COLOR_OPTIONS[0]);
   const scrollRef = useRef(null);
   const touchStartX = useRef(0);
 
@@ -31,6 +34,15 @@ export default function WeekView() {
   const openModal = (day, slotIndex, event = null) => {
     setModalInfo({ day, slotIndex });
     setEditingEvent(event);
+    if (event) {
+      setTitleInput(event.title);
+      setDurationInput(event.duration);
+      setColorInput(event.color);
+    } else {
+      setTitleInput("");
+      setDurationInput("30");
+      setColorInput(COLOR_OPTIONS[0]);
+    }
     setShowModal(true);
   };
 
@@ -39,18 +51,15 @@ export default function WeekView() {
     localStorage.setItem("calendarEvents", JSON.stringify(updatedEvents));
   };
 
-  const handleCreateOrUpdateEvent = (title, duration, color) => {
-    const dateStr = document.getElementById("date").value;
-    const slotIndex = parseInt(document.getElementById("time").value, 10);
-    if (!title || !duration || !color || !dateStr) return;
-
-    const day = dayjs(dateStr);
-    const dateKey = day.format("YYYY-MM-DD");
+  const handleCreateOrUpdateEvent = () => {
+    const dateStr = modalInfo.day.format("YYYY-MM-DD");
+    const slotIndex = modalInfo.slotIndex;
+    if (!titleInput || !durationInput || !colorInput || !dateStr) return;
 
     if (editingEvent) {
       const updated = events.map(e =>
         e.id === editingEvent.id
-          ? { ...e, title, duration: parseInt(duration, 10), color, date: dateKey, start: slotIndex }
+          ? { ...e, title: titleInput, duration: parseInt(durationInput, 10), color: colorInput, date: dateStr, start: slotIndex }
           : e
       );
       saveEvents(updated);
@@ -59,11 +68,11 @@ export default function WeekView() {
         ...events,
         {
           id: Date.now(),
-          date: dateKey,
+          date: dateStr,
           start: slotIndex,
-          duration: parseInt(duration, 10),
-          title,
-          color,
+          duration: parseInt(durationInput, 10),
+          title: titleInput,
+          color: colorInput,
         },
       ];
       saveEvents(newEvents);
@@ -93,39 +102,22 @@ export default function WeekView() {
     window.open(url, "_blank");
   };
 
-  const onTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const onTouchEnd = (e) => {
-    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    if (deltaX > 50) handlePrev();
-    else if (deltaX < -50) handleNext();
-  };
-
   useEffect(() => {
     const el = scrollRef.current;
     if (el) {
-      el.addEventListener("touchstart", onTouchStart);
-      el.addEventListener("touchend", onTouchEnd);
+      el.addEventListener("touchstart", (e) => touchStartX.current = e.touches[0].clientX);
+      el.addEventListener("touchend", (e) => {
+        const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+        if (deltaX > 50) handlePrev();
+        else if (deltaX < -50) handleNext();
+      });
     }
     return () => {
       if (el) {
-        el.removeEventListener("touchstart", onTouchStart);
-        el.removeEventListener("touchend", onTouchEnd);
+        el.removeEventListener("touchstart", () => {});
+        el.removeEventListener("touchend", () => {});
       }
     };
-  }, []);
-
-  useEffect(() => {
-    const handler = () => {
-      const now = dayjs();
-      const rounded = now.minute(Math.ceil(now.minute() / 5) * 5).second(0);
-      const slotIndex = Math.max(0, Math.floor((rounded.hour() * 60 + rounded.minute() - 420) / 5));
-      openModal(now, slotIndex);
-    };
-    window.addEventListener("calendar:addGlobalEvent", handler);
-    return () => window.removeEventListener("calendar:addGlobalEvent", handler);
   }, []);
 
   const upcomingEvents = events
@@ -180,6 +172,25 @@ export default function WeekView() {
           );
         })}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 transition-opacity duration-300">
+          <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-xs space-y-4 animate-fade-in">
+            <h2 className="font-bold text-lg">{editingEvent ? "Edit" : "Add"} Event</h2>
+            <input value={titleInput} onChange={(e) => setTitleInput(e.target.value)} className="w-full border p-2 rounded" placeholder="Event Title" />
+            <input value={durationInput} onChange={(e) => setDurationInput(e.target.value)} type="number" className="w-full border p-2 rounded" placeholder="Duration (min)" />
+            <select value={colorInput} onChange={(e) => setColorInput(e.target.value)} className="w-full border p-2 rounded">
+              {COLOR_OPTIONS.map(color => (
+                <option key={color} value={color}>{color}</option>
+              ))}
+            </select>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+              <button onClick={handleCreateOrUpdateEvent} className="px-4 py-2 bg-blue-500 text-white rounded">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {upcomingEvents.length > 0 && (
         <div className="mt-6">
