@@ -1,6 +1,6 @@
 // file: src/WeekView.jsx
 import React, { useState, useRef, useEffect } from "react";
-import dayjs from "dayjs";
+import * as dayjs from "dayjs";
 
 const HOURS = Array.from({ length: 24 }, (_, i) =>
   dayjs().startOf("day").add(i, "hour")
