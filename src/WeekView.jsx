@@ -148,7 +148,51 @@ export default function WeekView() {
 
   return (
     <div ref={scrollRef} className="p-4 min-h-screen bg-white overflow-auto">
-      {/* UI remains unchanged until the modal */}
+      <div className="flex overflow-x-auto">
+        <div className="min-w-[900px] grid grid-cols-[60px_repeat(3,minmax(250px,1fr))] border-t border-l">
+          <div className="bg-gray-100 border-r z-10">
+            {HOURS.map((slot, i) => (
+              <div key={i} className="h-20 text-[10px] px-1 border-b">
+                {slot.format("h:mm A")}
+              </div>
+            ))}
+          </div>
+          {days.map((day, i) => {
+            const dateKey = day.format("YYYY-MM-DD");
+            const dayEvents = events.filter((e) => e.date === dateKey);
+
+            return (
+              <div key={i} className="border-r relative">
+                <div className="text-center text-xs sm:text-sm font-semibold py-1 border-b bg-white sticky top-0 z-10">
+                  {day.format("ddd M/D/YYYY")}
+                </div>
+                {HOURS.map((_, j) => (
+                  <div
+                    key={j}
+                    className="h-20 border-b cursor-pointer hover:bg-blue-50"
+                    onClick={() => openModal(day, j * 12)}
+                  ></div>
+                ))}
+                {dayEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    onClick={() => openModal(day, ev.start, ev)}
+                    className="absolute left-0 right-0 px-1 text-[10px] text-white cursor-pointer"
+                    style={{
+                      top: `${(ev.start / 12) * 80}px`,
+                      height: `${(ev.duration / 60) * 80}px`,
+                      backgroundColor: ev.color,
+                    }}
+                    title="Click to edit"
+                  >
+                    {ev.title}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <button
         onClick={() => openModal(startDate, 96)}
@@ -181,8 +225,6 @@ export default function WeekView() {
           </div>
         </div>
       )}
-
-      {/* Upcoming list unchanged */}
     </div>
   );
 }
