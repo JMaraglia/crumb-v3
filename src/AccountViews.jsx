@@ -9,8 +9,11 @@ import React, { useState } from 'react';
 import { FaArrowLeft, FaChevronRight, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import './AccountViews.css';
+import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed } from './schedule';
 
-export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+// Re-exported so other files can keep importing these from here.
+export { DAYS, FREQUENCIES, STAGES, stageInfo };
+
 
 // Go back like the iPhone back gesture; if there's nowhere to go back to, go to `fallback`.
 function useGoBack() {
@@ -31,13 +34,6 @@ function digitsOnly(phone) {
    visitFrequency: one of the keys below
    visitStart: 'YYYY-MM-DD' first visit, so "every 2 weeks" knows which weeks
    Visit days use config.visitDaysField (prospects: deliveryDays, as before). */
-export const FREQUENCIES = [
-  { key: 'weekly', label: 'Weekly', weeks: 1 },
-  { key: '2w', label: 'Every 2 weeks', weeks: 2 },
-  { key: '3w', label: 'Every 3 weeks', weeks: 3 },
-  { key: '4w', label: 'Monthly (every 4 weeks)', weeks: 4 },
-  { key: '8w', label: 'Every 2 months', weeks: 8 },
-];
 
 function frequencyLabel(key) {
   const f = FREQUENCIES.find((x) => x.key === key);
@@ -73,17 +69,7 @@ function visitSummary(account, config) {
 }
 
 /* ---------- Prospect stages (saved as account.stage) ---------- */
-export const STAGES = [
-  { key: 'cold', label: 'Cold', color: '#0a84ff' },
-  { key: 'warming', label: 'Warming up', color: '#30b0c7' },
-  { key: 'warm', label: 'Warm', color: '#ff9500' },
-  { key: 'hot', label: 'Hot', color: '#ff3b30' },
-  { key: 'ready', label: 'Ready to close', color: '#34c759' },
-];
 
-export function stageInfo(key) {
-  return STAGES.find((st) => st.key === key) || null;
-}
 
 function StageChip({ stage }) {
   const st = stageInfo(stage);
@@ -178,16 +164,63 @@ export function ActionSheet({ title, actions, onClose }) {
       <div className="av-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="av-sheet-group">
           {title && <div className="av-sheet-title">{title}</div>}
-          {actions.map((a) => (
-            <a key={a.label} className="av-sheet-action" href={a.href} target={a.newTab ? '_blank' : undefined} rel="noreferrer" onClick={onClose}>
-              {a.label}
-            </a>
-          ))}
+          {actions.map((a) =>
+            a.onClick ? (
+              <button
+                key={a.label}
+                className={`av-sheet-action ${a.danger ? 'is-danger' : ''}`}
+                onClick={() => {
+                  a.onClick();
+                  onClose();
+                }}
+              >
+                {a.label}
+              </button>
+            ) : (
+              <a key={a.label} className="av-sheet-action" href={a.href} target={a.newTab ? '_blank' : undefined} rel="noreferrer" onClick={onClose}>
+                {a.label}
+              </a>
+            )
+          )}
         </div>
         <button className="av-sheet-cancel" onClick={onClose}>Cancel</button>
       </div>
     </div>
   );
+}
+
+// Snooze pop-up: skip the next visit, or pause visits for 1–4 weeks.
+// `save(snoozeUntil)` stores the new date (null = end the snooze).
+export function snoozeSheet(account, save) {
+  const actions = [
+    { label: 'Skip next visit', onClick: () => save(snoozeUntilFor(account, 'skip')) },
+    { label: 'Snooze 1 week', onClick: () => save(snoozeUntilFor(account, 1)) },
+    { label: 'Snooze 2 weeks', onClick: () => save(snoozeUntilFor(account, 2)) },
+    { label: 'Snooze 3 weeks', onClick: () => save(snoozeUntilFor(account, 3)) },
+    { label: 'Snooze 4 weeks', onClick: () => save(snoozeUntilFor(account, 4)) },
+  ];
+  if (isSnoozed(account)) actions.push({ label: 'End snooze', danger: true, onClick: () => save(null) });
+  return { title: `Snooze visits to ${account.name || 'this account'}`, actions };
+}
+
+function niceShort(k) {
+  const [y, m, d] = k.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// "Snoozed · back Nov 24" (the first visit after the snooze ends)
+export function SnoozeChip({ account }) {
+  if (!isSnoozed(account)) return null;
+  const back = nextVisitDate(account, account.snoozeUntil);
+  return (
+    <span className="av-chip av-chip-snooze">
+      Snoozed · {back ? `back ${niceShort(back)}` : `until ${niceShort(account.snoozeUntil)}`}
+    </span>
+  );
+}
+
+function hasVisitDays(account, config) {
+  return (account[config.visitDaysField] || []).length > 0;
 }
 
 export function mapActions(address) {
@@ -239,7 +272,7 @@ const HOLD_WIGGLE = 10;   // px a finger can move and still count as holding
 // Hold: open the full screen.
 const DOUBLE_TAP_MS = 320; // two taps this close together = double-tap
 
-function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet }) {
+function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze }) {
   const navigate = useNavigate();
   const hold = React.useRef(null);
   const lastTap = React.useRef(0);
@@ -326,6 +359,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
                 <span className="av-chip av-chip-orange">No visit set</span>
               )}
               {config.hasStage && <StageChip stage={a.stage} />}
+              <SnoozeChip account={a} />
             </span>
           )}
         </span>
@@ -351,6 +385,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
             {config.hasStage && <StageChip stage={a.stage} />}
+            <SnoozeChip account={a} />
           </div>
           <div className="av-quick">
             <button className="av-quick-btn" disabled={!reachable} onClick={() => onSheet(contactSheet(contacts))}>
@@ -363,6 +398,11 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
             >
               Map
             </button>
+            {onSnooze && hasVisitDays(a, config) && (
+              <button className="av-quick-btn" onClick={() => onSheet(snoozeSheet(a, (until) => onSnooze(a.id, until)))}>
+                {isSnoozed(a) ? 'Snoozed' : 'Snooze'}
+              </button>
+            )}
             <button className="av-quick-btn" onClick={() => navigate(config.notesPath(a.id))}>
               + Note
             </button>
@@ -388,7 +428,7 @@ function Header({ onBack, title, right }) {
 /* ------------------------------------------------------------------ */
 /* List                                                                */
 /* ------------------------------------------------------------------ */
-export function AccountList({ config, accounts }) {
+export function AccountList({ config, accounts, setAccounts }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [sortAZ, setSortAZ] = useState(true);
@@ -469,6 +509,12 @@ export function AccountList({ config, accounts }) {
                 onToggle={() => setOpenId((cur) => (cur === a.id ? null : a.id))}
                 onOpenFull={() => navigate(`${config.basePath}/${a.id}`)}
                 onEdit={() => navigate(`${config.basePath}/${a.id}/edit`)}
+                onSnooze={
+                  setAccounts
+                    ? (id, until) =>
+                        setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, snoozeUntil: until } : x)))
+                    : null
+                }
                 onSheet={(info) => info && setSheet(info)}
               />
             ))}
@@ -491,7 +537,7 @@ export function AccountList({ config, accounts }) {
 /* ------------------------------------------------------------------ */
 /* Detail                                                              */
 /* ------------------------------------------------------------------ */
-export function AccountDetail({ config, accounts }) {
+export function AccountDetail({ config, accounts, setAccounts }) {
   const navigate = useNavigate();
   const goBack = useGoBack();
   const { id } = useParams();
@@ -569,6 +615,7 @@ export function AccountDetail({ config, accounts }) {
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
             {config.hasStage && <StageChip stage={account.stage} />}
+            <SnoozeChip account={account} />
           </div>
 
           <div className="av-quick">
@@ -582,6 +629,20 @@ export function AccountDetail({ config, accounts }) {
             >
               Map
             </button>
+            {setAccounts && hasVisitDays(account, config) && (
+              <button
+                className="av-quick-btn"
+                onClick={() =>
+                  setSheet(
+                    snoozeSheet(account, (until) =>
+                      setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, snoozeUntil: until } : x)))
+                    )
+                  )
+                }
+              >
+                {isSnoozed(account) ? 'Snoozed' : 'Snooze'}
+              </button>
+            )}
             <button className="av-quick-btn" onClick={() => navigate(config.notesPath(account.id))}>
               + Note
             </button>

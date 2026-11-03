@@ -110,7 +110,7 @@ export default function App() {
         />
         <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
         <Route path="/prospects/new" element={<ProspectEditPage prospects={prospects} setProspects={setProspects} isNew />} />
-        <Route path="/prospects/:id" element={<ProspectDetailPage prospects={prospects} />} />
+        <Route path="/prospects/:id" element={<ProspectDetailPage prospects={prospects} setProspects={setProspects} />} />
         <Route path="/prospects/:id/edit" element={<ProspectEditPage prospects={prospects} setProspects={setProspects} />} />
         <Route
           path="/prospect-notes/:id"

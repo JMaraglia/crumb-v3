@@ -1,7 +1,31 @@
 // file: src/schedule.js
 // Shared date + visit-schedule logic, used by both the Itinerary and the Calendar
 // so they always agree on which prospects are due on which day.
-import { DAYS, FREQUENCIES, stageInfo } from './AccountViews';
+// (No imports: other files import from here.)
+
+export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export const FREQUENCIES = [
+  { key: 'weekly', label: 'Weekly', weeks: 1 },
+  { key: '2w', label: 'Every 2 weeks', weeks: 2 },
+  { key: '3w', label: 'Every 3 weeks', weeks: 3 },
+  { key: '4w', label: 'Monthly (every 4 weeks)', weeks: 4 },
+  { key: '8w', label: 'Every 2 months', weeks: 8 },
+];
+
+/* Prospect stages (saved as account.stage) */
+export const STAGES = [
+  { key: 'cold', label: 'Cold', color: '#0a84ff' },
+  { key: 'warming', label: 'Warming up', color: '#30b0c7' },
+  { key: 'warm', label: 'Warm', color: '#ff9500' },
+  { key: 'hot', label: 'Hot', color: '#ff3b30' },
+  { key: 'ready', label: 'Ready to close', color: '#34c759' },
+];
+
+export function stageInfo(key) {
+  return STAGES.find((st) => st.key === key) || null;
+}
+
 
 /* ---------- dates as 'YYYY-MM-DD' keys (local time) ---------- */
 export function keyOf(d) {
@@ -55,7 +79,8 @@ export function minutesToHhmm(m) {
 
 /* ---------- visit schedules ---------- */
 // Is this account due for a visit on this date (by its days + how often)?
-export function isDueOn(account, dateKey) {
+// Ignores snooze: "would this be a visit day by the regular schedule?"
+function regularDueOn(account, dateKey) {
   const days = account.deliveryDays || [];
   if (!days.includes(weekdayName(dateKey))) return false;
   const freq = FREQUENCIES.find((f) => f.key === account.visitFrequency) || FREQUENCIES[0];
@@ -63,6 +88,40 @@ export function isDueOn(account, dateKey) {
   if (dateKey < account.visitStart) return false;
   const weeks = Math.round((mondayOf(dateKey) - mondayOf(account.visitStart)) / (7 * 24 * 3600 * 1000));
   return weeks % freq.weeks === 0;
+}
+
+// Due on this date, and not snoozed (snoozeUntil = first date visits come back).
+export function isDueOn(account, dateKey) {
+  if (account.snoozeUntil && dateKey < account.snoozeUntil) return false;
+  return regularDueOn(account, dateKey);
+}
+
+export function todayKeyLocal() {
+  return keyOf(new Date());
+}
+
+// Next regular visit date on or after fromKey (looks ahead up to a year), or null.
+export function nextVisitDate(account, fromKey, ignoreSnooze = false) {
+  for (let i = 0, k = fromKey; i < 370; i++, k = addDaysToKey(k, 1)) {
+    if (ignoreSnooze ? regularDueOn(account, k) : isDueOn(account, k)) return k;
+  }
+  return null;
+}
+
+export function isSnoozed(account) {
+  return Boolean(account.snoozeUntil && account.snoozeUntil > todayKeyLocal());
+}
+
+// What snoozeUntil to save for a choice: 'skip' = skip the next visit, or a number of weeks.
+export function snoozeUntilFor(account, choice) {
+  const today = todayKeyLocal();
+  if (choice === 'skip') {
+    // start counting from the later of today and any current snooze
+    const from = account.snoozeUntil && account.snoozeUntil > today ? account.snoozeUntil : today;
+    const next = nextVisitDate(account, from, true);
+    return next ? addDaysToKey(next, 1) : null;
+  }
+  return addDaysToKey(today, 7 * choice);
 }
 
 // Itinerary: due that day and "Show in itinerary" isn't switched off.

@@ -16,13 +16,13 @@ const PROSPECT_CONFIG = {
 };
 
 // /prospects
-function ProspectsPage({ prospects }) {
-  return <AccountList config={PROSPECT_CONFIG} accounts={prospects} />;
+function ProspectsPage({ prospects, setProspects }) {
+  return <AccountList config={PROSPECT_CONFIG} accounts={prospects} setAccounts={setProspects} />;
 }
 
 // /prospects/:id
-export function ProspectDetailPage({ prospects }) {
-  return <AccountDetail config={PROSPECT_CONFIG} accounts={prospects} />;
+export function ProspectDetailPage({ prospects, setProspects }) {
+  return <AccountDetail config={PROSPECT_CONFIG} accounts={prospects} setAccounts={setProspects} />;
 }
 
 // /prospects/new and /prospects/:id/edit

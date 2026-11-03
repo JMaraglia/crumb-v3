@@ -825,3 +825,31 @@
 .av-switch:checked::after {
   transform: translateX(20px);
 }
+
+/* Snooze */
+.av-chip-snooze {
+  background: #fff1de;
+  color: #b25e00;
+}
+
+/* Pop-up choices that are buttons (Snooze) look the same as the link ones */
+.av-sheet-backdrop button.av-sheet-action,
+.av-sheet-backdrop button.av-sheet-action:hover {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border-top: 1px solid #ececf0;
+  font-size: 1.1rem;
+  color: #0077cc;
+  text-align: center;
+}
+
+.av-sheet-backdrop .av-sheet-title + button.av-sheet-action,
+.av-sheet-backdrop .av-sheet-group > button.av-sheet-action:first-child {
+  border-top: none;
+}
+
+.av-sheet-backdrop button.av-sheet-action.is-danger,
+.av-sheet-backdrop button.av-sheet-action.is-danger:hover {
+  color: #ff3b30;
+}

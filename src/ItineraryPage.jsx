@@ -16,6 +16,7 @@ import {
   ActionSheet,
   mapActions,
   contactSheet,
+  snoozeSheet,
 } from './AccountViews';
 import {
   keyOf,
@@ -284,6 +285,23 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             }
                           >
                             {stop.accountType === 'prospect' ? 'Open' : 'Notes'}
+                          </button>
+                        )}
+                        {stop.kind === 'scheduled' && acct && (
+                          <button
+                            className="it-quick-btn"
+                            onClick={() =>
+                              setSheet(
+                                snoozeSheet(acct, (until) => {
+                                  setProspects((prev) =>
+                                    prev.map((x) => (x.id === acct.id ? { ...x, snoozeUntil: until } : x))
+                                  );
+                                  setOpenKey(null);
+                                })
+                              )
+                            }
+                          >
+                            Snooze
                           </button>
                         )}
                       </div>
