@@ -70,6 +70,29 @@ function visitSummary(account, config) {
   return typeof account.visitTime === 'number' ? `${dayText} · ${timeLabel(account.visitTime)}` : dayText;
 }
 
+/* ---------- Prospect stages (saved as account.stage) ---------- */
+export const STAGES = [
+  { key: 'cold', label: 'Cold', color: '#0a84ff' },
+  { key: 'warming', label: 'Warming up', color: '#30b0c7' },
+  { key: 'warm', label: 'Warm', color: '#ff9500' },
+  { key: 'hot', label: 'Hot', color: '#ff3b30' },
+  { key: 'ready', label: 'Ready to close', color: '#34c759' },
+];
+
+function stageInfo(key) {
+  return STAGES.find((st) => st.key === key) || null;
+}
+
+function StageChip({ stage }) {
+  const st = stageInfo(stage);
+  if (!st) return null;
+  return (
+    <span className="av-chip av-stage-chip" style={{ background: st.color, color: '#fff' }}>
+      {st.label}
+    </span>
+  );
+}
+
 // Same 12 colors as the calendar; each account keeps the same color by name.
 const AVATAR_COLORS = ['#0077cc', '#ff3b30', '#ff9500', '#e6b800', '#34c759', '#00c7be', '#30b0c7', '#5856d6', '#af52de', '#ff2d55', '#a2845e', '#8e8e93'];
 function avatarColor(name) {
@@ -281,6 +304,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
           )}
           {!expanded && (
             <span className="av-chips">
+              {config.hasStage && <StageChip stage={a.stage} />}
               {visit ? (
                 <>
                   <span className="av-chip av-chip-blue">{visit}</span>
@@ -305,6 +329,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
             </button>
           )}
           <div className="av-chips av-summary-chips">
+            {config.hasStage && <StageChip stage={a.stage} />}
             {visit ? (
               <>
                 <span className="av-chip av-chip-blue">{visit}</span>
@@ -355,11 +380,13 @@ export function AccountList({ config, accounts }) {
   const [search, setSearch] = useState('');
   const [sortAZ, setSortAZ] = useState(true);
   const [openId, setOpenId] = useState(null); // the one row that's opened up
+  const [stageFilter, setStageFilter] = useState('all');
   const [sheet, setSheet] = useState(null);   // Call/Text or Maps pop-up
 
   const q = search.trim().toLowerCase();
   const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
   const shown = realAccounts
+    .filter((a) => stageFilter === 'all' || (a.stage || 'none') === stageFilter)
     .filter((a) => {
       if (!q) return true;
       return (
@@ -388,6 +415,27 @@ export function AccountList({ config, accounts }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+
+        {config.hasStage && (
+          <div className="av-stage-filters">
+            {[{ key: 'all', label: 'All' }, ...STAGES].map((st) => {
+              const count =
+                st.key === 'all' ? realAccounts.length : realAccounts.filter((a) => a.stage === st.key).length;
+              const on = stageFilter === st.key;
+              return (
+                <button
+                  key={st.key}
+                  className={`av-stage-filter ${on ? 'is-on' : ''}`}
+                  style={on && st.color ? { background: st.color, color: '#fff' } : undefined}
+                  onClick={() => setStageFilter(on && st.key !== 'all' ? 'all' : st.key)}
+                >
+                  {st.color && !on && <span className="av-stage-dot" style={{ background: st.color }} />}
+                  {st.label} <span className="av-stage-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="av-list-bar">
           <span className="av-count">
@@ -501,6 +549,7 @@ export function AccountDetail({ config, accounts }) {
           )}
 
           <div className="av-chips av-summary-chips">
+            {config.hasStage && <StageChip stage={account.stage} />}
             {visit ? (
               <>
                 <span className="av-chip av-chip-blue">{visit}</span>
@@ -648,6 +697,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   );
   const [visitFrequency, setVisitFrequency] = useState((existing && existing.visitFrequency) || 'weekly');
   const [visitStart, setVisitStart] = useState((existing && existing.visitStart) || todayKey());
+  const [stage, setStage] = useState((existing && existing.stage) || '');
 
   if (!isNew && !existing) {
     return (
@@ -690,6 +740,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
       visitFrequency,
       visitStart: visitFrequency === 'weekly' ? null : visitStart,
     };
+    if (config.hasStage) fields.stage = stage || null;
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
 
     if (isNew) {
@@ -742,6 +793,27 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
             onChange={(e) => setAddress(e.target.value)}
           />
         </div>
+
+        {config.hasStage && (
+          <>
+            <div className="av-section-title">Stage</div>
+            <div className="av-stage-pick">
+              {STAGES.map((st) => {
+                const on = stage === st.key;
+                return (
+                  <button
+                    key={st.key}
+                    className={`av-stage-option ${on ? 'is-on' : ''}`}
+                    style={on ? { background: st.color, color: '#fff', borderColor: st.color } : { color: st.color, borderColor: st.color }}
+                    onClick={() => setStage(on ? '' : st.key)}
+                  >
+                    {st.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         <div className="av-section-title">Contacts</div>
         {contacts.map((c, i) => (

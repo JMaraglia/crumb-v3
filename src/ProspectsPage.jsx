@@ -12,6 +12,7 @@ const PROSPECT_CONFIG = {
   hasAccountNumber: false,
   daysLabel: 'Days',
   visitDaysField: 'deliveryDays', // prospects have always stored their days here
+  hasStage: true, // Cold / Warming up / Warm / Hot / Ready to close
 };
 
 // /prospects

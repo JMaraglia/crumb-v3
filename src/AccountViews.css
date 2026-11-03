@@ -704,3 +704,68 @@
   color: #1c1c1e;
   padding: 1px 0;
 }
+
+/* ---------- Prospect stages ---------- */
+.av-stage-chip {
+  font-weight: 700;
+}
+
+.av-stage-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 0 0 10px;
+  scrollbar-width: none;
+}
+
+.av-stage-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.av-page .av-stage-filter,
+.av-page .av-stage-filter:hover {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 14px;
+  background: #e3e3e8;
+  color: #3a3a3c;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.av-page .av-stage-filter.is-on {
+  background: #1c1c1e;
+  color: #fff;
+}
+
+.av-stage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.av-stage-count {
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.av-stage-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.av-page .av-stage-option,
+.av-page .av-stage-option:hover {
+  padding: 8px 13px;
+  border-radius: 16px;
+  border: 2px solid;
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
