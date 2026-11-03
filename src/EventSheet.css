@@ -173,3 +173,65 @@
 .es-sheet .es-swatch.is-picked:hover {
   box-shadow: 0 0 0 2px #1c1c1e;
 }
+
+/* Double-booking warning box */
+.es-warning {
+  background: #fff4e5;
+  border: 1px solid #ffcc80;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.es-warning-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #8a4b00;
+  margin-bottom: 6px;
+}
+
+.es-warning-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #1c1c1e;
+  padding: 2px 0;
+}
+
+.es-warning-dot {
+  flex: 0 0 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.es-warning-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.es-sheet .es-warning-change,
+.es-sheet .es-warning-change:hover,
+.es-sheet .es-warning-save,
+.es-sheet .es-warning-save:hover {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.es-sheet .es-warning-change,
+.es-sheet .es-warning-change:hover {
+  background: #fff;
+  color: #0077cc;
+  border: 1px solid #d1d1d6;
+}
+
+.es-sheet .es-warning-save,
+.es-sheet .es-warning-save:hover {
+  background: #ff9500;
+  color: #fff;
+}

@@ -33,7 +33,7 @@ export const EVENT_COLORS = [
 ];
 export const DEFAULT_EVENT_COLOR = EVENT_COLORS[0].value;
 
-export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel }) {
+export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel, existingEvents = [] }) {
   const [title, setTitle] = useState(draft.title || '');
   const [date, setDate] = useState(draft.date);
   const [start, setStart] = useState(draft.start);
@@ -48,11 +48,26 @@ export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel })
   const changeStart = (value) => {
     const newStart = Number(value);
     const length = end - start; // keep the same event length when moving start
+    setConflicts([]);
     setStart(newStart);
     setEnd(Math.min(newStart + Math.max(length, STEP), 1440));
   };
 
-  const handleSave = () => {
+  // Double-booking warning: other events on the same day whose times overlap.
+  const [conflicts, setConflicts] = useState([]);
+  const findConflicts = () =>
+    existingEvents
+      .filter((ev) => ev.id !== draft.id && ev.date === date && ev.start < end && start < ev.end)
+      .sort((a, b) => a.start - b.start);
+
+  const handleSave = (confirmed = false) => {
+    if (!confirmed) {
+      const overlapping = findConflicts();
+      if (overlapping.length) {
+        setConflicts(overlapping);
+        return;
+      }
+    }
     onSave({
       ...draft,
       title: title.trim() || '(No title)',
@@ -73,8 +88,24 @@ export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel })
         <div className="es-topbar">
           <button className="es-text-btn" onClick={onCancel}>Cancel</button>
           <div className="es-heading">{isNew ? 'New Event' : 'Edit Event'}</div>
-          <button className="es-save-btn" onClick={handleSave}>Save</button>
+          <button className="es-save-btn" onClick={() => handleSave(false)}>Save</button>
         </div>
+
+        {conflicts.length > 0 && (
+          <div className="es-warning">
+            <div className="es-warning-title">Heads up — you're already booked</div>
+            {conflicts.map((ev) => (
+              <div key={ev.id} className="es-warning-item">
+                <span className="es-warning-dot" style={{ backgroundColor: ev.color }} />
+                {ev.title}, {timeLabel(ev.start)} – {timeLabel(ev.end)}
+              </div>
+            ))}
+            <div className="es-warning-actions">
+              <button className="es-warning-change" onClick={() => setConflicts([])}>Change time</button>
+              <button className="es-warning-save" onClick={() => handleSave(true)}>Save anyway</button>
+            </div>
+          </div>
+        )}
 
         <input
           className="es-title"
@@ -91,7 +122,7 @@ export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel })
               type="date"
               className="es-input"
               value={date}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
+              onChange={(e) => { if (e.target.value) { setConflicts([]); setDate(e.target.value); } }}
             />
           </label>
           <label className="es-row">
@@ -104,7 +135,7 @@ export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel })
           </label>
           <label className="es-row">
             <span className="es-label">Ends</span>
-            <select className="es-input" value={end} onChange={(e) => setEnd(Number(e.target.value))}>
+            <select className="es-input" value={end} onChange={(e) => { setConflicts([]); setEnd(Number(e.target.value)); }}>
               {endOptions.map((t) => (
                 <option key={t} value={t}>{timeLabel(t)}</option>
               ))}

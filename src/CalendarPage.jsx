@@ -166,6 +166,7 @@ export default function CalendarPage() {
           key={sheet.draft.id}
           draft={sheet.draft}
           isNew={sheet.isNew}
+          existingEvents={events}
           onSave={saveEvent}
           onDelete={deleteEvent}
           onCancel={() => setSheet(null)}
