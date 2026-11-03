@@ -4,8 +4,21 @@
 import React, { useState } from 'react';
 import { FaArrowLeft, FaCog } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import WeekView, { DAYS_PER_PAGE } from './WeekView';
+import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
+import EventSheet, { DEFAULT_EVENT_COLOR } from './EventSheet';
 import './CalendarPage.css';
+
+// Calendar events are saved on the phone under this name (new; nothing else uses it).
+const EVENTS_KEY = 'crumb_calendar_events';
+
+function loadEvents() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(EVENTS_KEY));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
 
 function startOfToday() {
   const now = new Date();
@@ -38,6 +51,58 @@ export default function CalendarPage() {
   const [viewStart, setViewStart] = useState(startOfToday);
 
   const shiftDays = (n) => setViewStart((d) => addDays(d, n));
+
+  // Saved events. Only written to the phone when you add, edit, or delete,
+  // so opening the calendar can never wipe what's stored.
+  const [events, setEvents] = useState(loadEvents);
+  const updateEvents = (change) => {
+    setEvents((prev) => {
+      const next = change(prev);
+      localStorage.setItem(EVENTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  // The add/edit panel. null when closed.
+  const [sheet, setSheet] = useState(null); // { isNew, draft }
+
+  const openNewEvent = (day, start) => {
+    setSheet({
+      isNew: true,
+      draft: {
+        id: Date.now(),
+        title: '',
+        date: day,
+        start,
+        end: Math.min(start + 60, 1440), // one hour by default
+        location: '',
+        notes: '',
+        color: DEFAULT_EVENT_COLOR,
+      },
+    });
+  };
+
+  // The + button: today, at the next half hour.
+  const handleAddButton = () => {
+    const now = new Date();
+    const nextHalfHour = Math.ceil((now.getHours() * 60 + now.getMinutes() + 1) / 30) * 30;
+    openNewEvent(dateKey(now), Math.min(nextHalfHour, 23 * 60 + 30));
+  };
+
+  const saveEvent = (event) => {
+    updateEvents((prev) =>
+      prev.some((e) => e.id === event.id)
+        ? prev.map((e) => (e.id === event.id ? event : e))
+        : [...prev, event]
+    );
+    setSheet(null);
+  };
+
+  const deleteEvent = (id) => {
+    if (!window.confirm('Delete this event?')) return;
+    updateEvents((prev) => prev.filter((e) => e.id !== id));
+    setSheet(null);
+  };
 
   const monthLabel =
     viewMode === 'Week'
@@ -78,14 +143,33 @@ export default function CalendarPage() {
       {/* Calendar body */}
       <div className="cal-body">
         {viewMode === 'Week' ? (
-          <WeekView startDate={viewStart} onShift={shiftDays} />
+          <WeekView
+            startDate={viewStart}
+            onShift={shiftDays}
+            events={events}
+            pendingEvent={sheet && sheet.isNew ? sheet.draft : null}
+            onHoldSlot={openNewEvent}
+            onEventTap={(ev) => setSheet({ isNew: false, draft: ev })}
+          />
         ) : (
           <div className="cal-placeholder">{viewMode} view coming soon</div>
         )}
       </div>
 
       {/* The one floating add button */}
-      <button className="cal-add" aria-label="Add event">+</button>
+      <button className="cal-add" aria-label="Add event" onClick={handleAddButton}>+</button>
+
+      {/* Add / edit panel */}
+      {sheet && (
+        <EventSheet
+          key={sheet.draft.id}
+          draft={sheet.draft}
+          isNew={sheet.isNew}
+          onSave={saveEvent}
+          onDelete={deleteEvent}
+          onCancel={() => setSheet(null)}
+        />
+      )}
     </div>
   );
 }
