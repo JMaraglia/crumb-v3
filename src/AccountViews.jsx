@@ -26,6 +26,33 @@ function useGoBack() {
   };
 }
 
+// Phone numbers as (774) 223-3374.
+// formatPhone: for SHOWING a saved number — only reformats a full 10-digit US
+//   number (or 11 starting with 1); anything else is shown as typed.
+// formatPhoneTyping: for the input box — formats as you type and still lets
+//   you backspace through it. Extensions/international are left as typed.
+function usDigits(value) {
+  const raw = value || '';
+  if (/[a-z+]/i.test(raw)) return null; // has letters (ext.) or + (international)
+  let d = raw.replace(/\D/g, '');
+  if (d.length === 11 && d[0] === '1') d = d.slice(1);
+  return d.length > 10 ? null : d;
+}
+
+export function formatPhone(value) {
+  const d = usDigits(value);
+  if (d === null || d.length !== 10) return value || '';
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
+export function formatPhoneTyping(value) {
+  const d = usDigits(value);
+  if (d === null) return value || '';
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
 function digitsOnly(phone) {
   return (phone || '').replace(/[^\d+]/g, '');
 }
@@ -255,9 +282,9 @@ function canReach(c) {
 function contactActions(c, withName = false) {
   const who = withName ? ` ${c.name || 'contact'}` : '';
   const actions = [];
-  if (c.phone) actions.push({ label: `Call${who || ' ' + c.phone}`, href: `tel:${digitsOnly(c.phone)}` });
+  if (c.phone) actions.push({ label: `Call${who || ' ' + formatPhone(c.phone)}`, href: `tel:${digitsOnly(c.phone)}` });
   const t = textNumber(c);
-  if (t) actions.push({ label: `Text${who || ' ' + t}`, href: `sms:${digitsOnly(t)}` });
+  if (t) actions.push({ label: `Text${who || ' ' + formatPhone(t)}`, href: `sms:${digitsOnly(t)}` });
   if (c.email) actions.push({ label: `Email${who || ' ' + c.email}`, href: `mailto:${c.email}` });
   return actions;
 }
@@ -699,7 +726,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
                   <FaPhoneAlt className="av-row-icon" />
                   <span className="av-row-text">
                     {c.textPhone && c.textPhone !== c.phone && <span className="av-row-label">Phone</span>}
-                    <span className="av-row-value av-blue">{c.phone}</span>
+                    <span className="av-row-value av-blue">{formatPhone(c.phone)}</span>
                   </span>
                 </button>
               )}
@@ -708,7 +735,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
                   <FaPhoneAlt className="av-row-icon" />
                   <span className="av-row-text">
                     <span className="av-row-label">Cell (texts)</span>
-                    <span className="av-row-value av-blue">{c.textPhone}</span>
+                    <span className="av-row-value av-blue">{formatPhone(c.textPhone)}</span>
                   </span>
                 </button>
               )}
@@ -735,14 +762,17 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </>
         )}
 
-        {config.hasCallNote && (account.callNote || typeof account.callTime === 'number' || account.onlineOrdering) && (
+        {config.hasCallNote &&
+          (account.callNote || typeof account.callTime === 'number' || account.callTime === 'na' || account.onlineOrdering) && (
           <>
             <div className="av-section-title">Call sheet</div>
             <div className="av-group">
-              {typeof account.callTime === 'number' && (
+              {(typeof account.callTime === 'number' || account.callTime === 'na') && (
                 <div className="av-row av-static-row">
                   <span className="av-row-label-inline">Call at</span>
-                  <span className="av-row-value">{timeLabel(account.callTime)}</span>
+                  <span className="av-row-value">
+                    {account.callTime === 'na' ? 'N/A (no call needed)' : timeLabel(account.callTime)}
+                  </span>
                 </div>
               )}
               <div className="av-row av-static-row">
@@ -861,7 +891,9 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     existing && existing[config.visitDaysField] ? [...existing[config.visitDaysField]] : []
   );
   const [callNote, setCallNote] = useState((existing && existing.callNote) || '');
-  const [callTime, setCallTime] = useState(existing && typeof existing.callTime === 'number' ? existing.callTime : '');
+  const [callTime, setCallTime] = useState(
+    existing && (typeof existing.callTime === 'number' || existing.callTime === 'na') ? existing.callTime : ''
+  );
   const [onlineOrdering, setOnlineOrdering] = useState(Boolean(existing && existing.onlineOrdering));
   const [deliveryDays, setDeliveryDays] = useState(
     config.deliveryDaysField && existing && existing[config.deliveryDaysField]
@@ -922,7 +954,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     if (config.deliveryDaysField) fields[config.deliveryDaysField] = DAYS.filter((d) => deliveryDays.includes(d));
     if (config.hasCallNote) {
       fields.callNote = callNote.trim();
-      fields.callTime = callTime === '' ? null : Number(callTime);
+      fields.callTime = callTime === '' ? null : callTime === 'na' ? 'na' : Number(callTime);
       fields.onlineOrdering = onlineOrdering;
     }
     fields.showInItinerary = showInItinerary;
@@ -1013,8 +1045,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
             </button>
             <input className="av-input" placeholder="Name" value={c.name} onChange={(e) => changeContact(i, 'name', e.target.value)} />
             <input className="av-input" placeholder="Title (Chef, Owner, Manager…)" value={c.title} onChange={(e) => changeContact(i, 'title', e.target.value)} />
-            <input className="av-input" placeholder="Phone (for calls)" type="tel" value={c.phone} onChange={(e) => changeContact(i, 'phone', e.target.value)} />
-            <input className="av-input" placeholder="Cell for texts (if different)" type="tel" value={c.textPhone} onChange={(e) => changeContact(i, 'textPhone', e.target.value)} />
+            <input className="av-input" placeholder="Phone (for calls)" type="tel" value={c.phone} onChange={(e) => changeContact(i, 'phone', formatPhoneTyping(e.target.value))} />
+            <input className="av-input" placeholder="Cell for texts (if different)" type="tel" value={c.textPhone} onChange={(e) => changeContact(i, 'textPhone', formatPhoneTyping(e.target.value))} />
             <input className="av-input" placeholder="Email" type="email" value={c.email} onChange={(e) => changeContact(i, 'email', e.target.value)} />
           </div>
         ))}
@@ -1049,6 +1081,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
                 <span className="av-row-label-inline">Call at</span>
                 <select className="av-select" value={callTime} onChange={(e) => setCallTime(e.target.value)}>
                   <option value="">Not set</option>
+                  <option value="na">N/A (no call)</option>
                   {TIME_OPTIONS.map((t) => (
                     <option key={t} value={t}>{timeLabel(t)}</option>
                   ))}

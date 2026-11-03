@@ -413,3 +413,12 @@
   font-weight: 600;
   color: #1e8e3e;
 }
+
+/* N/A (no call needed): grayed out, at the bottom */
+.cs-table tbody tr.is-no-call td {
+  color: #aeaeb2;
+}
+
+.cs-table tbody tr.is-no-call .cs-link {
+  color: #8e9bb0;
+}

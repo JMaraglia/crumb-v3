@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel } from './AccountViews';
+import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel, formatPhone } from './AccountViews';
 import './CallSheetPage.css';
 
 const FULL_DAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -49,8 +49,8 @@ function mainContact(account) {
 function phoneText(c) {
   if (!c) return '';
   const parts = [];
-  if (c.phone) parts.push(c.phone);
-  if (c.textPhone && c.textPhone !== c.phone) parts.push(`text ${c.textPhone}`);
+  if (c.phone) parts.push(formatPhone(c.phone));
+  if (c.textPhone && c.textPhone !== c.phone) parts.push(`text ${formatPhone(c.textPhone)}`);
   return parts.join(' / ');
 }
 
@@ -59,10 +59,11 @@ function rowsFor(customers, orderDay, orderedIds = []) {
   const delivers = nextDay(orderDay);
   return customers
     .filter((c) => c.name && c.name.trim() && (c.deliveryDays || []).includes(delivers))
-    // In calling order: by "Call at" time, then name; no time set goes last.
+    // In calling order: by "Call at" time, then name; no time set next; N/A (no call) last.
     .sort((a, b) => {
-      const ta = typeof a.callTime === 'number' ? a.callTime : 9999;
-      const tb = typeof b.callTime === 'number' ? b.callTime : 9999;
+      const rank = (c) => (typeof c.callTime === 'number' ? c.callTime : c.callTime === 'na' ? 20000 : 10000);
+      const ta = rank(a);
+      const tb = rank(b);
       return ta - tb || a.name.localeCompare(b.name);
     })
     .map((c) => {
@@ -73,8 +74,9 @@ function rowsFor(customers, orderDay, orderedIds = []) {
         number: c.accountNumber || '',
         contact: contact ? [contact.name, contact.title].filter(Boolean).join(', ') : '',
         phone: phoneText(contact),
-        callTime: typeof c.callTime === 'number' ? c.callTime : null,
-        callAt: typeof c.callTime === 'number' ? timeLabel(c.callTime) : '',
+        callTime: typeof c.callTime === 'number' || c.callTime === 'na' ? c.callTime : null,
+        callAt: typeof c.callTime === 'number' ? timeLabel(c.callTime) : c.callTime === 'na' ? 'N/A' : '',
+        noCall: c.callTime === 'na',
         online: Boolean(c.onlineOrdering),
         onlineText: c.onlineOrdering ? 'Yes' : 'No',
         ordered: orderedIds.includes(c.id),
@@ -85,8 +87,8 @@ function rowsFor(customers, orderDay, orderedIds = []) {
 }
 
 const COLUMNS = [
-  { key: 'name', label: 'Account' },
   { key: 'number', label: 'Acct #' },
+  { key: 'name', label: 'Account' },
   { key: 'contact', label: 'Contact' },
   { key: 'phone', label: 'Phone' },
   { key: 'callAt', label: 'Call at' },
@@ -242,13 +244,13 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.account.id}>
+                  <tr key={r.account.id} className={r.noCall ? 'is-no-call' : ''}>
+                    <td>{r.number}</td>
                     <td className="cs-name">
                       <button className="cs-link" onClick={() => navigate(`/customers/${r.account.id}`)}>
                         {r.name}
                       </button>
                     </td>
-                    <td>{r.number}</td>
                     <td>{r.contact}</td>
                     <td>
                       {r.phone ? (
@@ -271,11 +273,13 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
                         value={r.callTime == null ? '' : r.callTime}
                         onChange={(e) =>
                           updateCustomer(r.account.id, {
-                            callTime: e.target.value === '' ? null : Number(e.target.value),
+                            callTime:
+                              e.target.value === '' ? null : e.target.value === 'na' ? 'na' : Number(e.target.value),
                           })
                         }
                       >
                         <option value="">Set time</option>
+                        <option value="na">N/A (no call)</option>
                         {TIME_OPTIONS.map((t) => (
                           <option key={t} value={t}>{timeLabel(t)}</option>
                         ))}
