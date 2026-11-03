@@ -55,6 +55,11 @@ export default function EventSheet({
     draft.accountId ? { type: draft.accountType, id: draft.accountId, name: draft.accountName } : null
   );
   const [accountSearch, setAccountSearch] = useState('');
+  // Itinerary: linked events show by default; others only if switched on.
+  const [showInItinerary, setShowInItinerary] = useState(
+    typeof draft.showInItinerary === 'boolean' ? draft.showInItinerary : Boolean(draft.accountId)
+  );
+  const [itineraryTouched, setItineraryTouched] = useState(typeof draft.showInItinerary === 'boolean');
   const accountMatches = accountSearch.trim()
     ? accounts
         .filter((a) => a.name && a.name.toLowerCase().includes(accountSearch.trim().toLowerCase()))
@@ -63,6 +68,7 @@ export default function EventSheet({
 
   const pickAccount = (a) => {
     setAccount({ type: a.type, id: a.id, name: a.name });
+    if (!itineraryTouched) setShowInItinerary(true);
     setAccountSearch('');
     if (a.address) setLocation(a.address);
     if (!title.trim()) setTitle(a.name);
@@ -106,6 +112,7 @@ export default function EventSheet({
       accountType: account ? account.type : null,
       accountId: account ? account.id : null,
       accountName: account ? account.name : null,
+      showInItinerary,
     });
   };
 
@@ -231,6 +238,18 @@ export default function EventSheet({
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
+          <label className="es-row es-switch-row">
+            <span className="es-label">Show in itinerary</span>
+            <input
+              type="checkbox"
+              className="es-switch"
+              checked={showInItinerary}
+              onChange={(e) => {
+                setItineraryTouched(true);
+                setShowInItinerary(e.target.checked);
+              }}
+            />
+          </label>
           {location.trim() && (
             <div className="es-maps">
               <span className="es-maps-label">Directions:</span>

@@ -1,0 +1,542 @@
+/* file: src/ItineraryPage.css */
+/* Every class starts with "it-" so nothing collides with other pages.
+   App.css pads the body and makes every <button> blue; .it-page undoes that here. */
+
+.it-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.it-page button,
+.it-page button:hover,
+.it-sheet-backdrop button,
+.it-sheet-backdrop button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+  text-align: left;
+}
+
+/* ---------- Header ---------- */
+.it-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(242, 242, 247, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.it-page .it-icon-btn,
+.it-page .it-icon-btn:hover {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #0077cc;
+}
+
+.it-header-title {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.it-content {
+  padding: 0 16px 110px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ---------- Day picker ---------- */
+.it-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 12px;
+}
+
+.it-page .it-arrow,
+.it-page .it-arrow:hover {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  color: #0077cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.it-date {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+.it-date-main {
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.it-date-sub {
+  display: block;
+  font-size: 0.9rem;
+  color: #8e8e93;
+  margin-top: 2px;
+}
+
+/* Invisible date input over the date text: tap the date to pick one */
+.it-date-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* ---------- Progress ---------- */
+.it-progress {
+  margin-bottom: 12px;
+}
+
+.it-progress-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3a3a3c;
+  margin-bottom: 5px;
+}
+
+.it-progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: #e3e3e8;
+  overflow: hidden;
+}
+
+.it-progress-fill {
+  height: 100%;
+  background: #34c759;
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+
+/* ---------- Stops ---------- */
+.it-list {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.it-stop {
+  border-top: 1px solid #ececf0;
+}
+
+.it-list > .it-stop:first-child {
+  border-top: none;
+}
+
+.it-stop.is-open {
+  box-shadow: inset 3px 0 0 #0077cc;
+}
+
+.it-stop-row {
+  display: flex;
+  align-items: center;
+}
+
+.it-page .it-stop-main,
+.it-page .it-stop-main:hover {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 6px 12px 14px;
+}
+
+.it-time {
+  flex: 0 0 66px;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0077cc;
+  padding-top: 2px;
+}
+
+.it-bar {
+  flex: 0 0 4px;
+  border-radius: 2px;
+}
+
+.it-stop-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.it-stop-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.it-stop-sub {
+  font-size: 0.85rem;
+  color: #8e8e93;
+  margin-top: 1px;
+}
+
+.it-tag {
+  margin-top: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1.5px solid;
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.it-stop.is-done .it-stop-title {
+  color: #8e8e93;
+  text-decoration: line-through;
+}
+
+.it-stop.is-done .it-time,
+.it-stop.is-done .it-bar,
+.it-stop.is-done .it-tag {
+  opacity: 0.45;
+}
+
+.it-page .it-check,
+.it-page .it-check:hover {
+  flex: 0 0 30px;
+  height: 30px;
+  margin: 0 14px 0 6px;
+  border-radius: 50%;
+  border: 2px solid #c7c7cc;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 26px;
+}
+
+.it-page .it-check.is-checked,
+.it-page .it-check.is-checked:hover {
+  background: #34c759;
+  border-color: #34c759;
+}
+
+/* ---------- Opened stop ---------- */
+.it-expand {
+  padding: 0 14px 14px 14px;
+  animation: it-open 0.15s ease-out;
+}
+
+@keyframes it-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.it-last-note {
+  background: #f6f6f8;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  color: #3a3a3c;
+  margin-bottom: 10px;
+}
+
+.it-last-note-date {
+  color: #8e8e93;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.it-quick {
+  display: flex;
+  gap: 8px;
+}
+
+.it-page .it-quick-btn,
+.it-page .it-quick-btn:hover {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 9px;
+  background: #f0f6fc;
+  color: #0077cc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.it-page .it-quick-btn:disabled {
+  color: #c7c7cc;
+  background: #f6f6f8;
+  cursor: default;
+}
+
+.it-note {
+  margin-top: 10px;
+  background: #f6f6f8;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.it-note-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px;
+  color: #1c1c1e;
+}
+
+.it-note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.it-flash {
+  font-size: 0.85rem;
+  color: #34c759;
+  font-weight: 600;
+}
+
+.it-page .it-note-save,
+.it-page .it-note-save:hover {
+  padding: 7px 14px;
+  border-radius: 16px;
+  background: #0077cc;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.it-page .it-note-save:disabled {
+  background: #c7dff2;
+  cursor: default;
+}
+
+.it-hint-inline {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #8e8e93;
+}
+
+.it-page .it-remove,
+.it-page .it-remove:hover {
+  margin-top: 10px;
+  color: #ff3b30;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.it-empty {
+  text-align: center;
+  color: #8e8e93;
+  padding: 40px 16px;
+  line-height: 1.5;
+}
+
+.it-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #aeaeb2;
+  padding: 10px 0;
+}
+
+/* ---------- Floating + ---------- */
+.it-page .it-fab,
+.it-page .it-fab:hover {
+  position: fixed;
+  right: 20px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0077cc;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 56px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 119, 204, 0.35);
+  z-index: 10;
+}
+
+/* ---------- Add stop panel ---------- */
+.it-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: flex-end;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+}
+
+.it-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 85%;
+  overflow-y: auto;
+  background: #f2f2f7;
+  border-radius: 14px 14px 0 0;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+  animation: it-slide 0.25s ease-out;
+}
+
+@keyframes it-slide {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.it-sheet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.it-sheet-title {
+  font-weight: 600;
+}
+
+.it-sheet-backdrop .it-link,
+.it-sheet-backdrop .it-link:hover {
+  color: #0077cc;
+  font-size: 1rem;
+  padding: 4px 2px;
+}
+
+.it-sheet-backdrop .it-bold {
+  font-weight: 600;
+}
+
+.it-sheet-backdrop .it-link:disabled {
+  color: #c7c7cc;
+}
+
+.it-sheet-group {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.it-sheet-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-family: inherit;
+  color: #1c1c1e;
+}
+
+.it-sheet-backdrop .it-match,
+.it-sheet-backdrop .it-match:hover {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 9px 14px;
+  border-top: 1px solid #ececf0;
+}
+
+.it-match-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.it-match-sub {
+  font-size: 0.82rem;
+  color: #8e8e93;
+}
+
+.it-picked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.it-picked-name {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.it-picked-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0077cc;
+  background: #e6f1fa;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.it-sheet-backdrop .it-picked-clear,
+.it-sheet-backdrop .it-picked-clear:hover {
+  font-size: 1.3rem;
+  color: #8e8e93;
+  padding: 0 4px;
+}
+
+.it-sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-top: 1px solid #ececf0;
+  font-size: 16px;
+}
+
+.it-sheet-select {
+  font-size: 16px;
+  font-family: inherit;
+  color: #0077cc;
+  border: none;
+  background: transparent;
+  outline: none;
+}
+
+.it-sheet-note {
+  font-size: 0.8rem;
+  color: #8e8e93;
+  padding: 10px 4px 0;
+}

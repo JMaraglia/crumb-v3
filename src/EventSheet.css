@@ -333,3 +333,43 @@
   font-weight: 600;
   text-decoration: none;
 }
+
+/* Show in itinerary switch (iPhone style) */
+.es-switch-row {
+  border-top: 1px solid #e5e5ea;
+}
+
+.es-switch {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 51px;
+  height: 31px;
+  border-radius: 16px;
+  background: #e3e3e8;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.2s;
+  margin: 0;
+}
+
+.es-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.es-switch:checked {
+  background: #34c759;
+}
+
+.es-switch:checked::after {
+  transform: translateX(20px);
+}

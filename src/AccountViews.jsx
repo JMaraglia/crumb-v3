@@ -57,9 +57,9 @@ export function timeLabel(minutes) {
 
 // 5:00 AM … 11:30 PM first, then 12:00 AM … 4:30 AM at the bottom
 // (iPhone's time wheel starts at the top, so this avoids landing on 3:30 AM by accident).
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => ((i + 10) % 48) * 30);
+export const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => ((i + 10) % 48) * 30);
 
-function todayKey() {
+export function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -81,7 +81,7 @@ export const STAGES = [
   { key: 'ready', label: 'Ready to close', color: '#34c759' },
 ];
 
-function stageInfo(key) {
+export function stageInfo(key) {
   return STAGES.find((st) => st.key === key) || null;
 }
 
@@ -136,7 +136,7 @@ function BackgroundBox({ notes, onClick }) {
 }
 
 // Newest regular note (Background notes are shown separately).
-function lastNote(account) {
+export function lastNote(account) {
   const notes = (account.notes || []).filter((n) => !isBackground(n));
   if (notes.length === 0) return null;
   let best = notes[notes.length - 1];
@@ -151,7 +151,7 @@ function lastNote(account) {
   return best;
 }
 
-function shortDate(timestamp) {
+export function shortDate(timestamp) {
   const t = Date.parse(timestamp);
   if (!t) return '';
   return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -172,7 +172,7 @@ function displayName(account) {
 }
 
 // Bottom pop-up with choices (Call / Text / Email, Apple Maps / Google Maps).
-function ActionSheet({ title, actions, onClose }) {
+export function ActionSheet({ title, actions, onClose }) {
   return (
     <div className="av-sheet-backdrop" onClick={onClose}>
       <div className="av-sheet" onClick={(e) => e.stopPropagation()}>
@@ -190,7 +190,7 @@ function ActionSheet({ title, actions, onClose }) {
   );
 }
 
-function mapActions(address) {
+export function mapActions(address) {
   const q = encodeURIComponent(address);
   return [
     { label: 'Apple Maps', href: `https://maps.apple.com/?q=${q}`, newTab: true },
@@ -222,7 +222,7 @@ function contactActions(c, withName = false) {
 
 // The Contact pop-up for an account: one contact shows its choices directly;
 // several contacts are all listed by name. Returns null if nobody is reachable.
-function contactSheet(contacts) {
+export function contactSheet(contacts) {
   const reachable = (contacts || []).filter(canReach);
   if (reachable.length === 0) return null;
   if (reachable.length === 1) {
@@ -709,6 +709,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   const [visitFrequency, setVisitFrequency] = useState((existing && existing.visitFrequency) || 'weekly');
   const [visitStart, setVisitStart] = useState((existing && existing.visitStart) || todayKey());
   const [stage, setStage] = useState((existing && existing.stage) || '');
+  const [showInItinerary, setShowInItinerary] = useState(!(existing && existing.showInItinerary === false));
 
   if (!isNew && !existing) {
     return (
@@ -752,6 +753,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
       visitStart: visitFrequency === 'weekly' ? null : visitStart,
     };
     if (config.hasStage) fields.stage = stage || null;
+    fields.showInItinerary = showInItinerary;
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
 
     if (isNew) {
@@ -873,6 +875,15 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
                   <option key={f.key} value={f.key}>{f.label}</option>
                 ))}
               </select>
+            </label>
+            <label className="av-row av-static-row">
+              <span className="av-row-label-inline">Show in itinerary</span>
+              <input
+                type="checkbox"
+                className="av-switch"
+                checked={showInItinerary}
+                onChange={(e) => setShowInItinerary(e.target.checked)}
+              />
             </label>
             {visitFrequency !== 'weekly' && (
               <label className="av-row av-static-row">
