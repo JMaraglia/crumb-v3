@@ -190,3 +190,8 @@
   pointer-events: none;
   z-index: 3;
 }
+
+/* Scheduled visits (from a prospect's visit schedule or the itinerary): dashed edge */
+.wv-event.is-visit {
+  border-left-style: dashed;
+}

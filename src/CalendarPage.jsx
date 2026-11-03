@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
 import EventSheet, { DEFAULT_EVENT_COLOR } from './EventSheet';
 import MonthView from './MonthView';
+import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey } from './schedule';
 import './CalendarPage.css';
 
 // Calendar events are saved on the phone under this name (new; nothing else uses it).
@@ -73,6 +74,29 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   };
 
   // Customers + prospects the event panel can link to (blank-named ones skipped).
+  // Prospects' scheduled visits + hand-added itinerary stops, shown as calendar
+  // blocks for about 3 months around the date you're looking at. Built on the fly
+  // from their schedules, never saved as events.
+  const visitBlocks = scheduledCalendarBlocks(
+    prospects,
+    toVisitList(readJSON('visitData', [])),
+    addDaysToKey(dateKey(viewStart), -45),
+    addDaysToKey(dateKey(viewStart), 60)
+  );
+  const allEvents = [...events, ...visitBlocks];
+
+  // Tapping a scheduled visit opens that prospect (change the schedule there);
+  // tapping a hand-added stop opens the itinerary. Real events open the edit panel.
+  const handleEventTap = (ev) => {
+    if (!ev.virtual) {
+      setSheet({ isNew: false, draft: ev });
+    } else if (ev.accountType === 'prospect' && ev.accountId) {
+      navigate(`/prospects/${ev.accountId}`);
+    } else {
+      navigate('/itinerary');
+    }
+  };
+
   const accounts = [
     ...contacts.map((c) => ({ type: 'customer', id: c.id, name: c.name, address: c.address })),
     ...prospects.map((p) => ({ type: 'prospect', id: p.id, name: p.name, address: p.address })),
@@ -170,10 +194,10 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
             daysPerPage={viewMode === 'Day' ? 1 : DAYS_PER_PAGE}
             startDate={viewStart}
             onShift={shiftDays}
-            events={events}
+            events={allEvents}
             pendingEvent={sheet && sheet.isNew ? sheet.draft : null}
             onHoldSlot={openNewEvent}
-            onEventTap={(ev) => setSheet({ isNew: false, draft: ev })}
+            onEventTap={handleEventTap}
           />
         ) : (
           <MonthView
@@ -184,8 +208,8 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
               setViewStart(day);
               setViewMode('Day');
             }}
-            events={events}
-            onEventTap={(ev) => setSheet({ isNew: false, draft: ev })}
+            events={allEvents}
+            onEventTap={handleEventTap}
           />
         )}
       </div>
@@ -199,7 +223,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
           key={sheet.draft.id}
           draft={sheet.draft}
           isNew={sheet.isNew}
-          existingEvents={events}
+          existingEvents={allEvents}
           accounts={accounts}
           onSave={saveEvent}
           onDelete={deleteEvent}

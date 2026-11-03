@@ -298,7 +298,7 @@ export default function WeekView({
                       return (
                         <div
                           key={ev.id}
-                          className="wv-event"
+                          className={`wv-event ${ev.virtual ? 'is-visit' : ''}`}
                           style={{
                             top: (ev.start / 60) * HOUR_HEIGHT,
                             height,

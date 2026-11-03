@@ -710,6 +710,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   const [visitStart, setVisitStart] = useState((existing && existing.visitStart) || todayKey());
   const [stage, setStage] = useState((existing && existing.stage) || '');
   const [showInItinerary, setShowInItinerary] = useState(!(existing && existing.showInItinerary === false));
+  const [showOnCalendar, setShowOnCalendar] = useState(!(existing && existing.showOnCalendar === false));
 
   if (!isNew && !existing) {
     return (
@@ -754,6 +755,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     };
     if (config.hasStage) fields.stage = stage || null;
     fields.showInItinerary = showInItinerary;
+    fields.showOnCalendar = showOnCalendar;
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
 
     if (isNew) {
@@ -883,6 +885,15 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
                 className="av-switch"
                 checked={showInItinerary}
                 onChange={(e) => setShowInItinerary(e.target.checked)}
+              />
+            </label>
+            <label className="av-row av-static-row">
+              <span className="av-row-label-inline">Show on calendar</span>
+              <input
+                type="checkbox"
+                className="av-switch"
+                checked={showOnCalendar}
+                onChange={(e) => setShowOnCalendar(e.target.checked)}
               />
             </label>
             {visitFrequency !== 'weekly' && (

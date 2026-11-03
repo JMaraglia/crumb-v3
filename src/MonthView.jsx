@@ -187,7 +187,13 @@ export default function MonthView({
               <span className="mv-item-bar" style={{ backgroundColor: ev.color }} />
               <span className="mv-item-text">
                 <span className="mv-item-title">{ev.title}</span>
-                {ev.location && <span className="mv-item-location">{ev.location}</span>}
+                {(ev.location || ev.virtual) && (
+                  <span className="mv-item-location">
+                    {[ev.virtual ? (ev.source === 'schedule' ? 'Scheduled visit' : 'Itinerary stop') : null, ev.location]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                )}
               </span>
               <span className="mv-item-time">
                 <span>{timeLabel(ev.start)}</span>

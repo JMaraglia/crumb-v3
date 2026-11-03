@@ -8,8 +8,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import {
-  DAYS,
-  FREQUENCIES,
   TIME_OPTIONS,
   timeLabel,
   stageInfo,
@@ -19,71 +17,21 @@ import {
   mapActions,
   contactSheet,
 } from './AccountViews';
+import {
+  keyOf,
+  fromKey,
+  addDaysToKey,
+  readJSON,
+  toVisitList,
+  hhmmToMinutes,
+  minutesToHhmm,
+  onItinerary,
+} from './schedule';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
 const DONE_KEY = 'crumb_itinerary_done';            // checkmarks for scheduled/event stops
 const EVENTS_KEY = 'crumb_calendar_events';         // calendar events (read only here)
-
-/* ---------- small helpers ---------- */
-function keyOf(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-function fromKey(k) {
-  const [y, m, d] = k.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-function addDays(k, n) {
-  const d = fromKey(k);
-  d.setDate(d.getDate() + n);
-  return keyOf(d);
-}
-function weekdayName(k) {
-  return DAYS[(fromKey(k).getDay() + 6) % 7]; // Mon=0 … Sun=6
-}
-function mondayOf(k) {
-  const d = fromKey(k);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return d;
-}
-function readJSON(key, fallback) {
-  try {
-    const v = JSON.parse(localStorage.getItem(key));
-    return v == null ? fallback : v;
-  } catch {
-    return fallback;
-  }
-}
-// Saved visits should be a list. If they were stored as an object
-// (e.g. {} or grouped by date), turn them into a list instead of crashing.
-function toVisitList(value) {
-  if (Array.isArray(value)) return value;
-  if (value && typeof value === 'object') {
-    return Object.values(value).flat().filter((v) => v && typeof v === 'object');
-  }
-  return [];
-}
-// "HH:MM" (old saved visits) → minutes from midnight
-function hhmmToMinutes(t) {
-  if (!t || typeof t !== 'string' || !t.includes(':')) return null;
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
-}
-function minutesToHhmm(m) {
-  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-}
-
-// Is this prospect scheduled on this date?
-function scheduledOn(account, dateKey) {
-  if (account.showInItinerary === false) return false;
-  const days = account.deliveryDays || [];
-  if (!days.includes(weekdayName(dateKey))) return false;
-  const freq = FREQUENCIES.find((f) => f.key === account.visitFrequency) || FREQUENCIES[0];
-  if (freq.weeks === 1 || !account.visitStart) return true;
-  if (dateKey < account.visitStart) return false;
-  const weeks = Math.round((mondayOf(dateKey) - mondayOf(account.visitStart)) / (7 * 24 * 3600 * 1000));
-  return weeks % freq.weeks === 0;
-}
 
 function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -125,7 +73,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const stops = [];
 
   prospects
-    .filter((p) => p.name && p.name.trim() && scheduledOn(p, date))
+    .filter((p) => p.name && p.name.trim() && onItinerary(p, date))
     .forEach((p) => {
       const key = `p-${p.id}`;
       const st = stageInfo(p.stage);
@@ -222,7 +170,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   };
 
   const changeDay = (n) => {
-    setDate((d) => addDays(d, n));
+    setDate((d) => addDaysToKey(d, n));
     setOpenKey(null);
   };
 
