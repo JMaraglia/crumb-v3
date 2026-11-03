@@ -16,6 +16,7 @@ export const CUSTOMER_CONFIG = {
   visitDaysField: 'visitDays',      // when you visit them
   deliveryDaysField: 'deliveryDays', // when they get deliveries (unchanged)
   hasStage: false,
+  hasCallNote: true, // instructions shown on the Call Sheet
 };
 
 // /customers

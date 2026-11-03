@@ -724,6 +724,13 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </>
         )}
 
+        {config.hasCallNote && account.callNote && (
+          <>
+            <div className="av-section-title">Call sheet note</div>
+            <div className="av-group av-call-note">{account.callNote}</div>
+          </>
+        )}
+
         <div className="av-section-title">Visit schedule</div>
         <div className="av-days">
           {DAYS.map((d) => (
@@ -830,6 +837,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   const [days, setDays] = useState(
     existing && existing[config.visitDaysField] ? [...existing[config.visitDaysField]] : []
   );
+  const [callNote, setCallNote] = useState((existing && existing.callNote) || '');
   const [deliveryDays, setDeliveryDays] = useState(
     config.deliveryDaysField && existing && existing[config.deliveryDaysField]
       ? [...existing[config.deliveryDaysField]]
@@ -887,6 +895,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     };
     if (config.hasStage) fields.stage = stage || null;
     if (config.deliveryDaysField) fields[config.deliveryDaysField] = DAYS.filter((d) => deliveryDays.includes(d));
+    if (config.hasCallNote) fields.callNote = callNote.trim();
     fields.showInItinerary = showInItinerary;
     fields.showOnCalendar = showOnCalendar;
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
@@ -999,6 +1008,21 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
                   {d}
                 </button>
               ))}
+            </div>
+          </>
+        )}
+
+        {config.hasCallNote && (
+          <>
+            <div className="av-section-title">Call sheet note</div>
+            <div className="av-group">
+              <textarea
+                className="av-input av-textarea"
+                rows={2}
+                placeholder="For whoever makes the call, e.g. text Phil in the morning, call at 3"
+                value={callNote}
+                onChange={(e) => setCallNote(e.target.value)}
+              />
             </div>
           </>
         )}

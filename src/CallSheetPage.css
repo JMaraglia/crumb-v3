@@ -263,3 +263,97 @@
     print-color-adjust: exact;
   }
 }
+
+/* Call note cell */
+.cs-page .cs-note,
+.cs-page .cs-note:hover {
+  display: block;
+  width: 100%;
+  min-height: 1.2em;
+  color: #1c1c1e;
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.cs-page .cs-note.is-empty {
+  color: #0077cc;
+  font-weight: 600;
+}
+
+/* Call note editor */
+.cs-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: flex-end;
+}
+
+.cs-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 14px 14px 0 0;
+  padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.cs-sheet-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.cs-sheet-sub {
+  font-size: 0.85rem;
+  color: #8e8e93;
+  margin-bottom: 12px;
+}
+
+.cs-sheet-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d1d1d6;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 16px;
+  resize: none;
+  outline: none;
+  margin-bottom: 12px;
+}
+
+.cs-sheet-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cs-page .cs-sheet-cancel,
+.cs-page .cs-sheet-cancel:hover,
+.cs-page .cs-sheet-save,
+.cs-page .cs-sheet-save:hover {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cs-page .cs-sheet-cancel,
+.cs-page .cs-sheet-cancel:hover {
+  background: #f2f2f7;
+  color: #0077cc;
+}
+
+.cs-page .cs-sheet-save,
+.cs-page .cs-sheet-save:hover {
+  background: #0077cc;
+  color: #fff;
+}
+
+@media print {
+  .cs-page .cs-note.is-empty {
+    visibility: hidden;
+  }
+}

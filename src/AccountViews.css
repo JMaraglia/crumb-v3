@@ -941,3 +941,16 @@
 .av-sheet-backdrop .av-convert-go:disabled {
   background: #a8d5b5;
 }
+
+/* Call sheet note */
+.av-call-note {
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.av-textarea {
+  resize: none;
+  font-family: inherit;
+}

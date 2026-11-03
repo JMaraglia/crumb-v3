@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { DAYS, lastNote, ActionSheet, contactSheet } from './AccountViews';
+import { DAYS, ActionSheet, contactSheet } from './AccountViews';
 import './CallSheetPage.css';
 
 const FULL_DAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -18,13 +18,6 @@ function nextDay(day) {
 
 function todayShort() {
   return DAYS[(new Date().getDay() + 6) % 7]; // Mon=0 … Sun=6
-}
-
-function backgroundText(account) {
-  return (account.notes || [])
-    .filter((n) => n.category === 'Background')
-    .map((n) => n.text)
-    .join(' · ');
 }
 
 function mainContact(account) {
@@ -47,7 +40,6 @@ function rowsFor(customers, orderDay) {
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((c) => {
       const contact = mainContact(c);
-      const latest = lastNote(c);
       return {
         account: c,
         name: c.name,
@@ -55,8 +47,7 @@ function rowsFor(customers, orderDay) {
         contact: contact ? [contact.name, contact.title].filter(Boolean).join(', ') : '',
         phone: phoneText(contact),
         delivers: FULL_DAY[delivers],
-        background: backgroundText(c),
-        lastNote: latest ? latest.text : '',
+        callNote: c.callNote || '',
       };
     });
 }
@@ -67,8 +58,7 @@ const COLUMNS = [
   { key: 'contact', label: 'Contact' },
   { key: 'phone', label: 'Phone' },
   { key: 'delivers', label: 'Delivers' },
-  { key: 'background', label: 'Background' },
-  { key: 'lastNote', label: 'Last note' },
+  { key: 'callNote', label: 'Call notes' },
 ];
 
 function toCSV(rows, orderDay) {
@@ -81,11 +71,21 @@ function toCSV(rows, orderDay) {
   return '﻿' + lines.join('\r\n'); // ﻿ so Excel reads it as UTF-8
 }
 
-export default function CallSheetPage({ contacts = [] }) {
+export default function CallSheetPage({ contacts = [], setContacts }) {
   const navigate = useNavigate();
   const [day, setDay] = useState(todayShort());
   const [sheet, setSheet] = useState(null);
   const [message, setMessage] = useState('');
+  const [editing, setEditing] = useState(null); // { id, name, text } while editing a call note
+
+  const saveCallNote = () => {
+    if (setContacts) {
+      setContacts((prev) =>
+        prev.map((c) => (c.id === editing.id ? { ...c, callNote: editing.text.trim() } : c))
+      );
+    }
+    setEditing(null);
+  };
   const rows = rowsFor(contacts, day);
 
   const shareCSV = async () => {
@@ -205,8 +205,14 @@ export default function CallSheetPage({ contacts = [] }) {
                       )}
                     </td>
                     <td>{r.delivers}</td>
-                    <td className="cs-wide">{r.background}</td>
-                    <td className="cs-wide">{r.lastNote}</td>
+                    <td className="cs-wide">
+                      <button
+                        className={`cs-note ${r.callNote ? '' : 'is-empty'}`}
+                        onClick={() => setEditing({ id: r.account.id, name: r.name, text: r.callNote })}
+                      >
+                        {r.callNote || '+ Add call note'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -217,6 +223,27 @@ export default function CallSheetPage({ contacts = [] }) {
       </div>
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
+
+      {editing && (
+        <div className="cs-sheet-backdrop" onClick={() => setEditing(null)}>
+          <div className="cs-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="cs-sheet-title">Call note · {editing.name}</div>
+            <div className="cs-sheet-sub">Instructions for whoever makes this call. Stays until you change it.</div>
+            <textarea
+              className="cs-sheet-input"
+              rows={4}
+              placeholder="e.g. Text Phil in the morning to remind him, then call him at 3"
+              value={editing.text}
+              onChange={(e) => setEditing({ ...editing, text: e.target.value })}
+              autoFocus
+            />
+            <div className="cs-sheet-actions">
+              <button className="cs-sheet-cancel" onClick={() => setEditing(null)}>Cancel</button>
+              <button className="cs-sheet-save" onClick={saveCallNote}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

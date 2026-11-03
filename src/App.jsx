@@ -98,7 +98,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/call-sheet" element={<CallSheetPage contacts={contacts} />} />
+        <Route path="/call-sheet" element={<CallSheetPage contacts={contacts} setContacts={setContacts} />} />
         <Route
           path="/notes"
           element={
