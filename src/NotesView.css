@@ -334,3 +334,26 @@
   color: #aeaeb2;
   padding: 10px 0;
 }
+
+.nv-cats-label {
+  align-self: center;
+  font-size: 0.8rem;
+  color: #8e8e93;
+  margin-right: 2px;
+}
+
+/* Live words / error message under the Talk button */
+.nv-compose-actions {
+  flex-wrap: wrap;
+}
+
+.nv-mic-status {
+  order: 10;
+  flex-basis: 100%;
+  font-size: 0.9rem;
+  color: #3a3a3c;
+  background: #f6f6f8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  line-height: 1.35;
+}

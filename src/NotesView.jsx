@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import './NotesView.css';
 
 export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Background'];
+// Labels you can pick. A note with no label is saved as 'General' and shows no tag.
+const LABELS = ['Visit', 'Sample', 'Follow-up', 'Background'];
 
 const CATEGORY_COLORS = {
   General: { bg: '#eeeef0', fg: '#3a3a3c' },
@@ -40,41 +42,92 @@ export function noteDate(timestamp) {
 
 const speechSupported = typeof window !== 'undefined' && 'webkitSpeechRecognition' in window;
 
-// Talk-to-type button. Adds what you say to the text box.
+// Plain-English reasons the phone's speech-to-text can fail.
+const SPEECH_ERRORS = {
+  'no-speech': "Didn't hear anything. Tap Talk and start speaking.",
+  'not-allowed': 'Microphone is blocked for this site. Allow it in Safari settings.',
+  'service-not-allowed': 'Dictation is off. Turn it on: Settings › General › Keyboard › Enable Dictation.',
+  'audio-capture': 'No microphone found.',
+  network: 'Talk needs an internet connection.',
+  aborted: 'Stopped.',
+};
+
+// Talk-to-type button. Shows the words live while you talk, then adds them
+// to the note. If the phone refuses, it says why.
 function MicButton({ onText }) {
   const [listening, setListening] = useState(false);
-  const [rec, setRec] = useState(null);
+  const [live, setLive] = useState('');
+  const [error, setError] = useState('');
+  const recRef = React.useRef(null);
   if (!speechSupported) return null;
 
-  const toggle = () => {
-    if (listening && rec) {
-      rec.stop();
-      return;
-    }
+  const stop = () => {
+    if (recRef.current) recRef.current.stop();
+  };
+
+  const start = () => {
+    setError('');
+    setLive('');
+    let finalText = '';
     const r = new window.webkitSpeechRecognition();
-    r.continuous = false;
-    r.interimResults = false;
+    r.continuous = true;
+    r.interimResults = true;
     r.lang = 'en-US';
-    r.onresult = (e) => onText(e.results[0][0].transcript);
-    r.onerror = () => setListening(false);
-    r.onend = () => setListening(false);
-    r.start();
-    setRec(r);
-    setListening(true);
+    r.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const piece = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += piece;
+        else interim += piece;
+      }
+      setLive((finalText + ' ' + interim).trim());
+    };
+    r.onerror = (e) => {
+      if (e.error !== 'aborted') setError(SPEECH_ERRORS[e.error] || `Talk didn't work (${e.error}).`);
+    };
+    r.onend = () => {
+      setListening(false);
+      recRef.current = null;
+      setLive((current) => {
+        const words = (finalText || current).trim();
+        if (words) onText(words);
+        return '';
+      });
+    };
+    try {
+      r.start();
+      recRef.current = r;
+      setListening(true);
+    } catch (err) {
+      setError("Talk couldn't start. Try again.");
+    }
   };
 
   return (
-    <button type="button" className={`nv-mic ${listening ? 'is-on' : ''}`} onClick={toggle} aria-label="Talk to type">
-      <FaMicrophone />
-      <span>{listening ? 'Listening…' : 'Talk'}</span>
-    </button>
+    <>
+      <button
+        type="button"
+        className={`nv-mic ${listening ? 'is-on' : ''}`}
+        onClick={listening ? stop : start}
+        aria-label={listening ? 'Stop' : 'Talk to type'}
+      >
+        <FaMicrophone />
+        <span>{listening ? 'Stop' : 'Talk'}</span>
+      </button>
+      {(listening || error) && (
+        <div className="nv-mic-status">
+          {listening ? live || 'Listening…' : error}
+        </div>
+      )}
+    </>
   );
 }
 
 function CategoryChips({ value, onChange }) {
   return (
     <div className="nv-cats">
-      {NOTE_CATEGORIES.map((c) => {
+      <span className="nv-cats-label">Label:</span>
+      {LABELS.map((c) => {
         const on = normalizeCategory(value) === c;
         const st = categoryStyle(c);
         return (
@@ -83,7 +136,7 @@ function CategoryChips({ value, onChange }) {
             type="button"
             className={`nv-cat ${on ? 'is-on' : ''}`}
             style={on ? { background: st.fg, color: '#fff' } : { background: st.bg, color: st.fg }}
-            onClick={() => onChange(c)}
+            onClick={() => onChange(on ? 'General' : c)}  // tap again to remove the label
           >
             {c}
           </button>
@@ -119,7 +172,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     const ib = NOTE_CATEGORIES.indexOf(b);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
-  const filterChips = ['All', ...(openFollowUps ? ['Open follow-ups'] : []), ...usedCats];
+  const filterChips = ['All', ...(openFollowUps ? ['Open follow-ups'] : []), ...usedCats.filter((c) => c !== 'General')];
 
   // Back goes to wherever you came from (the account), like the iPhone gesture.
   const back = () => {
@@ -196,7 +249,9 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat })}
         >
           <span className="nv-note-meta">
-            <span className="nv-tag" style={{ background: st.bg, color: st.fg }}>{n.cat}</span>
+            {n.cat !== 'General' && (
+              <span className="nv-tag" style={{ background: st.bg, color: st.fg }}>{n.cat}</span>
+            )}
             <span className="nv-date">{noteDate(n.timestamp)}</span>
           </span>
           <span className="nv-note-text">{n.text}</span>
