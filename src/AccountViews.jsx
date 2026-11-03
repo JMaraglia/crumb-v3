@@ -158,6 +158,150 @@ function phoneActions(phone) {
   ];
 }
 
+// Call / Text pop-up for an account's contacts: one number goes straight to
+// the choice; several numbers are all listed. Returns null if there are none.
+function callTextSheet(contacts) {
+  const withPhone = (contacts || []).filter((c) => c.phone);
+  if (withPhone.length === 0) return null;
+  if (withPhone.length === 1) {
+    const c = withPhone[0];
+    return { title: c.name || c.phone, actions: phoneActions(c.phone) };
+  }
+  return {
+    title: 'Call or text',
+    actions: withPhone.flatMap((c) =>
+      phoneActions(c.phone).map((a) => ({ ...a, label: `${a.label.split(' ')[0]} ${c.name || c.phone}` }))
+    ),
+  };
+}
+
+const HOLD_MS = 500;      // hold a row this long to open the full screen
+const HOLD_WIGGLE = 10;   // px a finger can move and still count as holding
+
+// One prospect in the list. Tap: open/close the quick card in place.
+// Hold: open the full screen.
+function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }) {
+  const navigate = useNavigate();
+  const hold = React.useRef(null);
+  const visit = visitSummary(a, config);
+  const latest = lastNote(a);
+  const contacts = a.contacts || [];
+  const mainContact = contacts.find((c) => c.name || c.title);
+  const hasPhone = contacts.some((c) => c.phone);
+
+  const startHold = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const el = e.currentTarget;
+    const start = { x: e.clientX, y: e.clientY, fired: false, el };
+    start.timer = setTimeout(() => {
+      // Held long enough: highlight now, open the full screen when the finger lifts.
+      start.fired = true;
+      el.classList.add('is-held');
+    }, HOLD_MS);
+    hold.current = start;
+  };
+  const moveHold = (e) => {
+    const h = hold.current;
+    if (h && (Math.abs(e.clientX - h.x) > HOLD_WIGGLE || Math.abs(e.clientY - h.y) > HOLD_WIGGLE)) {
+      clearTimeout(h.timer);
+      h.el.classList.remove('is-held');
+      hold.current = null;
+    }
+  };
+  const endHold = () => {
+    if (hold.current) clearTimeout(hold.current.timer);
+  };
+  const tap = () => {
+    const h = hold.current;
+    hold.current = null;
+    if (h && h.fired) {
+      h.el.classList.remove('is-held');
+      onOpenFull();
+      return;
+    }
+    onToggle();
+  };
+
+  return (
+    <div className={`av-item ${expanded ? 'is-open' : ''}`}>
+      <button
+        className="av-row av-list-row"
+        onPointerDown={startHold}
+        onPointerMove={moveHold}
+        onPointerUp={endHold}
+        onPointerCancel={() => {
+          endHold();
+          if (hold.current) hold.current.el.classList.remove('is-held');
+          hold.current = null;
+        }}
+        onClick={tap}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <Avatar name={a.name} size={expanded ? 48 : 40} />
+        <span className="av-row-text">
+          <span className={`av-row-name ${expanded ? 'is-big' : ''}`}>{displayName(a)}</span>
+          {expanded ? (
+            <span className="av-row-sub">
+              {mainContact ? [mainContact.name, mainContact.title].filter(Boolean).join(' · ') : 'No contact yet'}
+            </span>
+          ) : (
+            a.address && <span className="av-row-sub">{a.address}</span>
+          )}
+          {!expanded && (
+            <span className="av-chips">
+              {visit ? (
+                <>
+                  <span className="av-chip av-chip-blue">{visit}</span>
+                  <span className="av-chip av-chip-gray">{shortFrequency(a.visitFrequency)}</span>
+                </>
+              ) : (
+                <span className="av-chip av-chip-orange">No visit set</span>
+              )}
+            </span>
+          )}
+        </span>
+        <FaChevronRight className={`av-row-chevron ${expanded ? 'is-open' : ''}`} />
+      </button>
+
+      {expanded && (
+        <div className="av-expand">
+          {latest && (
+            <button className="av-last-note" onClick={() => navigate(config.notesPath(a.id))}>
+              <span className="av-last-note-date">{shortDate(latest.timestamp)}</span>
+              {latest.text}
+            </button>
+          )}
+          <div className="av-chips av-summary-chips">
+            {visit ? (
+              <>
+                <span className="av-chip av-chip-blue">{visit}</span>
+                <span className="av-chip av-chip-gray">{shortFrequency(a.visitFrequency)}</span>
+              </>
+            ) : (
+              <span className="av-chip av-chip-orange">No visit set</span>
+            )}
+          </div>
+          <div className="av-quick">
+            <button className="av-quick-btn" disabled={!hasPhone} onClick={() => onSheet(callTextSheet(contacts))}>
+              Call / Text
+            </button>
+            <button
+              className="av-quick-btn"
+              disabled={!a.address}
+              onClick={() => onSheet({ title: a.address, actions: mapActions(a.address) })}
+            >
+              Map
+            </button>
+            <button className="av-quick-btn" onClick={() => navigate(config.notesPath(a.id))}>
+              + Note
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Header({ onBack, title, right }) {
   return (
     <header className="av-header">
@@ -177,6 +321,8 @@ export function AccountList({ config, accounts }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [sortAZ, setSortAZ] = useState(true);
+  const [openId, setOpenId] = useState(null); // the one row that's opened up
+  const [sheet, setSheet] = useState(null);   // Call/Text or Maps pop-up
 
   const q = search.trim().toLowerCase();
   const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
@@ -225,36 +371,27 @@ export function AccountList({ config, accounts }) {
           <div className="av-empty">No matches.</div>
         ) : (
           <div className="av-group">
-            {shown.map((a) => {
-              const visit = visitSummary(a, config);
-              return (
-                <button key={a.id} className="av-row av-list-row" onClick={() => navigate(`${config.basePath}/${a.id}`)}>
-                  <Avatar name={a.name} />
-                  <span className="av-row-text">
-                    <span className={`av-row-name ${a.name && a.name.trim() ? '' : 'is-blank'}`}>{displayName(a)}</span>
-                    {a.address && <span className="av-row-sub">{a.address}</span>}
-                    <span className="av-chips">
-                      {visit ? (
-                        <>
-                          <span className="av-chip av-chip-blue">{visit}</span>
-                          <span className="av-chip av-chip-gray">{shortFrequency(a.visitFrequency)}</span>
-                        </>
-                      ) : (
-                        <span className="av-chip av-chip-orange">No visit set</span>
-                      )}
-                    </span>
-                  </span>
-                  <FaChevronRight className="av-row-chevron" />
-                </button>
-              );
-            })}
+            {shown.map((a) => (
+              <ListRow
+                key={a.id}
+                account={a}
+                config={config}
+                expanded={openId === a.id}
+                onToggle={() => setOpenId((cur) => (cur === a.id ? null : a.id))}
+                onOpenFull={() => navigate(`${config.basePath}/${a.id}`)}
+                onSheet={(info) => info && setSheet(info)}
+              />
+            ))}
           </div>
         )}
+        {shown.length > 0 && <div className="av-hint">Tap to open · Hold for full details</div>}
       </div>
 
       <button className="av-fab" onClick={() => navigate(`${config.basePath}/new`)} aria-label={`Add ${config.singular}`}>
         +
       </button>
+
+      {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
     </div>
   );
 }
@@ -286,20 +423,9 @@ export function AccountDetail({ config, accounts }) {
   const mainContact = contacts.find((c) => c.name || c.title);
   const phoneContacts = contacts.filter((c) => c.phone);
 
-  // Quick Call / Text: one number goes straight to the choice; several are all listed.
   const openCallText = () => {
-    if (phoneContacts.length === 0) return;
-    if (phoneContacts.length === 1) {
-      const c = phoneContacts[0];
-      setSheet({ title: c.name || c.phone, actions: phoneActions(c.phone) });
-    } else {
-      setSheet({
-        title: 'Call or text',
-        actions: phoneContacts.flatMap((c) =>
-          phoneActions(c.phone).map((a) => ({ ...a, label: `${a.label.split(' ')[0]} ${c.name || c.phone}` }))
-        ),
-      });
-    }
+    const sheetInfo = callTextSheet(contacts);
+    if (sheetInfo) setSheet(sheetInfo);
   };
 
   return (

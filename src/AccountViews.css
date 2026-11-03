@@ -610,3 +610,62 @@
   letter-spacing: -0.02em;
   color: #1c1c1e;
 }
+
+/* ---------- List rows that open in place ---------- */
+.av-item {
+  border-top: 1px solid #ececf0;
+  -webkit-touch-callout: none;   /* no iPhone pop-up menu when holding a row */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.av-group > .av-item:first-child {
+  border-top: none;
+}
+
+.av-item > .av-row {
+  border-top: none !important;
+}
+
+.av-item.is-open {
+  background: #fff;
+  box-shadow: inset 3px 0 0 #0077cc;
+}
+
+.av-row-name.is-big {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.av-row-chevron {
+  transition: transform 0.15s ease;
+}
+
+.av-row-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.av-expand {
+  padding: 0 14px 14px;
+  animation: av-open 0.15s ease-out;
+}
+
+.av-expand .av-last-note {
+  margin-top: 0;
+}
+
+@keyframes av-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.av-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #aeaeb2;
+  padding: 2px 0 10px;
+}
+
+.av-page .av-list-row.is-held {
+  background: #e6f1fa;
+}
