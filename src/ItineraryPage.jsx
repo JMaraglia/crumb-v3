@@ -27,6 +27,8 @@ import {
   hhmmToMinutes,
   minutesToHhmm,
   onItinerary,
+  CUSTOMER_DAYS_FIELD,
+  CUSTOMER_COLOR,
 } from './schedule';
 import './ItineraryPage.css';
 
@@ -88,6 +90,24 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         color: st ? st.color : '#0077cc',
         accountType: 'prospect',
         accountId: p.id,
+        done: doneToday.includes(key),
+      });
+    });
+
+  contacts
+    .filter((c) => c.name && c.name.trim() && onItinerary(c, date, CUSTOMER_DAYS_FIELD))
+    .forEach((c) => {
+      const key = `c-${c.id}`;
+      stops.push({
+        key,
+        kind: 'scheduled',
+        time: typeof c.visitTime === 'number' ? c.visitTime : null,
+        title: c.name,
+        address: c.address,
+        tag: { label: 'Customer', color: CUSTOMER_COLOR },
+        color: CUSTOMER_COLOR,
+        accountType: 'customer',
+        accountId: c.id,
         done: doneToday.includes(key),
       });
     });
@@ -281,10 +301,10 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                           <button
                             className="it-quick-btn"
                             onClick={() =>
-                              navigate(stop.accountType === 'prospect' ? `/prospects/${acct.id}` : `/notes/${acct.id}`)
+                              navigate(stop.accountType === 'prospect' ? `/prospects/${acct.id}` : `/customers/${acct.id}`)
                             }
                           >
-                            {stop.accountType === 'prospect' ? 'Open' : 'Notes'}
+                            Open
                           </button>
                         )}
                         {stop.kind === 'scheduled' && acct && (
@@ -292,12 +312,17 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             className="it-quick-btn"
                             onClick={() =>
                               setSheet(
-                                snoozeSheet(acct, (until) => {
-                                  setProspects((prev) =>
-                                    prev.map((x) => (x.id === acct.id ? { ...x, snoozeUntil: until } : x))
-                                  );
-                                  setOpenKey(null);
-                                })
+                                snoozeSheet(
+                                  acct,
+                                  (until) => {
+                                    const setList = stop.accountType === 'customer' ? setContacts : setProspects;
+                                    setList((prev) =>
+                                      prev.map((x) => (x.id === acct.id ? { ...x, snoozeUntil: until } : x))
+                                    );
+                                    setOpenKey(null);
+                                  },
+                                  stop.accountType === 'customer' ? CUSTOMER_DAYS_FIELD : undefined
+                                )
                               )
                             }
                           >

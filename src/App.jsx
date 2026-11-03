@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from '
 import './App.css';
 import HomePage from './HomePage';
 import MasterNotesPage from './MasterNotesPage';
-import CustomersPage from './CustomersPage';
+import CustomersPage, { CustomerDetailPage, CustomerEditPage } from './CustomersPage';
 import NotesPage from './NotesPage';
 import ProspectsPage, { ProspectDetailPage, ProspectEditPage } from './ProspectsPage';
 import ProspectNotesPage from './ProspectNotesPage';
@@ -109,6 +109,9 @@ export default function App() {
           }
         />
         <Route path="/customers" element={<CustomersPage contacts={contacts} setContacts={setContacts} />} />
+        <Route path="/customers/new" element={<CustomerEditPage contacts={contacts} setContacts={setContacts} isNew />} />
+        <Route path="/customers/:id" element={<CustomerDetailPage contacts={contacts} setContacts={setContacts} />} />
+        <Route path="/customers/:id/edit" element={<CustomerEditPage contacts={contacts} setContacts={setContacts} />} />
         <Route
           path="/notes/:id"
           element={
@@ -122,7 +125,17 @@ export default function App() {
         />
         <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
         <Route path="/prospects/new" element={<ProspectEditPage prospects={prospects} setProspects={setProspects} isNew />} />
-        <Route path="/prospects/:id" element={<ProspectDetailPage prospects={prospects} setProspects={setProspects} />} />
+        <Route
+          path="/prospects/:id"
+          element={
+            <ProspectDetailPage
+              prospects={prospects}
+              setProspects={setProspects}
+              contacts={contacts}
+              setContacts={setContacts}
+            />
+          }
+        />
         <Route path="/prospects/:id/edit" element={<ProspectEditPage prospects={prospects} setProspects={setProspects} />} />
         <Route
           path="/prospect-notes/:id"

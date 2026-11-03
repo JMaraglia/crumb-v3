@@ -79,9 +79,15 @@ export function minutesToHhmm(m) {
 
 /* ---------- visit schedules ---------- */
 // Is this account due for a visit on this date (by its days + how often)?
+// Which saved field holds an account's VISIT days:
+//   prospects → 'deliveryDays' (how prospects have always stored them)
+//   customers → 'visitDays'    (customers' deliveryDays are real delivery days)
+export const PROSPECT_DAYS_FIELD = 'deliveryDays';
+export const CUSTOMER_DAYS_FIELD = 'visitDays';
+
 // Ignores snooze: "would this be a visit day by the regular schedule?"
-function regularDueOn(account, dateKey) {
-  const days = account.deliveryDays || [];
+function regularDueOn(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
+  const days = account[daysField] || [];
   if (!days.includes(weekdayName(dateKey))) return false;
   const freq = FREQUENCIES.find((f) => f.key === account.visitFrequency) || FREQUENCIES[0];
   if (freq.weeks === 1 || !account.visitStart) return true;
@@ -91,9 +97,9 @@ function regularDueOn(account, dateKey) {
 }
 
 // Due on this date, and not snoozed (snoozeUntil = first date visits come back).
-export function isDueOn(account, dateKey) {
+export function isDueOn(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
   if (account.snoozeUntil && dateKey < account.snoozeUntil) return false;
-  return regularDueOn(account, dateKey);
+  return regularDueOn(account, dateKey, daysField);
 }
 
 export function todayKeyLocal() {
@@ -101,9 +107,9 @@ export function todayKeyLocal() {
 }
 
 // Next regular visit date on or after fromKey (looks ahead up to a year), or null.
-export function nextVisitDate(account, fromKey, ignoreSnooze = false) {
+export function nextVisitDate(account, fromKey, ignoreSnooze = false, daysField = PROSPECT_DAYS_FIELD) {
   for (let i = 0, k = fromKey; i < 370; i++, k = addDaysToKey(k, 1)) {
-    if (ignoreSnooze ? regularDueOn(account, k) : isDueOn(account, k)) return k;
+    if (ignoreSnooze ? regularDueOn(account, k, daysField) : isDueOn(account, k, daysField)) return k;
   }
   return null;
 }
@@ -113,29 +119,50 @@ export function isSnoozed(account) {
 }
 
 // What snoozeUntil to save for a choice: 'skip' = skip the next visit, or a number of weeks.
-export function snoozeUntilFor(account, choice) {
+export function snoozeUntilFor(account, choice, daysField = PROSPECT_DAYS_FIELD) {
   const today = todayKeyLocal();
   if (choice === 'skip') {
     // start counting from the later of today and any current snooze
     const from = account.snoozeUntil && account.snoozeUntil > today ? account.snoozeUntil : today;
-    const next = nextVisitDate(account, from, true);
+    const next = nextVisitDate(account, from, true, daysField);
     return next ? addDaysToKey(next, 1) : null;
   }
   return addDaysToKey(today, 7 * choice);
 }
 
 // Itinerary: due that day and "Show in itinerary" isn't switched off.
-export function onItinerary(account, dateKey) {
-  return account.showInItinerary !== false && isDueOn(account, dateKey);
+export function onItinerary(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
+  return account.showInItinerary !== false && isDueOn(account, dateKey, daysField);
 }
 
-export const VISIT_BLOCK_MINUTES = 30; // scheduled visits show as 30-minute blocks on the calendar
+export const VISIT_BLOCK_MINUTES = 30;
+export const CUSTOMER_COLOR = '#1e8e3e'; // customers' scheduled visits (green) // scheduled visits show as 30-minute blocks on the calendar
 
 // Calendar blocks for prospects' scheduled visits and hand-added itinerary stops,
 // for every day from startKey to endKey. These are built on the fly, never saved.
-export function scheduledCalendarBlocks(prospects, visits, startKey, endKey) {
+export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, customers = []) {
   const blocks = [];
   for (let k = startKey; k <= endKey; k = addDaysToKey(k, 1)) {
+    customers.forEach((c) => {
+      if (!c.name || !c.name.trim()) return;
+      if (c.showOnCalendar === false) return;
+      if (typeof c.visitTime !== 'number') return;
+      if (!isDueOn(c, k, CUSTOMER_DAYS_FIELD)) return;
+      blocks.push({
+        id: `visit-c-${c.id}-${k}`,
+        virtual: true,
+        source: 'schedule',
+        title: c.name,
+        date: k,
+        start: c.visitTime,
+        end: Math.min(c.visitTime + VISIT_BLOCK_MINUTES, 1440),
+        color: CUSTOMER_COLOR,
+        location: c.address || '',
+        accountType: 'customer',
+        accountId: c.id,
+        accountName: c.name,
+      });
+    });
     prospects.forEach((p) => {
       if (!p.name || !p.name.trim()) return;
       if (p.showOnCalendar === false) return;

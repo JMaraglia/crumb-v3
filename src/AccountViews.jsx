@@ -3,7 +3,8 @@
 //   AccountList   – search, sort, tap a row
 //   AccountDetail – one account: address, contacts, days, notes
 //   AccountEdit   – one form for adding and editing (Save / Cancel / Delete)
-// Data shape is unchanged: { id, name, address, contacts[], deliveryDays[], notes[] }
+// Data shape: { id, name, address, contacts[], deliveryDays[], notes[] }
+// (+ accountNumber and visitDays for customers; prospects keep visit days in deliveryDays).
 // (+ accountNumber for customers).
 import React, { useState } from 'react';
 import { FaArrowLeft, FaChevronRight, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
@@ -191,13 +192,13 @@ export function ActionSheet({ title, actions, onClose }) {
 
 // Snooze pop-up: skip the next visit, or pause visits for 1–4 weeks.
 // `save(snoozeUntil)` stores the new date (null = end the snooze).
-export function snoozeSheet(account, save) {
+export function snoozeSheet(account, save, daysField) {
   const actions = [
-    { label: 'Skip next visit', onClick: () => save(snoozeUntilFor(account, 'skip')) },
-    { label: 'Snooze 1 week', onClick: () => save(snoozeUntilFor(account, 1)) },
-    { label: 'Snooze 2 weeks', onClick: () => save(snoozeUntilFor(account, 2)) },
-    { label: 'Snooze 3 weeks', onClick: () => save(snoozeUntilFor(account, 3)) },
-    { label: 'Snooze 4 weeks', onClick: () => save(snoozeUntilFor(account, 4)) },
+    { label: 'Skip next visit', onClick: () => save(snoozeUntilFor(account, 'skip', daysField)) },
+    { label: 'Snooze 1 week', onClick: () => save(snoozeUntilFor(account, 1, daysField)) },
+    { label: 'Snooze 2 weeks', onClick: () => save(snoozeUntilFor(account, 2, daysField)) },
+    { label: 'Snooze 3 weeks', onClick: () => save(snoozeUntilFor(account, 3, daysField)) },
+    { label: 'Snooze 4 weeks', onClick: () => save(snoozeUntilFor(account, 4, daysField)) },
   ];
   if (isSnoozed(account)) actions.push({ label: 'End snooze', danger: true, onClick: () => save(null) });
   return { title: `Snooze visits to ${account.name || 'this account'}`, actions };
@@ -209,9 +210,9 @@ function niceShort(k) {
 }
 
 // "Snoozed · back Nov 24" (the first visit after the snooze ends)
-export function SnoozeChip({ account }) {
+export function SnoozeChip({ account, daysField }) {
   if (!isSnoozed(account)) return null;
-  const back = nextVisitDate(account, account.snoozeUntil);
+  const back = nextVisitDate(account, account.snoozeUntil, false, daysField);
   return (
     <span className="av-chip av-chip-snooze">
       Snoozed · {back ? `back ${niceShort(back)}` : `until ${niceShort(account.snoozeUntil)}`}
@@ -346,7 +347,13 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
               {mainContact ? [mainContact.name, mainContact.title].filter(Boolean).join(' · ') : 'No contact yet'}
             </span>
           ) : (
-            a.address && <span className="av-row-sub">{a.address}</span>
+            (a.address || (config.hasAccountNumber && a.accountNumber)) && (
+              <span className="av-row-sub">
+                {[config.hasAccountNumber && a.accountNumber ? `#${a.accountNumber}` : null, a.address]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+            )
           )}
           {!expanded && (
             <span className="av-chips">
@@ -359,7 +366,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
                 <span className="av-chip av-chip-orange">No visit set</span>
               )}
               {config.hasStage && <StageChip stage={a.stage} />}
-              <SnoozeChip account={a} />
+              <SnoozeChip account={a} daysField={config.visitDaysField} />
             </span>
           )}
         </span>
@@ -385,7 +392,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
             {config.hasStage && <StageChip stage={a.stage} />}
-            <SnoozeChip account={a} />
+            <SnoozeChip account={a} daysField={config.visitDaysField} />
           </div>
           <div className="av-quick">
             <button className="av-quick-btn" disabled={!reachable} onClick={() => onSheet(contactSheet(contacts))}>
@@ -399,7 +406,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
               Map
             </button>
             {onSnooze && hasVisitDays(a, config) && (
-              <button className="av-quick-btn" onClick={() => onSheet(snoozeSheet(a, (until) => onSnooze(a.id, until)))}>
+              <button className="av-quick-btn" onClick={() => onSheet(snoozeSheet(a, (until) => onSnooze(a.id, until), config.visitDaysField))}>
                 {isSnoozed(a) ? 'Snoozed' : 'Snooze'}
               </button>
             )}
@@ -537,11 +544,13 @@ export function AccountList({ config, accounts, setAccounts }) {
 /* ------------------------------------------------------------------ */
 /* Detail                                                              */
 /* ------------------------------------------------------------------ */
-export function AccountDetail({ config, accounts, setAccounts }) {
+export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const navigate = useNavigate();
   const goBack = useGoBack();
   const { id } = useParams();
   const [sheet, setSheet] = useState(null); // { title, actions }
+  const [converting, setConverting] = useState(false);
+  const [newAccountNumber, setNewAccountNumber] = useState('');
   const account = accounts.find((a) => String(a.id) === id);
 
   if (!account) {
@@ -615,7 +624,7 @@ export function AccountDetail({ config, accounts, setAccounts }) {
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
             {config.hasStage && <StageChip stage={account.stage} />}
-            <SnoozeChip account={account} />
+            <SnoozeChip account={account} daysField={config.visitDaysField} />
           </div>
 
           <div className="av-quick">
@@ -634,8 +643,11 @@ export function AccountDetail({ config, accounts, setAccounts }) {
                 className="av-quick-btn"
                 onClick={() =>
                   setSheet(
-                    snoozeSheet(account, (until) =>
-                      setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, snoozeUntil: until } : x)))
+                    snoozeSheet(
+                      account,
+                      (until) =>
+                        setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, snoozeUntil: until } : x))),
+                      config.visitDaysField
                     )
                   )
                 }
@@ -699,6 +711,19 @@ export function AccountDetail({ config, accounts, setAccounts }) {
           ))
         )}
 
+        {config.deliveryDaysField && (
+          <>
+            <div className="av-section-title">Delivery days</div>
+            <div className="av-days">
+              {DAYS.map((d) => (
+                <span key={d} className={`av-day is-delivery ${(account[config.deliveryDaysField] || []).includes(d) ? 'is-on' : ''}`}>
+                  {d}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="av-section-title">Visit schedule</div>
         <div className="av-days">
           {DAYS.map((d) => (
@@ -737,9 +762,50 @@ export function AccountDetail({ config, accounts, setAccounts }) {
             <FaChevronRight className="av-row-chevron" />
           </button>
         </div>
+
+        {onConvert && (
+          <button className="av-convert" onClick={() => setConverting(true)}>
+            Convert to customer
+          </button>
+        )}
       </div>
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
+
+      {converting && (
+        <div className="av-sheet-backdrop" onClick={() => setConverting(false)}>
+          <div className="av-convert-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="av-convert-title">Convert {displayName(account)} to a customer</div>
+            <div className="av-convert-sub">
+              Notes, contacts, address, and visit schedule move over. It leaves your Prospects list.
+            </div>
+            <input
+              className="av-convert-input"
+              placeholder="Customer account number"
+              inputMode="numeric"
+              value={newAccountNumber}
+              onChange={(e) => setNewAccountNumber(e.target.value)}
+              autoFocus
+            />
+            <div className="av-convert-actions">
+              <button className="av-convert-cancel" onClick={() => setConverting(false)}>
+                Cancel
+              </button>
+              <button
+                className="av-convert-go"
+                disabled={!newAccountNumber.trim()}
+                onClick={() => {
+                  const path = onConvert(account, newAccountNumber.trim());
+                  setConverting(false);
+                  if (path) navigate(path, { replace: true });
+                }}
+              >
+                Convert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -763,6 +829,11 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   );
   const [days, setDays] = useState(
     existing && existing[config.visitDaysField] ? [...existing[config.visitDaysField]] : []
+  );
+  const [deliveryDays, setDeliveryDays] = useState(
+    config.deliveryDaysField && existing && existing[config.deliveryDaysField]
+      ? [...existing[config.deliveryDaysField]]
+      : []
   );
   const [visitTime, setVisitTime] = useState(
     existing && typeof existing.visitTime === 'number' ? existing.visitTime : ''
@@ -815,6 +886,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
       visitStart: visitFrequency === 'weekly' ? null : visitStart,
     };
     if (config.hasStage) fields.stage = stage || null;
+    if (config.deliveryDaysField) fields[config.deliveryDaysField] = DAYS.filter((d) => deliveryDays.includes(d));
     fields.showInItinerary = showInItinerary;
     fields.showOnCalendar = showOnCalendar;
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
@@ -911,6 +983,25 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
         <button className="av-add-contact" onClick={() => setContacts((prev) => [...prev, { ...BLANK_CONTACT }])}>
           + Add contact
         </button>
+
+        {config.deliveryDaysField && (
+          <>
+            <div className="av-section-title">Delivery days</div>
+            <div className="av-days">
+              {DAYS.map((d) => (
+                <button
+                  key={d}
+                  className={`av-day av-day-btn is-delivery ${deliveryDays.includes(d) ? 'is-on' : ''}`}
+                  onClick={() =>
+                    setDeliveryDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]))
+                  }
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="av-section-title">Visit schedule</div>
         <div className="av-days">

@@ -81,7 +81,8 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
     prospects,
     toVisitList(readJSON('visitData', [])),
     addDaysToKey(dateKey(viewStart), -45),
-    addDaysToKey(dateKey(viewStart), 60)
+    addDaysToKey(dateKey(viewStart), 60),
+    contacts
   );
   const allEvents = [...events, ...visitBlocks];
 
@@ -92,6 +93,8 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
       setSheet({ isNew: false, draft: ev });
     } else if (ev.accountType === 'prospect' && ev.accountId) {
       navigate(`/prospects/${ev.accountId}`);
+    } else if (ev.accountType === 'customer' && ev.accountId && ev.source === 'schedule') {
+      navigate(`/customers/${ev.accountId}`);
     } else {
       navigate('/itinerary');
     }

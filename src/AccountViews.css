@@ -853,3 +853,91 @@
 .av-sheet-backdrop button.av-sheet-action.is-danger:hover {
   color: #ff3b30;
 }
+
+/* Customers: delivery days in green so they don't look like visit days */
+.av-day.is-delivery.is-on,
+.av-page .av-day-btn.is-delivery.is-on,
+.av-page .av-day-btn.is-delivery.is-on:hover {
+  background: #1e8e3e;
+  color: #fff;
+}
+
+/* Convert prospect → customer */
+.av-page .av-convert,
+.av-page .av-convert:hover {
+  display: block;
+  width: 100%;
+  padding: 13px 0;
+  margin-top: 4px;
+  border-radius: 12px;
+  background: #1e8e3e;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+
+.av-convert-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 14px 14px 0 0;
+  padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
+  color: #1c1c1e;
+}
+
+.av-convert-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.av-convert-sub {
+  font-size: 0.9rem;
+  color: #8e8e93;
+  margin-bottom: 14px;
+  line-height: 1.35;
+}
+
+.av-convert-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #d1d1d6;
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.av-convert-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.av-sheet-backdrop .av-convert-cancel,
+.av-sheet-backdrop .av-convert-cancel:hover,
+.av-sheet-backdrop .av-convert-go,
+.av-sheet-backdrop .av-convert-go:hover {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.av-sheet-backdrop .av-convert-cancel,
+.av-sheet-backdrop .av-convert-cancel:hover {
+  background: #f2f2f7;
+  color: #0077cc;
+}
+
+.av-sheet-backdrop .av-convert-go,
+.av-sheet-backdrop .av-convert-go:hover {
+  background: #1e8e3e;
+  color: #fff;
+}
+
+.av-sheet-backdrop .av-convert-go:disabled {
+  background: #a8d5b5;
+}
