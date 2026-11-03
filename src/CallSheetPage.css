@@ -462,3 +462,118 @@
 .cs-table tbody tr.is-no-call .cs-link {
   color: #8e9bb0;
 }
+
+/* Darker printout: black text, bold header, dark gridlines, bigger type */
+@media print {
+  .cs-page,
+  .cs-table,
+  .cs-table td,
+  .cs-table th,
+  .cs-page .cs-link,
+  .cs-page .cs-note,
+  .cs-print-sub,
+  .cs-print-only {
+    color: #000 !important;
+  }
+
+  .cs-table {
+    font-size: 10.5pt;
+  }
+
+  .cs-table th,
+  .cs-table td {
+    border: 1.25px solid #000 !important;
+    padding: 6px 8px;
+  }
+
+  .cs-table th {
+    background: #d0d0d0 !important;
+    font-weight: 800;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cs-table td {
+    font-weight: 500;
+  }
+
+  .cs-table td.cs-name,
+  .cs-table td.cs-name .cs-link {
+    font-weight: 800;
+  }
+
+  .cs-print-sub {
+    font-weight: 600;
+  }
+
+  /* N/A rows: readable gray on paper, not faint */
+  .cs-table tbody tr.is-no-call td,
+  .cs-table tbody tr.is-no-call .cs-link {
+    color: #555 !important;
+  }
+}
+
+@media print {
+  /* Keep short columns (acct #, phone, time) on one line; notes still wrap */
+  .cs-table td:not(.cs-wide),
+  .cs-table th {
+    white-space: nowrap !important;
+  }
+
+  /* Bigger, darker checkboxes on paper */
+  .cs-table td.cs-center .cs-print-only {
+    font-size: 15pt;
+    line-height: 1;
+  }
+}
+
+/* Darker printout: black text, heavier weight, black gridlines */
+@media print {
+  .cs-print-heading,
+  .cs-print-sub {
+    color: #000;
+  }
+
+  .cs-print-sub {
+    font-weight: 600;
+  }
+
+  .cs-table {
+    font-size: 10pt;
+    color: #000;
+  }
+
+  .cs-table th,
+  .cs-table td {
+    border: 1.5px solid #000 !important;
+    color: #000 !important;
+    font-weight: 500;
+  }
+
+  .cs-table th {
+    background: #d4d4d4 !important;
+    font-weight: 800;
+  }
+
+  .cs-table td.cs-name,
+  .cs-table td.cs-name .cs-link {
+    font-weight: 800;
+  }
+
+  .cs-page .cs-link,
+  .cs-page .cs-note {
+    color: #000 !important;
+  }
+
+  .cs-print-only {
+    color: #000;
+    font-weight: 700;
+  }
+
+  /* N/A rows: still lighter than the rest, but readable */
+  .cs-table tbody tr.is-no-call td,
+  .cs-table tbody tr.is-no-call .cs-link,
+  .cs-table tbody tr.is-no-call .cs-print-only {
+    color: #555 !important;
+  }
+}
