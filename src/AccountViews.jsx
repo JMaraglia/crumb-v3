@@ -87,9 +87,32 @@ function Avatar({ name, size = 40 }) {
   );
 }
 
-// Newest note (notes are saved with a date/time string).
+function isBackground(n) {
+  return n && n.category === 'Background';
+}
+
+// Background notes (profile info) are shown pinned, newest first.
+function backgroundNotes(account) {
+  return (account.notes || [])
+    .filter(isBackground)
+    .sort((a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0));
+}
+
+function BackgroundBox({ notes, onClick }) {
+  if (!notes.length) return null;
+  return (
+    <button className="av-background" onClick={onClick}>
+      <span className="av-background-title">Background</span>
+      {notes.map((n, i) => (
+        <span key={i} className="av-background-line">{n.text}</span>
+      ))}
+    </button>
+  );
+}
+
+// Newest regular note (Background notes are shown separately).
 function lastNote(account) {
-  const notes = account.notes || [];
+  const notes = (account.notes || []).filter((n) => !isBackground(n));
   if (notes.length === 0) return null;
   let best = notes[notes.length - 1];
   let bestTime = Date.parse(best.timestamp) || 0;
@@ -274,6 +297,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
 
       {expanded && (
         <div className="av-expand">
+          <BackgroundBox notes={backgroundNotes(a)} onClick={() => navigate(config.notesPath(a.id))} />
           {latest && (
             <button className="av-last-note" onClick={() => navigate(config.notesPath(a.id))}>
               <span className="av-last-note-date">{shortDate(latest.timestamp)}</span>
@@ -468,6 +492,7 @@ export function AccountDetail({ config, accounts }) {
             <span className="av-badge">{config.singular}</span>
           </div>
 
+          <BackgroundBox notes={backgroundNotes(account)} onClick={() => navigate(config.notesPath(account.id))} />
           {latest && (
             <button className="av-last-note" onClick={() => navigate(config.notesPath(account.id))}>
               <span className="av-last-note-date">{shortDate(latest.timestamp)}</span>

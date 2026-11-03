@@ -669,3 +669,38 @@
 .av-page .av-list-row.is-held {
   background: #e6f1fa;
 }
+
+/* Pinned Background notes on the opened card / detail screen */
+.av-page .av-background,
+.av-page .av-background:hover {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background: #faf5fe;
+  border: 1px solid #ecd9f7;
+}
+
+.av-expand .av-background {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.av-background-title {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8a3fb5;
+  margin-bottom: 2px;
+}
+
+.av-background-line {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #1c1c1e;
+  padding: 1px 0;
+}

@@ -1,0 +1,336 @@
+/* file: src/NotesView.css */
+/* Every class starts with "nv-" so nothing collides with other pages.
+   App.css pads the body and makes every <button> blue; .nv-page undoes that here. */
+
+.nv-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nv-page button,
+.nv-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+  text-align: left;
+}
+
+/* ---------- Header ---------- */
+.nv-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(242, 242, 247, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.nv-page .nv-icon-btn,
+.nv-page .nv-icon-btn:hover {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #0077cc;
+}
+
+.nv-header-text {
+  text-align: center;
+  min-width: 0;
+}
+
+.nv-header-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nv-header-sub {
+  font-size: 0.78rem;
+  color: #8e8e93;
+}
+
+.nv-content {
+  padding: 6px 16px 60px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ---------- Pinned background ---------- */
+.nv-pinned {
+  background: #faf5fe;
+  border: 1px solid #ecd9f7;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.nv-pinned-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8a3fb5;
+  margin-bottom: 4px;
+}
+
+.nv-page .nv-pinned-item,
+.nv-page .nv-pinned-item:hover {
+  display: block;
+  width: 100%;
+  padding: 5px 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: #1c1c1e;
+  white-space: pre-wrap;
+}
+
+/* ---------- Compose ---------- */
+.nv-compose {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.nv-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 16px;   /* 16px stops iPhone from zooming in */
+  line-height: 1.4;
+  color: #1c1c1e;
+  background: transparent;
+}
+
+.nv-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.nv-page .nv-cat,
+.nv-page .nv-cat:hover {
+  padding: 6px 11px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.nv-compose-actions,
+.nv-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.nv-spacer {
+  flex: 1;
+}
+
+.nv-page .nv-mic,
+.nv-page .nv-mic:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: #f0f6fc;
+  color: #0077cc;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.nv-page .nv-mic.is-on {
+  background: #ff3b30;
+  color: #fff;
+}
+
+.nv-page .nv-btn-primary,
+.nv-page .nv-btn-primary:hover {
+  padding: 9px 16px;
+  border-radius: 18px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.nv-page .nv-btn-primary:disabled {
+  background: #c7dff2;
+  cursor: default;
+}
+
+.nv-page .nv-btn-plain,
+.nv-page .nv-btn-plain:hover {
+  padding: 9px 6px;
+  color: #0077cc;
+  font-size: 0.95rem;
+}
+
+.nv-page .nv-btn-delete,
+.nv-page .nv-btn-delete:hover {
+  padding: 9px 4px;
+  color: #ff3b30;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ---------- Filters ---------- */
+.nv-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+}
+
+.nv-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.nv-page .nv-filter,
+.nv-page .nv-filter:hover {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: #e3e3e8;
+  color: #3a3a3c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nv-page .nv-filter.is-on,
+.nv-page .nv-filter.is-on:hover {
+  background: #1c1c1e;
+  color: #fff;
+}
+
+/* ---------- Notes ---------- */
+.nv-list {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.nv-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid #ececf0;
+}
+
+.nv-list > .nv-note:first-child {
+  border-top: none;
+}
+
+.nv-note-editing {
+  display: block;
+  background: #fbfbfd;
+}
+
+.nv-pinned .nv-note-editing {
+  background: #fff;
+  border-radius: 10px;
+  border: none;
+  margin: 4px 0;
+}
+
+.nv-page .nv-note-body,
+.nv-page .nv-note-body:hover {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.nv-note-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.nv-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.nv-date {
+  font-size: 0.8rem;
+  color: #8e8e93;
+}
+
+.nv-note-text {
+  font-size: 1rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.nv-note.is-done .nv-note-text {
+  color: #8e8e93;
+  text-decoration: line-through;
+}
+
+.nv-page .nv-check,
+.nv-page .nv-check:hover {
+  flex: 0 0 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid #ff9500;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.nv-page .nv-check.is-checked,
+.nv-page .nv-check.is-checked:hover {
+  background: #34c759;
+  border-color: #34c759;
+}
+
+.nv-empty {
+  text-align: center;
+  color: #8e8e93;
+  padding: 24px 0;
+}
+
+.nv-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #aeaeb2;
+  padding: 10px 0;
+}
