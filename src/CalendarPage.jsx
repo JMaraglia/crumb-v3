@@ -142,8 +142,9 @@ export default function CalendarPage() {
 
       {/* Calendar body */}
       <div className="cal-body">
-        {viewMode === 'Week' ? (
+        {viewMode === 'Week' || viewMode === 'Day' ? (
           <WeekView
+            daysPerPage={viewMode === 'Day' ? 1 : DAYS_PER_PAGE}
             startDate={viewStart}
             onShift={shiftDays}
             events={events}

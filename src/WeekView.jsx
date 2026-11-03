@@ -47,9 +47,11 @@ function shortTime(minutes) {
 }
 
 // Light tint of an event color for the block background.
-function tint(hex, alpha) {
+// Mixed with white into a solid color so grid lines don't show through.
+function tint(hex, amount) {
   const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  const mix = (c) => Math.round(c * amount + 255 * (1 - amount));
+  return `rgb(${mix((n >> 16) & 255)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
 }
 
 // Events that overlap sit side by side, like Google Calendar.
@@ -86,6 +88,7 @@ function hourLabel(h) {
 export default function WeekView({
   startDate,
   onShift,
+  daysPerPage = DAYS_PER_PAGE, // 3 for Week view, 1 for Day view
   events = [],
   pendingEvent = null,   // the blue block shown while the add panel is open
   onHoldSlot,            // (dateKey, startMinutes) when a thumb is held on an empty spot
@@ -124,15 +127,15 @@ export default function WeekView({
   }, []);
 
   // Previous page + current page + next page.
-  const days = Array.from({ length: DAYS_PER_PAGE * 3 }, (_, i) =>
-    addDays(startDate, i - DAYS_PER_PAGE)
+  const days = Array.from({ length: daysPerPage * 3 }, (_, i) =>
+    addDays(startDate, i - daysPerPage)
   );
 
   const finishSwipe = (direction) => {
     setPhase(direction);
     setTimeout(() => {
-      if (direction === 'next') onShift(DAYS_PER_PAGE);
-      if (direction === 'prev') onShift(-DAYS_PER_PAGE);
+      if (direction === 'next') onShift(daysPerPage);
+      if (direction === 'prev') onShift(-daysPerPage);
       setDragX(0);
       setPhase('idle');
     }, SWIPE_MS);
@@ -236,6 +239,9 @@ export default function WeekView({
     transition: phase === 'idle' || phase === 'drag' ? 'none' : `transform ${SWIPE_MS}ms ease-out`,
   };
 
+  // Each day's share of the 3-page strip (1/9 in Week view, 1/3 in Day view).
+  const colWidth = { flex: `0 0 calc(100% / ${daysPerPage * 3})` };
+
   const nowTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_HEIGHT;
 
   return (
@@ -255,7 +261,7 @@ export default function WeekView({
             {days.map((day) => {
               const today = isSameDay(day, now);
               return (
-                <div key={day.toDateString()} className="wv-head-day">
+                <div key={day.toDateString()} className="wv-head-day" style={colWidth}>
                   <span className={`wv-weekday ${today ? 'is-today' : ''}`}>
                     {day.toLocaleDateString('en-US', { weekday: 'short' })}
                   </span>
@@ -286,7 +292,7 @@ export default function WeekView({
                 const dayEvents = events.filter((ev) => ev.date === key);
                 const showPending = pendingEvent && pendingEvent.date === key;
                 return (
-                  <div key={key} className="wv-col" data-date={key}>
+                  <div key={key} className="wv-col" data-date={key} style={colWidth}>
                     {layoutDayEvents(dayEvents).map(({ ev, lane, lanes }) => {
                       const height = Math.max(((ev.end - ev.start) / 60) * HOUR_HEIGHT, 18);
                       return (
