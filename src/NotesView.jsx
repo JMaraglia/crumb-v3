@@ -3,7 +3,7 @@
 // Each account still keeps its own notes; only the layout is shared.
 // A note looks like: { text, category, timestamp, done? }  (done is for Follow-ups)
 import React, { useState } from 'react';
-import { FaArrowLeft, FaMicrophone } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './NotesView.css';
 
@@ -38,89 +38,6 @@ export function noteDate(timestamp) {
   const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   return `${day} · ${time}`;
-}
-
-const speechSupported = typeof window !== 'undefined' && 'webkitSpeechRecognition' in window;
-
-// Plain-English reasons the phone's speech-to-text can fail.
-const SPEECH_ERRORS = {
-  'no-speech': "Didn't hear anything. Tap Talk and start speaking.",
-  'not-allowed': 'Microphone is blocked for this site. Allow it in Safari settings.',
-  'service-not-allowed': 'Dictation is off. Turn it on: Settings › General › Keyboard › Enable Dictation.',
-  'audio-capture': 'No microphone found.',
-  network: 'Talk needs an internet connection.',
-  aborted: 'Stopped.',
-};
-
-// Talk-to-type button. Shows the words live while you talk, then adds them
-// to the note. If the phone refuses, it says why.
-function MicButton({ onText }) {
-  const [listening, setListening] = useState(false);
-  const [live, setLive] = useState('');
-  const [error, setError] = useState('');
-  const recRef = React.useRef(null);
-  if (!speechSupported) return null;
-
-  const stop = () => {
-    if (recRef.current) recRef.current.stop();
-  };
-
-  const start = () => {
-    setError('');
-    setLive('');
-    let finalText = '';
-    const r = new window.webkitSpeechRecognition();
-    r.continuous = true;
-    r.interimResults = true;
-    r.lang = 'en-US';
-    r.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const piece = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalText += piece;
-        else interim += piece;
-      }
-      setLive((finalText + ' ' + interim).trim());
-    };
-    r.onerror = (e) => {
-      if (e.error !== 'aborted') setError(SPEECH_ERRORS[e.error] || `Talk didn't work (${e.error}).`);
-    };
-    r.onend = () => {
-      setListening(false);
-      recRef.current = null;
-      setLive((current) => {
-        const words = (finalText || current).trim();
-        if (words) onText(words);
-        return '';
-      });
-    };
-    try {
-      r.start();
-      recRef.current = r;
-      setListening(true);
-    } catch (err) {
-      setError("Talk couldn't start. Try again.");
-    }
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        className={`nv-mic ${listening ? 'is-on' : ''}`}
-        onClick={listening ? stop : start}
-        aria-label={listening ? 'Stop' : 'Talk to type'}
-      >
-        <FaMicrophone />
-        <span>{listening ? 'Stop' : 'Talk'}</span>
-      </button>
-      {(listening || error) && (
-        <div className="nv-mic-status">
-          {listening ? live || 'Listening…' : error}
-        </div>
-      )}
-    </>
-  );
 }
 
 function CategoryChips({ value, onChange }) {
@@ -305,7 +222,6 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           />
           <CategoryChips value={category} onChange={setCategory} />
           <div className="nv-compose-actions">
-            <MicButton onText={(t) => setText((prev) => (prev ? prev.trimEnd() + ' ' : '') + t)} />
             <span className="nv-spacer" />
             <button className="nv-btn-primary" disabled={!text.trim()} onClick={add}>
               Add note

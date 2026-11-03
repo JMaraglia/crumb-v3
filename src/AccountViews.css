@@ -769,3 +769,22 @@
   font-size: 0.9rem;
   font-weight: 700;
 }
+
+/* Stage dropdown (replaces the row of stage chips) */
+.av-stage-select {
+  font-size: 16px;   /* 16px stops iPhone from zooming in */
+  font-family: inherit;
+  font-weight: 600;
+  color: #1c1c1e;
+  background: #e3e3e8;
+  border: none;
+  border-radius: 9px;
+  padding: 7px 10px;
+  outline: none;
+  max-width: 70%;
+}
+
+/* No double-tap zoom on list rows, so double-tap can mean Edit */
+.av-list-row {
+  touch-action: manipulation;
+}

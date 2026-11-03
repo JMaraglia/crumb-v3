@@ -55,7 +55,9 @@ export function timeLabel(minutes) {
   return `${hour12}:${m === 0 ? '00' : m} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => i * 30);
+// 5:00 AM … 11:30 PM first, then 12:00 AM … 4:30 AM at the bottom
+// (iPhone's time wheel starts at the top, so this avoids landing on 3:30 AM by accident).
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => ((i + 10) % 48) * 30);
 
 function todayKey() {
   const d = new Date();
@@ -230,14 +232,17 @@ function contactSheet(contacts) {
   return { title: 'Contact', actions: reachable.flatMap((c) => contactActions(c, true)) };
 }
 
-const HOLD_MS = 500;      // hold a row this long to open the full screen
+const HOLD_MS = 500;      // hold a row this long to open the full screen (double-tap = Edit)
 const HOLD_WIGGLE = 10;   // px a finger can move and still count as holding
 
 // One prospect in the list. Tap: open/close the quick card in place.
 // Hold: open the full screen.
-function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }) {
+const DOUBLE_TAP_MS = 320; // two taps this close together = double-tap
+
+function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet }) {
   const navigate = useNavigate();
   const hold = React.useRef(null);
+  const lastTap = React.useRef(0);
   const visit = visitSummary(a, config);
   const latest = lastNote(a);
   const contacts = a.contacts || [];
@@ -274,6 +279,14 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
       onOpenFull();
       return;
     }
+    const now = Date.now();
+    if (now - lastTap.current < DOUBLE_TAP_MS) {
+      // Double-tap: straight to Edit
+      lastTap.current = 0;
+      onEdit();
+      return;
+    }
+    lastTap.current = now;
     onToggle();
   };
 
@@ -304,7 +317,6 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
           )}
           {!expanded && (
             <span className="av-chips">
-              {config.hasStage && <StageChip stage={a.stage} />}
               {visit ? (
                 <>
                   <span className="av-chip av-chip-blue">{visit}</span>
@@ -313,6 +325,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
               ) : (
                 <span className="av-chip av-chip-orange">No visit set</span>
               )}
+              {config.hasStage && <StageChip stage={a.stage} />}
             </span>
           )}
         </span>
@@ -329,7 +342,6 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
             </button>
           )}
           <div className="av-chips av-summary-chips">
-            {config.hasStage && <StageChip stage={a.stage} />}
             {visit ? (
               <>
                 <span className="av-chip av-chip-blue">{visit}</span>
@@ -338,6 +350,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
             ) : (
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
+            {config.hasStage && <StageChip stage={a.stage} />}
           </div>
           <div className="av-quick">
             <button className="av-quick-btn" disabled={!reachable} onClick={() => onSheet(contactSheet(contacts))}>
@@ -416,31 +429,26 @@ export function AccountList({ config, accounts }) {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {config.hasStage && (
-          <div className="av-stage-filters">
-            {[{ key: 'all', label: 'All' }, ...STAGES].map((st) => {
-              const count =
-                st.key === 'all' ? realAccounts.length : realAccounts.filter((a) => a.stage === st.key).length;
-              const on = stageFilter === st.key;
-              return (
-                <button
-                  key={st.key}
-                  className={`av-stage-filter ${on ? 'is-on' : ''}`}
-                  style={on && st.color ? { background: st.color, color: '#fff' } : undefined}
-                  onClick={() => setStageFilter(on && st.key !== 'all' ? 'all' : st.key)}
-                >
-                  {st.color && !on && <span className="av-stage-dot" style={{ background: st.color }} />}
-                  {st.label} <span className="av-stage-count">{count}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         <div className="av-list-bar">
-          <span className="av-count">
-            {shown.length} {shown.length === 1 ? config.singular.toLowerCase() : config.plural.toLowerCase()}
-          </span>
+          {config.hasStage ? (
+            <select
+              className="av-stage-select"
+              value={stageFilter}
+              onChange={(e) => setStageFilter(e.target.value)}
+              style={stageInfo(stageFilter) ? { color: stageInfo(stageFilter).color } : undefined}
+            >
+              <option value="all">All {config.plural.toLowerCase()} ({realAccounts.length})</option>
+              {STAGES.map((st) => (
+                <option key={st.key} value={st.key}>
+                  {st.label} ({realAccounts.filter((a) => a.stage === st.key).length})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="av-count">
+              {shown.length} {shown.length === 1 ? config.singular.toLowerCase() : config.plural.toLowerCase()}
+            </span>
+          )}
           <button className="av-link-btn" onClick={() => setSortAZ((v) => !v)}>
             {sortAZ ? 'A–Z' : 'Z–A'}
           </button>
@@ -460,12 +468,15 @@ export function AccountList({ config, accounts }) {
                 expanded={openId === a.id}
                 onToggle={() => setOpenId((cur) => (cur === a.id ? null : a.id))}
                 onOpenFull={() => navigate(`${config.basePath}/${a.id}`)}
+                onEdit={() => navigate(`${config.basePath}/${a.id}/edit`)}
                 onSheet={(info) => info && setSheet(info)}
               />
             ))}
           </div>
         )}
-        {shown.length > 0 && <div className="av-hint">Tap to open · Hold for full details</div>}
+        {shown.length > 0 && (
+          <div className="av-hint">Tap to open · Double-tap to edit · Hold for full details</div>
+        )}
       </div>
 
       <button className="av-fab" onClick={() => navigate(`${config.basePath}/new`)} aria-label={`Add ${config.singular}`}>
@@ -549,7 +560,6 @@ export function AccountDetail({ config, accounts }) {
           )}
 
           <div className="av-chips av-summary-chips">
-            {config.hasStage && <StageChip stage={account.stage} />}
             {visit ? (
               <>
                 <span className="av-chip av-chip-blue">{visit}</span>
@@ -558,6 +568,7 @@ export function AccountDetail({ config, accounts }) {
             ) : (
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
+            {config.hasStage && <StageChip stage={account.stage} />}
           </div>
 
           <div className="av-quick">
