@@ -1,67 +1,150 @@
 /* file: src/WeekView.css */
-.wv-container {
+/* Every class starts with "wv-" so nothing collides with other pages.
+   Sizes that must match WeekView.jsx: 60px per hour, 52px time column. */
+
+.wv {
   display: flex;
+  flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  touch-action: pan-y;        /* browser scrolls up/down; we handle left/right */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* Time labels column */
-.wv-times {
-  width: 60px;
-  background: #f9f9f9;
-  border-right: 1px solid #ddd;
-  overflow: hidden;
-}
-
-.wv-time-cell {
-  height: 30px;
-  line-height: 30px;
-  text-align: right;
-  padding-right: 4px;
-  font-size: 0.75rem;
-  border-bottom: 1px solid #eee;
-}
-
-/* Days grid: subtract time column width for correct sizing */
-.wv-days {
-  flex: 1;
+/* ---------- Day headers ---------- */
+.wv-head {
   display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e5e5ea;
 }
 
-.wv-day-col {
-  flex: 0 0 calc((100% - 60px) / 3);
-  scroll-snap-align: start;
-  border-left: 1px solid #ddd;
+.wv-corner {
+  flex: 0 0 52px;
+}
+
+/* Clips the sliding strip; used by both headers and grid */
+.wv-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   position: relative;
-  box-sizing: border-box;
 }
 
-.wv-day-header {
-  position: sticky;
-  top: 0;
-  background: #fff;
+/* Three pages wide: previous, current, next */
+.wv-strip {
+  display: flex;
+  width: 300%;
+  height: 100%;
+  will-change: transform;
+}
+
+.wv-head-day {
+  flex: 0 0 calc(100% / 9);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 0 8px;
+}
+
+.wv-weekday {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8e8e93;
+}
+
+.wv-weekday.is-today {
+  color: #0077cc;
+}
+
+.wv-date {
+  margin-top: 2px;
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  border-radius: 50%;
   text-align: center;
-  font-weight: bold;
-  padding: 4px 0;
-  border-bottom: 1px solid #ddd;
-  z-index: 1;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #1c1c1e;
 }
 
-.wv-slot {
-  height: 30px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
+.wv-date.is-today {
+  background: #0077cc;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---------- Hours grid ---------- */
+.wv-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;        /* needed here too: this is the scrolling box */
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 0 96px;       /* room for the 12 AM label and the + button */
+  scrollbar-width: none;      /* hidden scrollbar keeps columns lined up */
+}
+
+.wv-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.wv-body {
+  display: flex;
+  position: relative;
+}
+
+/* Fixed time column on the left */
+.wv-times {
+  flex: 0 0 52px;
+  position: relative;
+}
+
+.wv-time {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);  /* label centered on its hour line */
+  font-size: 0.68rem;
+  color: #8e8e93;
+  white-space: nowrap;
+}
+
+/* Day columns: hour lines every 60px, lighter half-hour lines every 30px.
+   Drawn as backgrounds so every column lines up exactly with the labels. */
+.wv-col {
+  flex: 0 0 calc(100% / 9);
   box-sizing: border-box;
+  position: relative;
+  border-left: 1px solid #e5e5ea;
+  border-bottom: 1px solid #e5e5ea;
+  background-image:
+    linear-gradient(to bottom, #e5e5ea 1px, transparent 1px),
+    linear-gradient(to bottom, #f2f2f5 1px, transparent 1px);
+  background-size: 100% 60px, 100% 30px;
 }
 
-.wv-event {
+/* Red current-time line in today's column */
+.wv-now {
   position: absolute;
   left: 0;
   right: 0;
-  color: #fff;
-  padding: 2px;
-  box-sizing: border-box;
-  font-size: 0.75rem;
+  height: 2px;
+  margin-top: -1px;
+  background: #ff3b30;
+  z-index: 2;
+}
+
+.wv-now::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff3b30;
 }

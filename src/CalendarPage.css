@@ -1,16 +1,133 @@
 /* file: src/CalendarPage.css */
-.calendar-page { display:flex; flex-direction:column; height:100vh; background:#fff; font-family:sans-serif; }
-.cal-header { display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid #ddd; }
-.cal-btn { background:none; border:none; font-size:1.2rem; cursor:pointer; }
-.cal-title { margin:0; font-size:1.5rem; }
-.cal-toggles { display:flex; justify-content:center; padding:8px 0; background:#f7f7f7; }
-.cal-toggles button { margin:0 4px; padding:6px 16px; border:none; border-radius:4px; background:#fff; cursor:pointer; }
-.cal-toggles .active { background:#007bff; color:#fff; }
-.cal-month-label { text-align:center; font-weight:bold; margin:8px 0; }
-.cal-subheader { display:flex; align-items:center; justify-content:center; gap:12px; padding:4px 0; border-bottom:1px solid #ddd; }
-.cal-nav { background:none; border:none; font-size:1.2rem; cursor:pointer; }
-.cal-day-label { text-align:center; min-width:80px; }
-.cal-day-label div:first-child { font-weight:bold; }
-.cal-body { flex:1; overflow:hidden; position:relative; }
-.placeholder { display:flex; align-items:center; justify-content:center; height:100%; color:#666; }
-.cal-add { position:fixed; bottom:20px; right:20px; width:50px; height:50px; border-radius:50%; background:#007bff; color:#fff; font-size:2rem; border:none; cursor:pointer; }
+/* All rules are scoped under .calendar-page so they can't affect other pages.
+   App.css adds body padding and makes every <button> blue; the overrides
+   below undo that for the calendar only. */
+
+.calendar-page {
+  position: fixed;   /* full screen, ignores the 20px body padding from App.css */
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reset the global button styles from App.css inside the calendar */
+.calendar-page button,
+.calendar-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+}
+
+/* Top bar */
+.calendar-page .cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 6px;
+}
+
+.calendar-page .cal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1c1c1e;
+  text-align: center;
+}
+
+.calendar-page .cal-icon-btn,
+.calendar-page .cal-icon-btn:hover {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #8e8e93;
+}
+
+.calendar-page .cal-back,
+.calendar-page .cal-back:hover {
+  color: #0077cc;
+}
+
+/* Day / Week / Month segmented switch */
+.calendar-page .cal-toggles {
+  display: flex;
+  margin: 4px 14px 0;
+  padding: 2px;
+  background: #eeeef0;
+  border-radius: 9px;
+}
+
+.calendar-page .cal-toggle,
+.calendar-page .cal-toggle:hover {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1c1c1e;
+}
+
+.calendar-page .cal-toggle.is-active,
+.calendar-page .cal-toggle.is-active:hover {
+  background: #fff;
+  color: #0077cc;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Month label */
+.calendar-page .cal-month-row {
+  padding: 12px 16px 6px;
+}
+
+.calendar-page .cal-month-label {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Body fills the rest of the screen */
+.calendar-page .cal-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-page .cal-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8e8e93;
+}
+
+/* The one floating + button */
+.calendar-page .cal-add,
+.calendar-page .cal-add:hover {
+  position: fixed;
+  right: 20px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0077cc;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 56px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 119, 204, 0.35);
+  z-index: 20;
+}

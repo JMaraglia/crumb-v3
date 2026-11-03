@@ -1,70 +1,91 @@
 // file: src/CalendarPage.jsx
+// Owns the page-level pieces: header, Day/Week/Month switch, month label,
+// and the single floating "+" button. WeekView only draws the grid and swiping.
 import React, { useState } from 'react';
 import { FaArrowLeft, FaCog } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import WeekView from './WeekView';
+import WeekView, { DAYS_PER_PAGE } from './WeekView';
 import './CalendarPage.css';
+
+function startOfToday() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function addDays(date, n) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+}
+
+// Month/year label built from the dates actually on screen.
+// "November 2026", or "Oct – Nov 2026" when the visible days span two months.
+function visibleRangeLabel(start, dayCount) {
+  const end = addDays(start, dayCount - 1);
+  const long = (d) => d.toLocaleDateString('en-US', { month: 'long' });
+  const short = (d) => d.toLocaleDateString('en-US', { month: 'short' });
+  if (start.getFullYear() !== end.getFullYear()) {
+    return `${short(start)} ${start.getFullYear()} – ${short(end)} ${end.getFullYear()}`;
+  }
+  if (start.getMonth() !== end.getMonth()) {
+    return `${short(start)} – ${short(end)} ${end.getFullYear()}`;
+  }
+  return `${long(start)} ${start.getFullYear()}`;
+}
 
 export default function CalendarPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('Week');
-  const [viewStart, setViewStart] = useState(new Date(2025, 5, 22)); // Sunday, 6/22/2025
+  // First day shown in Week view. Opens on today.
+  const [viewStart, setViewStart] = useState(startOfToday);
 
-  const monthYear = viewStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const days = Array.from({ length: 3 }, (_, i) => {
-    const d = new Date(viewStart);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
+  const shiftDays = (n) => setViewStart((d) => addDays(d, n));
 
-  const prev3 = () => setViewStart(d => { d = new Date(d); d.setDate(d.getDate() - 3); return d; });
-  const next3 = () => setViewStart(d => { d = new Date(d); d.setDate(d.getDate() + 3); return d; });
+  const monthLabel =
+    viewMode === 'Week'
+      ? visibleRangeLabel(viewStart, DAYS_PER_PAGE)
+      : visibleRangeLabel(viewStart, 1);
 
   return (
     <div className="calendar-page">
       {/* Top bar */}
       <header className="cal-header">
-        <button className="cal-btn" onClick={() => navigate(-1)}><FaArrowLeft/></button>
+        <button className="cal-icon-btn cal-back" onClick={() => navigate(-1)} aria-label="Back">
+          <FaArrowLeft />
+        </button>
         <h1 className="cal-title">Calendar</h1>
-        <button className="cal-btn"><FaCog/></button>
+        <button className="cal-icon-btn" aria-label="Settings">
+          <FaCog />
+        </button>
       </header>
 
-      {/* Day/Week/Month toggles */}
+      {/* Day / Week / Month switch */}
       <div className="cal-toggles">
-        {['Day','Week','Month'].map(mode => (
+        {['Day', 'Week', 'Month'].map((mode) => (
           <button
             key={mode}
-            className={mode === viewMode ? 'active' : ''}
+            className={`cal-toggle ${mode === viewMode ? 'is-active' : ''}`}
             onClick={() => setViewMode(mode)}
-          >{mode}</button>
+          >
+            {mode}
+          </button>
         ))}
       </div>
 
       {/* Month label */}
-      <div className="cal-month-label">{monthYear}</div>
-
-      {/* Sub-header with prev/next and day labels */}
-      <div className="cal-subheader">
-        <button className="cal-nav" onClick={prev3}>&lt;</button>
-        {days.map((d, i) => (
-          <div key={i} className="cal-day-label">
-            <div>{d.toLocaleDateString('en-US',{weekday:'short'})}</div>
-            <div>{d.getMonth()+1}/{d.getDate()}/{d.getFullYear()}</div>
-          </div>
-        ))}
-        <button className="cal-nav" onClick={next3}>&gt;</button>
+      <div className="cal-month-row">
+        <div className="cal-month-label">{monthLabel}</div>
       </div>
 
-      {/* Calendar grid body */}
+      {/* Calendar body */}
       <div className="cal-body">
-        {viewMode === 'Week'
-          ? <WeekView viewStart={viewStart} />
-          : <div className="placeholder">{viewMode} View Coming Soon</div>
-        }
+        {viewMode === 'Week' ? (
+          <WeekView startDate={viewStart} onShift={shiftDays} />
+        ) : (
+          <div className="cal-placeholder">{viewMode} view coming soon</div>
+        )}
       </div>
 
-      {/* Floating add button */}
-      <button className="cal-add">+</button>
+      {/* The one floating add button */}
+      <button className="cal-add" aria-label="Add event">+</button>
     </div>
   );
 }
