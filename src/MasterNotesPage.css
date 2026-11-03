@@ -1,0 +1,277 @@
+/* file: src/MasterNotesPage.css */
+/* Every class starts with "mn-" so nothing collides with other pages.
+   App.css pads the body and styles every <button>/<h1>; .mn-page undoes that here. */
+
+.mn-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mn-page button,
+.mn-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+  text-align: left;
+}
+
+.mn-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(242, 242, 247, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.mn-page .mn-icon-btn,
+.mn-page .mn-icon-btn:hover {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #0077cc;
+}
+
+.mn-content {
+  padding: 0 16px 60px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.mn-page h1.mn-title {
+  margin: 0 0 10px;
+  text-align: left;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1c1c1e;
+}
+
+.mn-search {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #e3e3e8;
+  font-size: 16px;   /* 16px stops iPhone from zooming in */
+  outline: none;
+  color: #1c1c1e;
+}
+
+/* Day / Month / Year */
+.mn-seg {
+  display: flex;
+  padding: 2px;
+  background: #e3e3e8;
+  border-radius: 9px;
+  margin-bottom: 10px;
+}
+
+.mn-page .mn-seg-btn,
+.mn-page .mn-seg-btn:hover {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 7px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3a3a3c;
+}
+
+.mn-page .mn-seg-btn.is-on,
+.mn-page .mn-seg-btn.is-on:hover {
+  background: #fff;
+  color: #0077cc;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Filters */
+.mn-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.mn-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.mn-select {
+  flex: 1 1 40%;
+  min-width: 0;
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 600;
+  color: #1c1c1e;
+  background: #fff;
+  border: 1px solid #e3e3e8;
+  border-radius: 9px;
+  padding: 7px 8px;
+  outline: none;
+}
+
+.mn-count {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #8e8e93;
+  padding: 4px 4px 8px;
+}
+
+.mn-page .mn-clear,
+.mn-page .mn-clear:hover {
+  color: #0077cc;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Groups */
+.mn-group {
+  margin-bottom: 14px;
+}
+
+.mn-group-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8e8e93;
+  padding: 6px 4px;
+}
+
+.mn-group-count {
+  font-weight: 500;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.mn-list {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mn-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid #ececf0;
+}
+
+.mn-list > .mn-note:first-child {
+  border-top: none;
+}
+
+.mn-page .mn-note-body,
+.mn-page .mn-note-body:hover {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mn-note-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.mn-account {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.mn-kind {
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+.mn-kind.customer {
+  background: #e3f6e8;
+  color: #1e8e3e;
+}
+
+.mn-kind.prospect {
+  background: #e6f1fa;
+  color: #0077cc;
+}
+
+.mn-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+.mn-text {
+  font-size: 1rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mn-time {
+  font-size: 0.78rem;
+  color: #8e8e93;
+  margin-top: 4px;
+}
+
+.mn-note.is-done .mn-text {
+  color: #8e8e93;
+  text-decoration: line-through;
+}
+
+.mn-page .mn-check,
+.mn-page .mn-check:hover {
+  flex: 0 0 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid #ff9500;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.mn-page .mn-check.is-checked,
+.mn-page .mn-check.is-checked:hover {
+  background: #34c759;
+  border-color: #34c759;
+}
+
+.mn-empty {
+  text-align: center;
+  color: #8e8e93;
+  padding: 40px 16px;
+  line-height: 1.5;
+}

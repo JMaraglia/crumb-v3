@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import './App.css';
 import HomePage from './HomePage';
+import MasterNotesPage from './MasterNotesPage';
 import CustomersPage from './CustomersPage';
 import NotesPage from './NotesPage';
 import ProspectsPage, { ProspectDetailPage, ProspectEditPage } from './ProspectsPage';
@@ -96,6 +97,17 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route
+          path="/notes"
+          element={
+            <MasterNotesPage
+              contacts={contacts}
+              setContacts={setContacts}
+              prospects={prospects}
+              setProspects={setProspects}
+            />
+          }
+        />
         <Route path="/customers" element={<CustomersPage contacts={contacts} setContacts={setContacts} />} />
         <Route
           path="/notes/:id"
