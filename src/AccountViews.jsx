@@ -735,10 +735,22 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </>
         )}
 
-        {config.hasCallNote && account.callNote && (
+        {config.hasCallNote && (account.callNote || typeof account.callTime === 'number' || account.onlineOrdering) && (
           <>
-            <div className="av-section-title">Call sheet note</div>
-            <div className="av-group av-call-note">{account.callNote}</div>
+            <div className="av-section-title">Call sheet</div>
+            <div className="av-group">
+              {typeof account.callTime === 'number' && (
+                <div className="av-row av-static-row">
+                  <span className="av-row-label-inline">Call at</span>
+                  <span className="av-row-value">{timeLabel(account.callTime)}</span>
+                </div>
+              )}
+              <div className="av-row av-static-row">
+                <span className="av-row-label-inline">Online ordering</span>
+                <span className="av-row-value">{account.onlineOrdering ? 'Yes' : 'No'}</span>
+              </div>
+              {account.callNote && <div className="av-call-note">{account.callNote}</div>}
+            </div>
           </>
         )}
 
@@ -849,6 +861,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     existing && existing[config.visitDaysField] ? [...existing[config.visitDaysField]] : []
   );
   const [callNote, setCallNote] = useState((existing && existing.callNote) || '');
+  const [callTime, setCallTime] = useState(existing && typeof existing.callTime === 'number' ? existing.callTime : '');
+  const [onlineOrdering, setOnlineOrdering] = useState(Boolean(existing && existing.onlineOrdering));
   const [deliveryDays, setDeliveryDays] = useState(
     config.deliveryDaysField && existing && existing[config.deliveryDaysField]
       ? [...existing[config.deliveryDaysField]]
@@ -906,7 +920,11 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     };
     if (config.hasStage) fields.stage = stage || null;
     if (config.deliveryDaysField) fields[config.deliveryDaysField] = DAYS.filter((d) => deliveryDays.includes(d));
-    if (config.hasCallNote) fields.callNote = callNote.trim();
+    if (config.hasCallNote) {
+      fields.callNote = callNote.trim();
+      fields.callTime = callTime === '' ? null : Number(callTime);
+      fields.onlineOrdering = onlineOrdering;
+    }
     fields.showInItinerary = showInItinerary;
     fields.showOnCalendar = showOnCalendar;
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
@@ -1025,8 +1043,26 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
 
         {config.hasCallNote && (
           <>
-            <div className="av-section-title">Call sheet note</div>
+            <div className="av-section-title">Call sheet</div>
             <div className="av-group">
+              <label className="av-row av-static-row">
+                <span className="av-row-label-inline">Call at</span>
+                <select className="av-select" value={callTime} onChange={(e) => setCallTime(e.target.value)}>
+                  <option value="">Not set</option>
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{timeLabel(t)}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="av-row av-static-row">
+                <span className="av-row-label-inline">Uses online ordering</span>
+                <input
+                  type="checkbox"
+                  className="av-switch"
+                  checked={onlineOrdering}
+                  onChange={(e) => setOnlineOrdering(e.target.checked)}
+                />
+              </label>
               <textarea
                 className="av-input av-textarea"
                 rows={2}

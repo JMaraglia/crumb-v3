@@ -357,3 +357,45 @@
     visibility: hidden;
   }
 }
+
+/* "Call at" picker and "Online" checkbox inside the grid */
+.cs-time {
+  font-size: 16px;
+  font-family: inherit;
+  color: #1c1c1e;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+}
+
+.cs-time.is-empty {
+  color: #0077cc;
+  font-weight: 600;
+}
+
+.cs-table td.cs-center {
+  text-align: center;
+}
+
+.cs-check {
+  width: 20px;
+  height: 20px;
+  accent-color: #1e8e3e;
+  margin: 0;
+}
+
+.cs-print-only {
+  display: none;
+}
+
+@media print {
+  .cs-time,
+  .cs-check {
+    display: none !important;
+  }
+
+  .cs-print-only {
+    display: inline;
+  }
+}

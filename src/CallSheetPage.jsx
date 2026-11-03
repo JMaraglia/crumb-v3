@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { DAYS, ActionSheet, contactSheet } from './AccountViews';
+import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel } from './AccountViews';
 import './CallSheetPage.css';
 
 const FULL_DAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -37,7 +37,12 @@ function rowsFor(customers, orderDay) {
   const delivers = nextDay(orderDay);
   return customers
     .filter((c) => c.name && c.name.trim() && (c.deliveryDays || []).includes(delivers))
-    .sort((a, b) => a.name.localeCompare(b.name))
+    // In calling order: by "Call at" time, then name; no time set goes last.
+    .sort((a, b) => {
+      const ta = typeof a.callTime === 'number' ? a.callTime : 9999;
+      const tb = typeof b.callTime === 'number' ? b.callTime : 9999;
+      return ta - tb || a.name.localeCompare(b.name);
+    })
     .map((c) => {
       const contact = mainContact(c);
       return {
@@ -46,7 +51,10 @@ function rowsFor(customers, orderDay) {
         number: c.accountNumber || '',
         contact: contact ? [contact.name, contact.title].filter(Boolean).join(', ') : '',
         phone: phoneText(contact),
-        delivers: FULL_DAY[delivers],
+        callTime: typeof c.callTime === 'number' ? c.callTime : null,
+        callAt: typeof c.callTime === 'number' ? timeLabel(c.callTime) : '',
+        online: Boolean(c.onlineOrdering),
+        onlineText: c.onlineOrdering ? 'Yes' : 'No',
         callNote: c.callNote || '',
       };
     });
@@ -57,7 +65,8 @@ const COLUMNS = [
   { key: 'number', label: 'Acct #' },
   { key: 'contact', label: 'Contact' },
   { key: 'phone', label: 'Phone' },
-  { key: 'delivers', label: 'Delivers' },
+  { key: 'callAt', label: 'Call at' },
+  { key: 'onlineText', label: 'Online ordering' },
   { key: 'callNote', label: 'Call notes' },
 ];
 
@@ -77,6 +86,11 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
   const [sheet, setSheet] = useState(null);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(null); // { id, name, text } while editing a call note
+
+  // Change one customer right from the sheet (call time, online ordering)
+  const updateCustomer = (id, patch) => {
+    if (setContacts) setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  };
 
   const saveCallNote = () => {
     if (setContacts) {
@@ -175,7 +189,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
               <thead>
                 <tr>
                   {COLUMNS.map((c) => (
-                    <th key={c.key}>{c.label}</th>
+                    <th key={c.key}>{c.key === 'onlineText' ? 'Online' : c.label}</th>
                   ))}
                 </tr>
               </thead>
@@ -204,7 +218,33 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
                         ''
                       )}
                     </td>
-                    <td>{r.delivers}</td>
+                    <td>
+                      <select
+                        className={`cs-time ${r.callTime == null ? 'is-empty' : ''}`}
+                        value={r.callTime == null ? '' : r.callTime}
+                        onChange={(e) =>
+                          updateCustomer(r.account.id, {
+                            callTime: e.target.value === '' ? null : Number(e.target.value),
+                          })
+                        }
+                      >
+                        <option value="">Set time</option>
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t} value={t}>{timeLabel(t)}</option>
+                        ))}
+                      </select>
+                      <span className="cs-print-only">{r.callAt}</span>
+                    </td>
+                    <td className="cs-center">
+                      <input
+                        type="checkbox"
+                        className="cs-check"
+                        checked={r.online}
+                        onChange={(e) => updateCustomer(r.account.id, { onlineOrdering: e.target.checked })}
+                        aria-label="Uses online ordering"
+                      />
+                      <span className="cs-print-only">{r.online ? '☑' : '☐'}</span>
+                    </td>
                     <td className="cs-wide">
                       <button
                         className={`cs-note ${r.callNote ? '' : 'is-empty'}`}
