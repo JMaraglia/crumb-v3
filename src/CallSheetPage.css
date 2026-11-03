@@ -230,11 +230,51 @@
     padding: 0;
   }
 
+  /* Centered header on the printout */
   .cs-print-title {
     display: block;
-    font-size: 14pt;
-    font-weight: 700;
-    margin-bottom: 8px;
+    text-align: center;
+    margin: 0 0 14pt;
+    padding-bottom: 10pt;
+    border-bottom: 2px solid #0077cc;
+  }
+
+  .cs-print-brand {
+    font-size: 11pt;
+    font-weight: 800;
+    color: #0077cc;
+    letter-spacing: -0.01em;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cs-print-heading {
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #1c1c1e;
+    margin: 2pt 0 4pt;
+  }
+
+  .cs-print-sub {
+    font-size: 11pt;
+    color: #3a3a3c;
+  }
+
+  /* Pure white page: no app background color behind the grid */
+  html,
+  body {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .cs-page,
+  .cs-content,
+  .cs-scroll,
+  .cs-table tbody tr td,
+  .cs-table tbody tr:nth-child(even) td {
+    background: #fff !important;
   }
 
   .cs-scroll {
