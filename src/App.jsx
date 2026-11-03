@@ -120,7 +120,7 @@ export default function App() {
             />
           }
         />
-        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/calendar" element={<CalendarPage contacts={contacts} prospects={prospects} />} />
         <Route path="/itinerary" element={<ItineraryPage contacts={contacts} itinerary={itinerary} />} />
       </Routes>
     </Router>

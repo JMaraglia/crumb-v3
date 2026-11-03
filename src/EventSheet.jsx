@@ -33,7 +33,15 @@ export const EVENT_COLORS = [
 ];
 export const DEFAULT_EVENT_COLOR = EVENT_COLORS[0].value;
 
-export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel, existingEvents = [] }) {
+export default function EventSheet({
+  draft,
+  isNew,
+  onSave,
+  onDelete,
+  onCancel,
+  existingEvents = [],
+  accounts = [], // customers + prospects: { type, id, name, address }
+}) {
   const [title, setTitle] = useState(draft.title || '');
   const [date, setDate] = useState(draft.date);
   const [start, setStart] = useState(draft.start);
@@ -41,6 +49,24 @@ export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel, e
   const [location, setLocation] = useState(draft.location || '');
   const [notes, setNotes] = useState(draft.notes || '');
   const [color, setColor] = useState(draft.color || DEFAULT_EVENT_COLOR);
+
+  // Linked customer/prospect. Picking one fills in the location with their address.
+  const [account, setAccount] = useState(
+    draft.accountId ? { type: draft.accountType, id: draft.accountId, name: draft.accountName } : null
+  );
+  const [accountSearch, setAccountSearch] = useState('');
+  const accountMatches = accountSearch.trim()
+    ? accounts
+        .filter((a) => a.name && a.name.toLowerCase().includes(accountSearch.trim().toLowerCase()))
+        .slice(0, 6)
+    : [];
+
+  const pickAccount = (a) => {
+    setAccount({ type: a.type, id: a.id, name: a.name });
+    setAccountSearch('');
+    if (a.address) setLocation(a.address);
+    if (!title.trim()) setTitle(a.name);
+  };
 
   const endOptions = [];
   for (let t = start + STEP; t <= 1440; t += STEP) endOptions.push(t);
@@ -77,6 +103,9 @@ export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel, e
       location: location.trim(),
       notes: notes.trim(),
       color,
+      accountType: account ? account.type : null,
+      accountId: account ? account.id : null,
+      accountName: account ? account.name : null,
     });
   };
 
@@ -157,12 +186,72 @@ export default function EventSheet({ draft, isNew, onSave, onDelete, onCancel, e
         </div>
 
         <div className="es-group">
+          {account ? (
+            <div className="es-account-chip">
+              <span className="es-account-name">{account.name}</span>
+              <span className="es-account-type">{account.type === 'prospect' ? 'Prospect' : 'Customer'}</span>
+              <button type="button" className="es-account-clear" onClick={() => setAccount(null)} aria-label="Remove">
+                ×
+              </button>
+            </div>
+          ) : (
+            <div className="es-account-search">
+              <input
+                className="es-input es-full"
+                placeholder="Customer or prospect"
+                value={accountSearch}
+                onChange={(e) => setAccountSearch(e.target.value)}
+              />
+              {accountMatches.length > 0 && (
+                <div className="es-account-list">
+                  {accountMatches.map((a) => (
+                    <button
+                      type="button"
+                      key={`${a.type}-${a.id}`}
+                      className="es-account-option"
+                      onClick={() => pickAccount(a)}
+                    >
+                      <span className="es-account-option-name">{a.name}</span>
+                      <span className="es-account-option-detail">
+                        {a.type === 'prospect' ? 'Prospect' : 'Customer'}
+                        {a.address ? ` · ${a.address}` : ''}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {accountSearch.trim() && accountMatches.length === 0 && (
+                <div className="es-account-none">No matching customers or prospects</div>
+              )}
+            </div>
+          )}
           <input
             className="es-input es-full"
             placeholder="Location"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
+          {location.trim() && (
+            <div className="es-maps">
+              <span className="es-maps-label">Directions:</span>
+              <a
+                className="es-maps-link"
+                href={`https://maps.apple.com/?q=${encodeURIComponent(location.trim())}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Apple Maps
+              </a>
+              <a
+                className="es-maps-link"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.trim())}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Google Maps
+              </a>
+            </div>
+          )}
           <textarea
             className="es-input es-full es-notes"
             placeholder="Notes"

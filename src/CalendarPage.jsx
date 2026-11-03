@@ -45,7 +45,7 @@ function visibleRangeLabel(start, dayCount) {
   return `${long(start)} ${start.getFullYear()}`;
 }
 
-export default function CalendarPage() {
+export default function CalendarPage({ contacts = [], prospects = [] }) {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('Week');
   // First day shown in Week view. Opens on today.
@@ -71,6 +71,12 @@ export default function CalendarPage() {
       return next;
     });
   };
+
+  // Customers + prospects the event panel can link to (blank-named ones skipped).
+  const accounts = [
+    ...contacts.map((c) => ({ type: 'customer', id: c.id, name: c.name, address: c.address })),
+    ...prospects.map((p) => ({ type: 'prospect', id: p.id, name: p.name, address: p.address })),
+  ].filter((a) => a.name && a.name.trim());
 
   // The add/edit panel. null when closed.
   const [sheet, setSheet] = useState(null); // { isNew, draft }
@@ -194,6 +200,7 @@ export default function CalendarPage() {
           draft={sheet.draft}
           isNew={sheet.isNew}
           existingEvents={events}
+          accounts={accounts}
           onSave={saveEvent}
           onDelete={deleteEvent}
           onCancel={() => setSheet(null)}

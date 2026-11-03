@@ -235,3 +235,101 @@
   background: #ff9500;
   color: #fff;
 }
+
+/* Linked customer / prospect */
+.es-account-search {
+  position: relative;
+}
+
+.es-account-list {
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.es-sheet .es-account-option,
+.es-sheet .es-account-option:hover {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 9px 14px;
+  border-top: 1px solid #f2f2f5;
+  text-align: left;
+  color: #1c1c1e;
+}
+
+.es-sheet .es-account-option:active {
+  background: #f2f2f7;
+}
+
+.es-account-option-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.es-account-option-detail {
+  font-size: 0.82rem;
+  color: #8e8e93;
+  margin-top: 1px;
+}
+
+.es-account-none {
+  padding: 8px 14px 10px;
+  font-size: 0.85rem;
+  color: #8e8e93;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.es-account-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.es-account-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.es-account-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0077cc;
+  background: #e6f1fa;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.es-sheet .es-account-clear,
+.es-sheet .es-account-clear:hover {
+  padding: 0 4px;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: #8e8e93;
+}
+
+/* Directions links under the location */
+.es-maps {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid #e5e5ea;
+  font-size: 0.9rem;
+}
+
+.es-maps-label {
+  color: #8e8e93;
+}
+
+.es-maps-link {
+  color: #0077cc;
+  font-weight: 600;
+  text-decoration: none;
+}
