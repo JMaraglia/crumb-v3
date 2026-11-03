@@ -6,6 +6,7 @@ import { FaArrowLeft, FaCog } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
 import EventSheet, { DEFAULT_EVENT_COLOR } from './EventSheet';
+import MonthView from './MonthView';
 import './CalendarPage.css';
 
 // Calendar events are saved on the phone under this name (new; nothing else uses it).
@@ -52,6 +53,14 @@ export default function CalendarPage() {
 
   const shiftDays = (n) => setViewStart((d) => addDays(d, n));
 
+  // Month view: move to the same day number in the next/previous month
+  // (or the last day, if that month is shorter).
+  const shiftMonths = (n) =>
+    setViewStart((d) => {
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + n + 1, 0).getDate();
+      return new Date(d.getFullYear(), d.getMonth() + n, Math.min(d.getDate(), lastDay));
+    });
+
   // Saved events. Only written to the phone when you add, edit, or delete,
   // so opening the calendar can never wipe what's stored.
   const [events, setEvents] = useState(loadEvents);
@@ -82,11 +91,19 @@ export default function CalendarPage() {
     });
   };
 
-  // The + button: today, at the next half hour.
+  // The + button. Week view: today at the next half hour.
+  // Day and Month views: the day you're looking at (next half hour if it's today, else 9 AM).
   const handleAddButton = () => {
     const now = new Date();
-    const nextHalfHour = Math.ceil((now.getHours() * 60 + now.getMinutes() + 1) / 30) * 30;
-    openNewEvent(dateKey(now), Math.min(nextHalfHour, 23 * 60 + 30));
+    const nextHalfHour = Math.min(
+      Math.ceil((now.getHours() * 60 + now.getMinutes() + 1) / 30) * 30,
+      23 * 60 + 30
+    );
+    if (viewMode === 'Week' || dateKey(viewStart) === dateKey(now)) {
+      openNewEvent(dateKey(now), nextHalfHour);
+    } else {
+      openNewEvent(dateKey(viewStart), 9 * 60);
+    }
   };
 
   const saveEvent = (event) => {
@@ -153,7 +170,17 @@ export default function CalendarPage() {
             onEventTap={(ev) => setSheet({ isNew: false, draft: ev })}
           />
         ) : (
-          <div className="cal-placeholder">{viewMode} view coming soon</div>
+          <MonthView
+            selectedDate={viewStart}
+            onSelectDate={setViewStart}
+            onShiftMonth={shiftMonths}
+            onOpenDay={(day) => {
+              setViewStart(day);
+              setViewMode('Day');
+            }}
+            events={events}
+            onEventTap={(ev) => setSheet({ isNew: false, draft: ev })}
+          />
         )}
       </div>
 

@@ -1,0 +1,183 @@
+/* file: src/MonthView.css */
+/* Every class starts with "mv-" so nothing collides with other pages. */
+
+.mv {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.mv-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0 4px 4px;
+  border-bottom: 1px solid #e5e5ea;
+  flex-shrink: 0;
+}
+
+.mv-weekday {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #8e8e93;
+}
+
+/* Sliding strip: previous, current, next month */
+.mv-viewport {
+  flex-shrink: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.mv-strip {
+  display: flex;
+  width: 300%;
+  will-change: transform;
+}
+
+.mv-page {
+  flex: 0 0 calc(100% / 3);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 50px;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.mv-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px solid #f2f2f5;
+  cursor: pointer;
+}
+
+.mv-num {
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  border-radius: 50%;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #1c1c1e;
+}
+
+.mv-cell.is-outside .mv-num {
+  color: #c7c7cc;
+}
+
+.mv-num.is-today {
+  color: #0077cc;
+  font-weight: 700;
+}
+
+.mv-num.is-selected {
+  background: #1c1c1e;
+  color: #fff;
+  font-weight: 600;
+}
+
+.mv-num.is-today.is-selected {
+  background: #0077cc;
+  color: #fff;
+}
+
+.mv-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 8px;
+  margin-top: 3px;
+}
+
+.mv-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.mv-more {
+  font-size: 0.6rem;
+  line-height: 6px;
+  color: #8e8e93;
+  font-weight: 700;
+}
+
+/* Selected day's events */
+.mv-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 16px 96px;  /* room for the + button */
+}
+
+.mv-list-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #8e8e93;
+  margin-bottom: 8px;
+}
+
+.mv-empty {
+  color: #8e8e93;
+  font-size: 0.95rem;
+  padding: 8px 0;
+}
+
+.mv-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f2f2f5;
+  cursor: pointer;
+}
+
+.mv-item-bar {
+  flex: 0 0 4px;
+  align-self: stretch;
+  border-radius: 2px;
+}
+
+.mv-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-item-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1c1c1e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mv-item-location {
+  font-size: 0.85rem;
+  color: #8e8e93;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mv-item-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.9rem;
+  color: #1c1c1e;
+  white-space: nowrap;
+}
+
+.mv-item-end {
+  color: #8e8e93;
+}
