@@ -1,0 +1,265 @@
+/* file: src/CallSheetPage.css */
+/* Every class starts with "cs-" so nothing collides with other pages.
+   App.css pads the body and styles every <button>/<h1>; .cs-page undoes that here. */
+
+.cs-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cs-page button,
+.cs-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+  text-align: left;
+}
+
+.cs-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(242, 242, 247, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.cs-page .cs-icon-btn,
+.cs-page .cs-icon-btn:hover {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #0077cc;
+}
+
+.cs-content {
+  padding: 0 16px 60px;
+}
+
+.cs-page h1.cs-title {
+  margin: 0 0 12px;
+  text-align: left;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1c1c1e;
+}
+
+/* Day switcher */
+.cs-days {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  background: #e3e3e8;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.cs-page .cs-day,
+.cs-page .cs-day:hover {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3a3a3c;
+}
+
+.cs-page .cs-day.is-on,
+.cs-page .cs-day.is-on:hover {
+  background: #fff;
+  color: #0077cc;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.cs-subtitle {
+  font-size: 0.95rem;
+  color: #3a3a3c;
+  margin-bottom: 10px;
+}
+
+.cs-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cs-page .cs-btn,
+.cs-page .cs-btn:hover {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 10px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cs-page .cs-btn-plain,
+.cs-page .cs-btn-plain:hover {
+  background: #fff;
+  color: #0077cc;
+  border: 1px solid #d1d1d6;
+}
+
+.cs-page .cs-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cs-message {
+  font-size: 0.85rem;
+  color: #3a3a3c;
+  margin: -4px 0 10px;
+}
+
+.cs-empty {
+  text-align: center;
+  color: #8e8e93;
+  padding: 40px 16px;
+  line-height: 1.5;
+}
+
+/* ---------- The grid (looks like a spreadsheet) ---------- */
+.cs-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1px solid #c7c7cc;
+  border-radius: 6px;
+}
+
+.cs-print-title {
+  display: none;
+}
+
+.cs-table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 0.85rem;
+}
+
+.cs-table th,
+.cs-table td {
+  border: 1px solid #d1d1d6;
+  padding: 7px 9px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.cs-table th {
+  background: #eef2f6;
+  font-weight: 700;
+  color: #3a3a3c;
+  position: sticky;
+  top: 0;
+}
+
+.cs-table tbody tr:nth-child(even) td {
+  background: #fafafc;
+}
+
+.cs-table td.cs-wide {
+  white-space: normal;
+  min-width: 180px;
+  max-width: 260px;
+}
+
+.cs-table td.cs-name {
+  font-weight: 700;
+}
+
+.cs-page .cs-link,
+.cs-page .cs-link:hover {
+  color: #0077cc;
+  font-weight: inherit;
+}
+
+.cs-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #aeaeb2;
+  padding: 10px 0;
+}
+
+/* ---------- Printed / saved as PDF ---------- */
+@media print {
+  @page {
+    size: landscape;
+    margin: 12mm;
+  }
+
+  .cs-page {
+    position: static;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .cs-header,
+  .cs-title,
+  .cs-days,
+  .cs-subtitle,
+  .cs-actions,
+  .cs-message,
+  .cs-hint {
+    display: none !important;
+  }
+
+  .cs-content {
+    padding: 0;
+  }
+
+  .cs-print-title {
+    display: block;
+    font-size: 14pt;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .cs-scroll {
+    overflow: visible;
+    border: none;
+  }
+
+  .cs-table {
+    width: 100%;
+    font-size: 9pt;
+  }
+
+  .cs-table th,
+  .cs-table td {
+    border: 1px solid #555;
+    white-space: normal;
+  }
+
+  .cs-page .cs-link {
+    color: #000;
+  }
+
+  .cs-table th {
+    background: #e6e6e6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

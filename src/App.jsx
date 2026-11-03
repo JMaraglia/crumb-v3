@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from '
 import './App.css';
 import HomePage from './HomePage';
 import MasterNotesPage from './MasterNotesPage';
+import CallSheetPage from './CallSheetPage';
 import CustomersPage, { CustomerDetailPage, CustomerEditPage } from './CustomersPage';
 import NotesPage from './NotesPage';
 import ProspectsPage, { ProspectDetailPage, ProspectEditPage } from './ProspectsPage';
@@ -97,6 +98,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/call-sheet" element={<CallSheetPage contacts={contacts} />} />
         <Route
           path="/notes"
           element={
