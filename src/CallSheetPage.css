@@ -399,3 +399,17 @@
     display: inline;
   }
 }
+
+/* Ordered checkbox (last column) */
+.cs-ordered {
+  accent-color: #0077cc;
+}
+
+.cs-table tbody tr:has(.cs-ordered:checked) td {
+  background: #eef7ee;
+}
+
+.cs-progress {
+  font-weight: 600;
+  color: #1e8e3e;
+}

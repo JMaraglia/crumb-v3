@@ -16,6 +16,28 @@ function nextDay(day) {
   return DAYS[(DAYS.indexOf(day) + 1) % 7];
 }
 
+const ORDERED_KEY = 'crumb_callsheet_ordered'; // { 'YYYY-MM-DD': [customerId, ...] }
+
+function keyOf(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// The date of `day` in THIS week (Mon–Sun), e.g. Tue → Nov 3
+function dateThisWeek(day) {
+  const now = new Date();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + DAYS.indexOf(day));
+}
+
+function readOrdered() {
+  try {
+    const v = JSON.parse(localStorage.getItem(ORDERED_KEY));
+    return v && typeof v === 'object' ? v : {};
+  } catch {
+    return {};
+  }
+}
+
 function todayShort() {
   return DAYS[(new Date().getDay() + 6) % 7]; // Mon=0 … Sun=6
 }
@@ -33,7 +55,7 @@ function phoneText(c) {
 }
 
 // One row per customer that orders on `orderDay`.
-function rowsFor(customers, orderDay) {
+function rowsFor(customers, orderDay, orderedIds = []) {
   const delivers = nextDay(orderDay);
   return customers
     .filter((c) => c.name && c.name.trim() && (c.deliveryDays || []).includes(delivers))
@@ -55,6 +77,8 @@ function rowsFor(customers, orderDay) {
         callAt: typeof c.callTime === 'number' ? timeLabel(c.callTime) : '',
         online: Boolean(c.onlineOrdering),
         onlineText: c.onlineOrdering ? 'Yes' : 'No',
+        ordered: orderedIds.includes(c.id),
+        orderedText: orderedIds.includes(c.id) ? 'Yes' : 'No',
         callNote: c.callNote || '',
       };
     });
@@ -68,12 +92,13 @@ const COLUMNS = [
   { key: 'callAt', label: 'Call at' },
   { key: 'onlineText', label: 'Online ordering' },
   { key: 'callNote', label: 'Call notes' },
+  { key: 'orderedText', label: 'Ordered' },
 ];
 
-function toCSV(rows, orderDay) {
+function toCSV(rows, orderDay, dateText) {
   const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
   const lines = [
-    [`Call sheet: ${FULL_DAY[orderDay]} orders (deliver ${FULL_DAY[nextDay(orderDay)]})`].map(esc).join(','),
+    [`Call sheet: ${FULL_DAY[orderDay]} ${dateText} orders (deliver ${FULL_DAY[nextDay(orderDay)]})`].map(esc).join(','),
     COLUMNS.map((c) => esc(c.label)).join(','),
     ...rows.map((r) => COLUMNS.map((c) => esc(r[c.key])).join(',')),
   ];
@@ -84,6 +109,19 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
   const navigate = useNavigate();
   const [day, setDay] = useState(todayShort());
   const [sheet, setSheet] = useState(null);
+  const [orderedMap, setOrderedMap] = useState(readOrdered);
+  const dateKeyForDay = keyOf(dateThisWeek(day));
+  const dateText = dateThisWeek(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const orderedIds = orderedMap[dateKeyForDay] || [];
+
+  // Ordered checkmarks are kept per date, so next week starts unchecked.
+  const toggleOrdered = (id) => {
+    const list = orderedMap[dateKeyForDay] || [];
+    const nextList = list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+    const next = { ...orderedMap, [dateKeyForDay]: nextList };
+    setOrderedMap(next);
+    localStorage.setItem(ORDERED_KEY, JSON.stringify(next));
+  };
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(null); // { id, name, text } while editing a call note
 
@@ -100,12 +138,13 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
     }
     setEditing(null);
   };
-  const rows = rowsFor(contacts, day);
+  const rows = rowsFor(contacts, day, orderedIds);
+  const orderedCount = rows.filter((r) => r.ordered).length;
 
   const shareCSV = async () => {
     setMessage('');
     const fileName = `Crumb call sheet - ${FULL_DAY[day]}.csv`;
-    const csv = toCSV(rows, day);
+    const csv = toCSV(rows, day, dateText);
     try {
       const file = new File([csv], fileName, { type: 'text/csv' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -159,8 +198,16 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
         </div>
 
         <div className="cs-subtitle">
-          <strong>{FULL_DAY[day]} orders</strong> · deliver {FULL_DAY[nextDay(day)]} ·{' '}
-          {rows.length} {rows.length === 1 ? 'account' : 'accounts'}
+          <strong>
+            {FULL_DAY[day]}, {dateText} orders
+          </strong>{' '}
+          · deliver {FULL_DAY[nextDay(day)]}
+          {rows.length > 0 && (
+            <span className="cs-progress">
+              {' '}
+              · {orderedCount} of {rows.length} ordered
+            </span>
+          )}
         </div>
 
         <div className="cs-actions">
@@ -183,7 +230,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
           <div className="cs-scroll">
             {/* Title only shows on the printed / PDF copy */}
             <div className="cs-print-title">
-              Call sheet: {FULL_DAY[day]} orders (deliver {FULL_DAY[nextDay(day)]})
+              Call sheet: {FULL_DAY[day]}, {dateText} orders (deliver {FULL_DAY[nextDay(day)]})
             </div>
             <table className="cs-table">
               <thead>
@@ -252,6 +299,16 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
                       >
                         {r.callNote || '+ Add call note'}
                       </button>
+                    </td>
+                    <td className="cs-center">
+                      <input
+                        type="checkbox"
+                        className="cs-check cs-ordered"
+                        checked={r.ordered}
+                        onChange={() => toggleOrdered(r.account.id)}
+                        aria-label="Ordered"
+                      />
+                      <span className="cs-print-only">{r.ordered ? '☑' : '☐'}</span>
                     </td>
                   </tr>
                 ))}
