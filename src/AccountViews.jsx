@@ -114,7 +114,7 @@ function isEmptyRecord(a) {
   return (
     !(a.name && a.name.trim()) &&
     !(a.address && a.address.trim()) &&
-    !(a.contacts || []).some((c) => c && (c.name || c.phone || c.email || c.title)) &&
+    !(a.contacts || []).some((c) => c && (c.name || c.phone || c.textPhone || c.email || c.title)) &&
     !(a.notes || []).length
   );
 }
@@ -123,7 +123,7 @@ function displayName(account) {
   return account.name && account.name.trim() ? account.name : '(No name)';
 }
 
-// Bottom pop-up with choices (Call / Text, Apple Maps / Google Maps).
+// Bottom pop-up with choices (Call / Text / Email, Apple Maps / Google Maps).
 function ActionSheet({ title, actions, onClose }) {
   return (
     <div className="av-sheet-backdrop" onClick={onClose}>
@@ -150,29 +150,38 @@ function mapActions(address) {
   ];
 }
 
-function phoneActions(phone) {
-  const n = digitsOnly(phone);
-  return [
-    { label: `Call ${phone}`, href: `tel:${n}` },
-    { label: `Text ${phone}`, href: `sms:${n}` },
-  ];
+// A contact can have two numbers: `phone` for calls (e.g. the restaurant line)
+// and `textPhone` for texts (a cell). If textPhone is blank, texts go to phone.
+function textNumber(c) {
+  return (c.textPhone && c.textPhone.trim()) || c.phone || '';
 }
 
-// Call / Text pop-up for an account's contacts: one number goes straight to
-// the choice; several numbers are all listed. Returns null if there are none.
-function callTextSheet(contacts) {
-  const withPhone = (contacts || []).filter((c) => c.phone);
-  if (withPhone.length === 0) return null;
-  if (withPhone.length === 1) {
-    const c = withPhone[0];
-    return { title: c.name || c.phone, actions: phoneActions(c.phone) };
+function canReach(c) {
+  return Boolean(c && (c.phone || c.textPhone || c.email));
+}
+
+// Call / Text / Email choices for one contact. `withName` labels them by name
+// (used when several contacts are listed together).
+function contactActions(c, withName = false) {
+  const who = withName ? ` ${c.name || 'contact'}` : '';
+  const actions = [];
+  if (c.phone) actions.push({ label: `Call${who || ' ' + c.phone}`, href: `tel:${digitsOnly(c.phone)}` });
+  const t = textNumber(c);
+  if (t) actions.push({ label: `Text${who || ' ' + t}`, href: `sms:${digitsOnly(t)}` });
+  if (c.email) actions.push({ label: `Email${who || ' ' + c.email}`, href: `mailto:${c.email}` });
+  return actions;
+}
+
+// The Contact pop-up for an account: one contact shows its choices directly;
+// several contacts are all listed by name. Returns null if nobody is reachable.
+function contactSheet(contacts) {
+  const reachable = (contacts || []).filter(canReach);
+  if (reachable.length === 0) return null;
+  if (reachable.length === 1) {
+    const c = reachable[0];
+    return { title: c.name || 'Contact', actions: contactActions(c) };
   }
-  return {
-    title: 'Call or text',
-    actions: withPhone.flatMap((c) =>
-      phoneActions(c.phone).map((a) => ({ ...a, label: `${a.label.split(' ')[0]} ${c.name || c.phone}` }))
-    ),
-  };
+  return { title: 'Contact', actions: reachable.flatMap((c) => contactActions(c, true)) };
 }
 
 const HOLD_MS = 500;      // hold a row this long to open the full screen
@@ -187,7 +196,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
   const latest = lastNote(a);
   const contacts = a.contacts || [];
   const mainContact = contacts.find((c) => c.name || c.title);
-  const hasPhone = contacts.some((c) => c.phone);
+  const reachable = contacts.some(canReach);
 
   const startHold = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -282,8 +291,8 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onSheet }
             )}
           </div>
           <div className="av-quick">
-            <button className="av-quick-btn" disabled={!hasPhone} onClick={() => onSheet(callTextSheet(contacts))}>
-              Call / Text
+            <button className="av-quick-btn" disabled={!reachable} onClick={() => onSheet(contactSheet(contacts))}>
+              Contact
             </button>
             <button
               className="av-quick-btn"
@@ -421,10 +430,10 @@ export function AccountDetail({ config, accounts }) {
   const latest = lastNote(account);
   const visit = visitSummary(account, config);
   const mainContact = contacts.find((c) => c.name || c.title);
-  const phoneContacts = contacts.filter((c) => c.phone);
+  const reachableContacts = contacts.filter(canReach);
 
   const openCallText = () => {
-    const sheetInfo = callTextSheet(contacts);
+    const sheetInfo = contactSheet(contacts);
     if (sheetInfo) setSheet(sheetInfo);
   };
 
@@ -478,8 +487,8 @@ export function AccountDetail({ config, accounts }) {
           </div>
 
           <div className="av-quick">
-            <button className="av-quick-btn" disabled={phoneContacts.length === 0} onClick={openCallText}>
-              Call / Text
+            <button className="av-quick-btn" disabled={reachableContacts.length === 0} onClick={openCallText}>
+              Contact
             </button>
             <button
               className="av-quick-btn"
@@ -517,9 +526,21 @@ export function AccountDetail({ config, accounts }) {
                 {c.title && <span className="av-contact-title">{c.title}</span>}
               </div>
               {c.phone && (
-                <button className="av-row" onClick={() => setSheet({ title: c.name || c.phone, actions: phoneActions(c.phone) })}>
+                <button className="av-row" onClick={() => setSheet({ title: c.name || c.phone, actions: contactActions(c) })}>
                   <FaPhoneAlt className="av-row-icon" />
-                  <span className="av-row-value av-blue">{c.phone}</span>
+                  <span className="av-row-text">
+                    {c.textPhone && c.textPhone !== c.phone && <span className="av-row-label">Phone</span>}
+                    <span className="av-row-value av-blue">{c.phone}</span>
+                  </span>
+                </button>
+              )}
+              {c.textPhone && c.textPhone !== c.phone && (
+                <button className="av-row" onClick={() => setSheet({ title: c.name || c.textPhone, actions: contactActions(c) })}>
+                  <FaPhoneAlt className="av-row-icon" />
+                  <span className="av-row-text">
+                    <span className="av-row-label">Cell (texts)</span>
+                    <span className="av-row-value av-blue">{c.textPhone}</span>
+                  </span>
                 </button>
               )}
               {c.email && (
@@ -580,7 +601,7 @@ export function AccountDetail({ config, accounts }) {
 /* ------------------------------------------------------------------ */
 /* Add / Edit                                                          */
 /* ------------------------------------------------------------------ */
-const BLANK_CONTACT = { title: '', name: '', phone: '', email: '' };
+const BLANK_CONTACT = { title: '', name: '', phone: '', textPhone: '', email: '' };
 
 export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   const navigate = useNavigate();
@@ -630,8 +651,15 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
       address: address.trim(),
       // drop contact rows that were left completely empty
       contacts: contacts
-        .map((c) => ({ title: c.title.trim(), name: c.name.trim(), phone: c.phone.trim(), email: c.email.trim() }))
-        .filter((c) => c.title || c.name || c.phone || c.email),
+        .map((c) => ({
+          ...c, // keep anything else already saved on the contact
+          title: c.title.trim(),
+          name: c.name.trim(),
+          phone: c.phone.trim(),
+          textPhone: c.textPhone.trim(),
+          email: c.email.trim(),
+        }))
+        .filter((c) => c.title || c.name || c.phone || c.textPhone || c.email),
       [config.visitDaysField]: DAYS.filter((d) => days.includes(d)),
       visitTime: visitTime === '' ? null : Number(visitTime),
       visitFrequency,
@@ -702,7 +730,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
             </button>
             <input className="av-input" placeholder="Name" value={c.name} onChange={(e) => changeContact(i, 'name', e.target.value)} />
             <input className="av-input" placeholder="Title (Chef, Owner, Manager…)" value={c.title} onChange={(e) => changeContact(i, 'title', e.target.value)} />
-            <input className="av-input" placeholder="Phone" type="tel" value={c.phone} onChange={(e) => changeContact(i, 'phone', e.target.value)} />
+            <input className="av-input" placeholder="Phone (for calls)" type="tel" value={c.phone} onChange={(e) => changeContact(i, 'phone', e.target.value)} />
+            <input className="av-input" placeholder="Cell for texts (if different)" type="tel" value={c.textPhone} onChange={(e) => changeContact(i, 'textPhone', e.target.value)} />
             <input className="av-input" placeholder="Email" type="email" value={c.email} onChange={(e) => changeContact(i, 'email', e.target.value)} />
           </div>
         ))}
