@@ -26,6 +26,99 @@ function digitsOnly(phone) {
   return (phone || '').replace(/[^\d+]/g, '');
 }
 
+/* ---------- Visit schedule ----------
+   visitTime: minutes from midnight (e.g. 600 = 10:00 AM), or null for no set time
+   visitFrequency: one of the keys below
+   visitStart: 'YYYY-MM-DD' first visit, so "every 2 weeks" knows which weeks
+   Visit days use config.visitDaysField (prospects: deliveryDays, as before). */
+export const FREQUENCIES = [
+  { key: 'weekly', label: 'Weekly', weeks: 1 },
+  { key: '2w', label: 'Every 2 weeks', weeks: 2 },
+  { key: '3w', label: 'Every 3 weeks', weeks: 3 },
+  { key: '4w', label: 'Monthly (every 4 weeks)', weeks: 4 },
+  { key: '8w', label: 'Every 2 months', weeks: 8 },
+];
+
+function frequencyLabel(key) {
+  const f = FREQUENCIES.find((x) => x.key === key);
+  return f ? f.label : 'Weekly';
+}
+
+function shortFrequency(key) {
+  return { weekly: 'Weekly', '2w': 'Every 2 wks', '3w': 'Every 3 wks', '4w': 'Monthly', '8w': 'Every 2 mos' }[key] || 'Weekly';
+}
+
+export function timeLabel(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${m === 0 ? '00' : m} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => i * 30);
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// "Tue · 10:00 AM" / "Tue, Thu" / null when no visit days are set
+function visitSummary(account, config) {
+  const days = DAYS.filter((d) => (account[config.visitDaysField] || []).includes(d));
+  if (days.length === 0) return null;
+  const dayText = days.join(', ');
+  return typeof account.visitTime === 'number' ? `${dayText} · ${timeLabel(account.visitTime)}` : dayText;
+}
+
+// Same 12 colors as the calendar; each account keeps the same color by name.
+const AVATAR_COLORS = ['#0077cc', '#ff3b30', '#ff9500', '#e6b800', '#34c759', '#00c7be', '#30b0c7', '#5856d6', '#af52de', '#ff2d55', '#a2845e', '#8e8e93'];
+function avatarColor(name) {
+  let h = 0;
+  for (const ch of name || '') h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+function Avatar({ name, size = 40 }) {
+  const letter = ((name || '').trim()[0] || '?').toUpperCase();
+  return (
+    <span className="av-avatar" style={{ backgroundColor: avatarColor(name), width: size, height: size, lineHeight: `${size}px`, fontSize: size * 0.42 }}>
+      {letter}
+    </span>
+  );
+}
+
+// Newest note (notes are saved with a date/time string).
+function lastNote(account) {
+  const notes = account.notes || [];
+  if (notes.length === 0) return null;
+  let best = notes[notes.length - 1];
+  let bestTime = Date.parse(best.timestamp) || 0;
+  notes.forEach((n) => {
+    const t = Date.parse(n.timestamp) || 0;
+    if (t > bestTime) {
+      best = n;
+      bestTime = t;
+    }
+  });
+  return best;
+}
+
+function shortDate(timestamp) {
+  const t = Date.parse(timestamp);
+  if (!t) return '';
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// A record with nothing in it at all (left over from the old Add button).
+function isEmptyRecord(a) {
+  return (
+    !(a.name && a.name.trim()) &&
+    !(a.address && a.address.trim()) &&
+    !(a.contacts || []).some((c) => c && (c.name || c.phone || c.email || c.title)) &&
+    !(a.notes || []).length
+  );
+}
+
 function displayName(account) {
   return account.name && account.name.trim() ? account.name : '(No name)';
 }
@@ -86,7 +179,8 @@ export function AccountList({ config, accounts }) {
   const [sortAZ, setSortAZ] = useState(true);
 
   const q = search.trim().toLowerCase();
-  const shown = accounts
+  const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
+  const shown = realAccounts
     .filter((a) => {
       if (!q) return true;
       return (
@@ -105,9 +199,10 @@ export function AccountList({ config, accounts }) {
 
   return (
     <div className="av-page">
-      <Header onBack={() => navigate('/')} title={config.plural} />
+      <Header onBack={() => navigate('/')} title="" />
 
       <div className="av-content">
+        <h1 className="av-big-title">{config.plural}</h1>
         <input
           className="av-search"
           placeholder={config.hasAccountNumber ? 'Search name, address, or account #' : 'Search name or address'}
@@ -124,21 +219,35 @@ export function AccountList({ config, accounts }) {
           </button>
         </div>
 
-        {accounts.length === 0 ? (
+        {realAccounts.length === 0 ? (
           <div className="av-empty">No {config.plural.toLowerCase()} yet. Tap + to add one.</div>
         ) : shown.length === 0 ? (
           <div className="av-empty">No matches.</div>
         ) : (
           <div className="av-group">
-            {shown.map((a) => (
-              <button key={a.id} className="av-row" onClick={() => navigate(`${config.basePath}/${a.id}`)}>
-                <span className="av-row-text">
-                  <span className={`av-row-name ${a.name && a.name.trim() ? '' : 'is-blank'}`}>{displayName(a)}</span>
-                  {a.address && <span className="av-row-sub">{a.address}</span>}
-                </span>
-                <FaChevronRight className="av-row-chevron" />
-              </button>
-            ))}
+            {shown.map((a) => {
+              const visit = visitSummary(a, config);
+              return (
+                <button key={a.id} className="av-row av-list-row" onClick={() => navigate(`${config.basePath}/${a.id}`)}>
+                  <Avatar name={a.name} />
+                  <span className="av-row-text">
+                    <span className={`av-row-name ${a.name && a.name.trim() ? '' : 'is-blank'}`}>{displayName(a)}</span>
+                    {a.address && <span className="av-row-sub">{a.address}</span>}
+                    <span className="av-chips">
+                      {visit ? (
+                        <>
+                          <span className="av-chip av-chip-blue">{visit}</span>
+                          <span className="av-chip av-chip-gray">{shortFrequency(a.visitFrequency)}</span>
+                        </>
+                      ) : (
+                        <span className="av-chip av-chip-orange">No visit set</span>
+                      )}
+                    </span>
+                  </span>
+                  <FaChevronRight className="av-row-chevron" />
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -170,8 +279,28 @@ export function AccountDetail({ config, accounts }) {
   }
 
   const contacts = account.contacts || [];
-  const days = account.deliveryDays || [];
+  const days = account[config.visitDaysField] || [];
   const noteCount = (account.notes || []).length;
+  const latest = lastNote(account);
+  const visit = visitSummary(account, config);
+  const mainContact = contacts.find((c) => c.name || c.title);
+  const phoneContacts = contacts.filter((c) => c.phone);
+
+  // Quick Call / Text: one number goes straight to the choice; several are all listed.
+  const openCallText = () => {
+    if (phoneContacts.length === 0) return;
+    if (phoneContacts.length === 1) {
+      const c = phoneContacts[0];
+      setSheet({ title: c.name || c.phone, actions: phoneActions(c.phone) });
+    } else {
+      setSheet({
+        title: 'Call or text',
+        actions: phoneContacts.flatMap((c) =>
+          phoneActions(c.phone).map((a) => ({ ...a, label: `${a.label.split(' ')[0]} ${c.name || c.phone}` }))
+        ),
+      });
+    }
+  };
 
   return (
     <div className="av-page">
@@ -186,14 +315,57 @@ export function AccountDetail({ config, accounts }) {
       />
 
       <div className="av-content">
-        <div className="av-hero">
-          <div className={`av-hero-name ${account.name && account.name.trim() ? '' : 'is-blank'}`}>
-            {displayName(account)}
+        {/* Summary card: who, last note, visit schedule, quick buttons */}
+        <div className="av-group av-summary">
+          <div className="av-summary-top">
+            <Avatar name={account.name} size={48} />
+            <div className="av-summary-text">
+              <div className={`av-summary-name ${account.name && account.name.trim() ? '' : 'is-blank'}`}>
+                {displayName(account)}
+              </div>
+              <div className="av-summary-sub">
+                {mainContact
+                  ? [mainContact.name, mainContact.title].filter(Boolean).join(' · ')
+                  : 'No contact yet'}
+                {config.hasAccountNumber && account.accountNumber ? ` · #${account.accountNumber}` : ''}
+              </div>
+            </div>
+            <span className="av-badge">{config.singular}</span>
           </div>
-          <span className="av-badge">{config.singular}</span>
-          {config.hasAccountNumber && account.accountNumber && (
-            <div className="av-hero-sub">Account #{account.accountNumber}</div>
+
+          {latest && (
+            <button className="av-last-note" onClick={() => navigate(config.notesPath(account.id))}>
+              <span className="av-last-note-date">{shortDate(latest.timestamp)}</span>
+              {latest.text}
+            </button>
           )}
+
+          <div className="av-chips av-summary-chips">
+            {visit ? (
+              <>
+                <span className="av-chip av-chip-blue">{visit}</span>
+                <span className="av-chip av-chip-gray">{shortFrequency(account.visitFrequency)}</span>
+              </>
+            ) : (
+              <span className="av-chip av-chip-orange">No visit set</span>
+            )}
+          </div>
+
+          <div className="av-quick">
+            <button className="av-quick-btn" disabled={phoneContacts.length === 0} onClick={openCallText}>
+              Call / Text
+            </button>
+            <button
+              className="av-quick-btn"
+              disabled={!account.address}
+              onClick={() => setSheet({ title: account.address, actions: mapActions(account.address) })}
+            >
+              Map
+            </button>
+            <button className="av-quick-btn" onClick={() => navigate(config.notesPath(account.id))}>
+              + Note
+            </button>
+          </div>
         </div>
 
         {account.address && (
@@ -234,12 +406,34 @@ export function AccountDetail({ config, accounts }) {
           ))
         )}
 
-        <div className="av-section-title">{config.daysLabel}</div>
+        <div className="av-section-title">Visit schedule</div>
         <div className="av-days">
           {DAYS.map((d) => (
             <span key={d} className={`av-day ${days.includes(d) ? 'is-on' : ''}`}>{d}</span>
           ))}
         </div>
+        {days.length > 0 && (
+          <div className="av-group">
+            <div className="av-row av-static-row">
+              <span className="av-row-label-inline">Usual time</span>
+              <span className="av-row-value">
+                {typeof account.visitTime === 'number' ? timeLabel(account.visitTime) : 'Not set'}
+              </span>
+            </div>
+            <div className="av-row av-static-row">
+              <span className="av-row-label-inline">How often</span>
+              <span className="av-row-value">{frequencyLabel(account.visitFrequency)}</span>
+            </div>
+            {account.visitFrequency && account.visitFrequency !== 'weekly' && account.visitStart && (
+              <div className="av-row av-static-row">
+                <span className="av-row-label-inline">Starting</span>
+                <span className="av-row-value">
+                  {new Date(account.visitStart + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="av-group">
           <button className="av-row" onClick={() => navigate(config.notesPath(account.id))}>
@@ -274,7 +468,14 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   const [contacts, setContacts] = useState(
     existing && existing.contacts ? existing.contacts.map((c) => ({ ...BLANK_CONTACT, ...c })) : []
   );
-  const [days, setDays] = useState(existing && existing.deliveryDays ? [...existing.deliveryDays] : []);
+  const [days, setDays] = useState(
+    existing && existing[config.visitDaysField] ? [...existing[config.visitDaysField]] : []
+  );
+  const [visitTime, setVisitTime] = useState(
+    existing && typeof existing.visitTime === 'number' ? existing.visitTime : ''
+  );
+  const [visitFrequency, setVisitFrequency] = useState((existing && existing.visitFrequency) || 'weekly');
+  const [visitStart, setVisitStart] = useState((existing && existing.visitStart) || todayKey());
 
   if (!isNew && !existing) {
     return (
@@ -305,7 +506,10 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
       contacts: contacts
         .map((c) => ({ title: c.title.trim(), name: c.name.trim(), phone: c.phone.trim(), email: c.email.trim() }))
         .filter((c) => c.title || c.name || c.phone || c.email),
-      deliveryDays: DAYS.filter((d) => days.includes(d)),
+      [config.visitDaysField]: DAYS.filter((d) => days.includes(d)),
+      visitTime: visitTime === '' ? null : Number(visitTime),
+      visitFrequency,
+      visitStart: visitFrequency === 'weekly' ? null : visitStart,
     };
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
 
@@ -380,7 +584,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
           + Add contact
         </button>
 
-        <div className="av-section-title">{config.daysLabel}</div>
+        <div className="av-section-title">Visit schedule</div>
         <div className="av-days">
           {DAYS.map((d) => (
             <button key={d} className={`av-day av-day-btn ${days.includes(d) ? 'is-on' : ''}`} onClick={() => toggleDay(d)}>
@@ -388,6 +592,38 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
             </button>
           ))}
         </div>
+        {days.length > 0 && (
+          <div className="av-group">
+            <label className="av-row av-static-row">
+              <span className="av-row-label-inline">Usual time</span>
+              <select className="av-select" value={visitTime} onChange={(e) => setVisitTime(e.target.value)}>
+                <option value="">Not set</option>
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>{timeLabel(t)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="av-row av-static-row">
+              <span className="av-row-label-inline">How often</span>
+              <select className="av-select" value={visitFrequency} onChange={(e) => setVisitFrequency(e.target.value)}>
+                {FREQUENCIES.map((f) => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </select>
+            </label>
+            {visitFrequency !== 'weekly' && (
+              <label className="av-row av-static-row">
+                <span className="av-row-label-inline">Starting</span>
+                <input
+                  type="date"
+                  className="av-select"
+                  value={visitStart}
+                  onChange={(e) => e.target.value && setVisitStart(e.target.value)}
+                />
+              </label>
+            )}
+          </div>
+        )}
 
         {!isNew && (
           <button className="av-delete" onClick={remove}>

@@ -460,3 +460,153 @@
   font-weight: 600;
   text-align: center;
 }
+
+/* ---------- Colored initial ---------- */
+.av-avatar {
+  flex: 0 0 auto;
+  display: inline-block;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ---------- Chips (visit day/time, frequency) ---------- */
+.av-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.av-chip {
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+.av-chip-blue { background: #e6f1fa; color: #0077cc; }
+.av-chip-gray { background: #eeeef0; color: #636366; }
+.av-chip-orange { background: #fff1de; color: #b25e00; }
+
+.av-page .av-list-row,
+.av-page .av-list-row:hover {
+  align-items: center;
+  padding: 11px 14px;
+}
+
+/* ---------- Detail summary card ---------- */
+.av-summary {
+  padding: 14px;
+  margin-top: 4px;
+}
+
+.av-summary-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.av-summary-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.av-summary-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.av-summary-name.is-blank {
+  color: #8e8e93;
+  font-style: italic;
+}
+
+.av-summary-sub {
+  font-size: 0.88rem;
+  color: #8e8e93;
+  margin-top: 2px;
+}
+
+.av-page .av-last-note,
+.av-page .av-last-note:hover {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: #f6f6f8;
+  font-size: 0.92rem;
+  color: #3a3a3c;
+  line-height: 1.35;
+}
+
+.av-last-note-date {
+  color: #8e8e93;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.av-summary-chips {
+  margin-top: 12px;
+}
+
+.av-quick {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.av-page .av-quick-btn,
+.av-page .av-quick-btn:hover {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 9px;
+  background: #f0f6fc;
+  color: #0077cc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.av-page .av-quick-btn:disabled {
+  color: #c7c7cc;
+  background: #f6f6f8;
+  cursor: default;
+}
+
+/* ---------- Visit schedule rows ---------- */
+.av-page .av-static-row,
+.av-page .av-static-row:hover {
+  justify-content: space-between;
+  cursor: default;
+}
+
+.av-row-label-inline {
+  font-size: 1rem;
+  color: #1c1c1e;
+}
+
+.av-select {
+  font-size: 16px;
+  font-family: inherit;
+  color: #0077cc;
+  border: none;
+  background: transparent;
+  outline: none;
+  text-align: right;
+}
+
+/* Big page title on the list (h1 is restyled here because App.css centers all h1s) */
+.av-page h1.av-big-title {
+  margin: 0 0 10px;
+  text-align: left;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1c1c1e;
+}

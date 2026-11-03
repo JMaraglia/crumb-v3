@@ -11,6 +11,7 @@ const PROSPECT_CONFIG = {
   notesPath: (id) => `/prospect-notes/${id}`,
   hasAccountNumber: false,
   daysLabel: 'Days',
+  visitDaysField: 'deliveryDays', // prospects have always stored their days here
 };
 
 // /prospects
