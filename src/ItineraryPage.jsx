@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// Saved visits should be a list. If they were stored as an object
+// (e.g. {} or grouped by date), turn them into a list instead of crashing.
+// Any visits found inside are kept, nothing is thrown away.
+function toVisitList(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === 'object') {
+    return Object.values(value).flat().filter((v) => v && typeof v === 'object');
+  }
+  return [];
+}
+
 function ItineraryPage({ itinerary }) {
   const navigate = useNavigate();
   const today = new Date();
@@ -58,11 +69,11 @@ function ItineraryPage({ itinerary }) {
   );
   const [visitData, setVisitData] = useState(() => {
     const saved = localStorage.getItem('visitData');
-    return saved ? JSON.parse(saved) : [];
+    return toVisitList(saved ? JSON.parse(saved) : []);
   });
 
   useEffect(() => {
-    const enhanced = itinerary.map((visit) => ({
+    const enhanced = toVisitList(itinerary).map((visit) => ({
       ...visit,
       done: visit.done || false,
       recurrence: visit.recurrence || 'none',

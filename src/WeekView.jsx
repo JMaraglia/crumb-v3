@@ -1,189 +1,46 @@
 // file: src/WeekView.jsx
-import React, { useState, useRef, useEffect } from "react";
-import dayjs from "dayjs";
+import React, { useState } from 'react';
+import './WeekView.css';
 
-const HOURS = Array.from({ length: 24 }, (_, i) =>
-  dayjs().startOf("day").add(i, "hour")
-);
-
-const COLOR_OPTIONS = [
-  "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
-  "#3b82f6", "#8b5cf6", "#d946ef", "#f43f5e", "#14b8a6"
-];
-
-export default function WeekView() {
-  const [startDate, setStartDate] = useState(dayjs());
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem("calendarEvents");
-    return saved ? JSON.parse(saved) : [];
+export default function WeekView({ viewStart }) {
+  const days = Array.from({ length:3 }, (_,i) => {
+    const d = new Date(viewStart);
+    d.setDate(d.getDate() + i);
+    return d;
   });
-  const [showModal, setShowModal] = useState(false);
-  const [modalInfo, setModalInfo] = useState(null);
-  const [editingEvent, setEditingEvent] = useState(null);
-  const [titleInput, setTitleInput] = useState("");
-  const [locationInput, setLocationInput] = useState("");
-  const [durationInput, setDurationInput] = useState("30");
-  const [colorInput, setColorInput] = useState(COLOR_OPTIONS[0]);
-  const [recurring, setRecurring] = useState("none");
-  const scrollRef = useRef(null);
-  const touchStartX = useRef(0);
+  const slots = Array.from({ length:24*12 }, (_,i) => i*5);
+  const [events, setEvents] = useState([]);
 
-  const handleNext = () => setStartDate((prev) => prev.add(3, "day"));
-  const handlePrev = () => setStartDate((prev) => prev.subtract(3, "day"));
-
-  const days = Array.from({ length: 3 }, (_, i) => startDate.add(i, "day"));
-
-  const openModal = (day, slotIndex, event = null) => {
-    setModalInfo({ day, slotIndex });
-    setEditingEvent(event);
-    if (event) {
-      setTitleInput(event.title);
-      setDurationInput(event.duration);
-      setColorInput(event.color);
-      setRecurring(event.recurring || "none");
-      setLocationInput(event.location || "");
-    } else {
-      setTitleInput("");
-      setDurationInput("30");
-      setColorInput(COLOR_OPTIONS[0]);
-      setRecurring("none");
-      setLocationInput("");
-    }
-    setShowModal(true);
+  const addEvent = (day, min) => {
+    const title = prompt('Title:'); if(!title) return;
+    const dur = parseInt(prompt('Duration (min):'),10); if(!dur) return;
+    const color = '#3498db';
+    const key = day.toDateString();
+    setEvents(prev => [...prev, { id:Date.now(), date:key, start:min, duration:dur, title, color }]);
   };
-
-  const saveEvents = (updatedEvents) => {
-    setEvents(updatedEvents);
-    localStorage.setItem("calendarEvents", JSON.stringify(updatedEvents));
-  };
-
-  const handleCreateOrUpdateEvent = () => {
-    if (!modalInfo) return;
-    const dateStr = modalInfo.day.format("YYYY-MM-DD");
-    const slotIndex = modalInfo.slotIndex;
-    if (!titleInput || !durationInput || !colorInput || !dateStr) return;
-
-    const newEvent = {
-      id: Date.now(),
-      date: dateStr,
-      start: slotIndex,
-      duration: parseInt(durationInput, 10),
-      title: titleInput,
-      color: colorInput,
-      recurring,
-      location: locationInput,
-    };
-
-    let newEvents = [];
-    if (recurring !== "none") {
-      const repeatCount = 3;
-      for (let i = 0; i < repeatCount; i++) {
-        const date = dayjs(dateStr).add(i, recurring === "daily" ? "day" : "week");
-        newEvents.push({ ...newEvent, id: Date.now() + i, date: date.format("YYYY-MM-DD") });
-      }
-    } else {
-      newEvents = [newEvent];
-    }
-
-    if (editingEvent) {
-      const updated = events.map(e =>
-        e.id === editingEvent.id ? { ...newEvent, id: e.id } : e
-      );
-      saveEvents(updated);
-    } else {
-      saveEvents([...events, ...newEvents]);
-    }
-    setShowModal(false);
-  };
-
-  const downloadICS = (event) => {
-    const dt = dayjs(event.date).add(event.start * 5, "minute");
-    const dtEnd = dt.add(event.duration, "minute");
-    const content = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${event.title}\nLOCATION:${event.location || ""}\nDTSTART:${dt.format("YYYYMMDDTHHmmss")}Z\nDTEND:${dtEnd.format("YYYYMMDDTHHmmss")}Z\nDESCRIPTION:Created from CRM\nEND:VEVENT\nEND:VCALENDAR`;
-    const blob = new Blob([content], { type: "text/calendar" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${event.title}.ics`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const openGoogleCalendar = (event) => {
-    const dt = dayjs(event.date).add(event.start * 5, "minute");
-    const dtEnd = dt.add(event.duration, "minute");
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      event.title
-    )}&dates=${dt.format("YYYYMMDDTHHmmss")}Z/${dtEnd.format("YYYYMMDDTHHmmss")}Z&location=${encodeURIComponent(event.location || "")}&details=Created+from+CRM`;
-    window.open(url, "_blank");
-  };
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    const handleTouchStart = (e) => {
-      touchStartX.current = e.touches[0].clientX;
-    };
-    const handleTouchEnd = (e) => {
-      const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-      if (deltaX > 50) handlePrev();
-      else if (deltaX < -50) handleNext();
-    };
-    if (el) {
-      el.addEventListener("touchstart", handleTouchStart);
-      el.addEventListener("touchend", handleTouchEnd);
-    }
-    return () => {
-      if (el) {
-        el.removeEventListener("touchstart", handleTouchStart);
-        el.removeEventListener("touchend", handleTouchEnd);
-      }
-    };
-  }, []);
-
-  const upcomingEvents = events
-    .map(e => ({ ...e, datetime: dayjs(e.date).add(e.start * 5, 'minute') }))
-    .filter(e => e.datetime.isAfter(dayjs()))
-    .sort((a, b) => a.datetime - b.datetime)
-    .slice(0, 5);
 
   return (
-    <div ref={scrollRef} className="p-4 min-h-screen bg-white overflow-x-auto">
-      <div className="min-w-[900px] grid grid-cols-[60px_repeat(3,250px)] border-t border-l">
-        <div className="bg-gray-100 border-r z-10">
-          {HOURS.map((slot, i) => (
-            <div key={i} className="h-20 text-[10px] px-1 border-b">
-              {slot.format("h:mm A")}
-            </div>
-          ))}
-        </div>
-        {days.map((day, i) => {
-          const dateKey = day.format("YYYY-MM-DD");
-          const dayEvents = events.filter((e) => e.date === dateKey);
-
+    <div className="wv-container">
+      <div className="wv-times">
+        {slots.map(min=>{
+          const h=Math.floor(min/60), m=min%60;
+          const label = m===0?`${h===0?12:h>12?h-12:h}:00 ${h<12?'AM':'PM'}`:'';
+          return <div key={min} className="wv-time-cell">{label}</div>;
+        })}
+      </div>
+      <div className="wv-days">
+        {days.map(day=>{
+          const key = day.toDateString();
+          const dayEv = events.filter(e=>e.date===key);
           return (
-            <div key={i} className="border-r relative">
-              <div className="text-center text-xs sm:text-sm font-semibold py-1 border-b bg-white sticky top-0 z-10">
-                {day.format("ddd M/D/YYYY")}
+            <div key={key} className="wv-day-col">
+              <div className="wv-day-header">
+                <div>{day.toLocaleDateString('en-US',{weekday:'short'})}</div>
+                <div>{day.getMonth()+1}/{day.getDate()}</div>
               </div>
-              {HOURS.map((_, j) => (
-                <div
-                  key={j}
-                  className="h-20 border-b cursor-pointer hover:bg-blue-50"
-                  onClick={() => openModal(day, j * 12)}
-                ></div>
-              ))}
-              {dayEvents.map((ev) => (
-                <div
-                  key={ev.id}
-                  onClick={() => openModal(day, ev.start, ev)}
-                  className="absolute left-0 right-0 px-1 text-[10px] text-white cursor-pointer"
-                  style={{
-                    top: `${(ev.start / 12) * 80}px`,
-                    height: `${(ev.duration / 60) * 80}px`,
-                    backgroundColor: ev.color,
-                  }}
-                  title="Click to edit"
-                >
+              {slots.map(min=> <div key={min} className="wv-slot" onClick={()=>addEvent(day,min)}/> )}
+              {dayEv.map(ev=>(
+                <div key={ev.id} className="wv-event" style={{ top:(ev.start/5)*30+'px', height:(ev.duration/5)*30+'px', backgroundColor:ev.color }}>
                   {ev.title}
                 </div>
               ))}
@@ -191,38 +48,6 @@ export default function WeekView() {
           );
         })}
       </div>
-
-      <button
-        onClick={() => openModal(startDate, 96)}
-        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-blue-500 text-white text-3xl flex items-center justify-center shadow-lg"
-      >
-        +
-      </button>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 transition-opacity duration-300">
-          <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-xs space-y-4 animate-fade-in">
-            <h2 className="font-bold text-lg">{editingEvent ? "Edit" : "Add"} Event</h2>
-            <input value={titleInput} onChange={(e) => setTitleInput(e.target.value)} className="w-full border p-2 rounded" placeholder="Event Title" />
-            <input value={locationInput} onChange={(e) => setLocationInput(e.target.value)} className="w-full border p-2 rounded" placeholder="Location" />
-            <input value={durationInput} onChange={(e) => setDurationInput(e.target.value)} type="number" className="w-full border p-2 rounded" placeholder="Duration (min)" />
-            <select value={colorInput} onChange={(e) => setColorInput(e.target.value)} className="w-full border p-2 rounded">
-              {COLOR_OPTIONS.map(color => (
-                <option key={color} value={color}>{color}</option>
-              ))}
-            </select>
-            <select value={recurring} onChange={(e) => setRecurring(e.target.value)} className="w-full border p-2 rounded">
-              <option value="none">One-time</option>
-              <option value="daily">Daily (3x)</option>
-              <option value="weekly">Weekly (3x)</option>
-            </select>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-              <button onClick={handleCreateOrUpdateEvent} className="px-4 py-2 bg-blue-500 text-white rounded">Save</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
