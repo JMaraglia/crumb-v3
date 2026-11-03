@@ -5,7 +5,7 @@ import './App.css';
 import HomePage from './HomePage';
 import CustomersPage from './CustomersPage';
 import NotesPage from './NotesPage';
-import ProspectsPage from './ProspectsPage';
+import ProspectsPage, { ProspectDetailPage, ProspectEditPage } from './ProspectsPage';
 import ProspectNotesPage from './ProspectNotesPage';
 import CalendarPage from './CalendarPage';
 import ItineraryPage from './ItineraryPage';
@@ -109,6 +109,9 @@ export default function App() {
           }
         />
         <Route path="/prospects" element={<ProspectsPage prospects={prospects} setProspects={setProspects} />} />
+        <Route path="/prospects/new" element={<ProspectEditPage prospects={prospects} setProspects={setProspects} isNew />} />
+        <Route path="/prospects/:id" element={<ProspectDetailPage prospects={prospects} />} />
+        <Route path="/prospects/:id/edit" element={<ProspectEditPage prospects={prospects} setProspects={setProspects} />} />
         <Route
           path="/prospect-notes/:id"
           element={

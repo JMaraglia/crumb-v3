@@ -1,0 +1,462 @@
+/* file: src/AccountViews.css */
+/* Every class starts with "av-" so nothing collides with other pages.
+   App.css pads the body and makes every <button> blue; .av-page undoes
+   that for these screens only. */
+
+.av-page {
+  position: fixed;   /* full screen, ignores the body padding from App.css */
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reset App.css button styles inside these screens */
+.av-page button,
+.av-page button:hover,
+.av-sheet-backdrop button,
+.av-sheet-backdrop button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+  text-align: left;
+}
+
+/* ---------- Header ---------- */
+.av-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 80px 1fr 80px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(242, 242, 247, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.av-header-title {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.av-header-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.av-page .av-icon-btn,
+.av-page .av-icon-btn:hover {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #0077cc;
+}
+
+.av-page .av-link-btn,
+.av-page .av-link-btn:hover {
+  color: #0077cc;
+  font-size: 1rem;
+  padding: 6px 0;
+}
+
+.av-header .av-link-btn:last-child {
+  justify-self: end;
+  text-align: right;
+}
+
+.av-page .av-bold,
+.av-page .av-bold:hover {
+  font-weight: 600;
+}
+
+/* ---------- Content ---------- */
+.av-content {
+  padding: 4px 16px 110px;   /* room at the bottom for the + button */
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.av-search {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #e3e3e8;
+  font-size: 16px;   /* 16px stops iPhone from zooming in */
+  outline: none;
+  color: #1c1c1e;
+}
+
+.av-list-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px 6px;
+}
+
+.av-count {
+  font-size: 0.85rem;
+  color: #8e8e93;
+}
+
+.av-empty {
+  text-align: center;
+  color: #8e8e93;
+  padding: 40px 20px;
+}
+
+/* White rounded group of rows (iPhone Settings style) */
+.av-group {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.av-page .av-row,
+.av-page .av-row:hover {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-top: 1px solid #ececf0;
+  text-decoration: none;
+  color: #1c1c1e;
+}
+
+.av-group > .av-row:first-child,
+.av-group > button.av-row:first-child {
+  border-top: none;
+}
+
+.av-page .av-row:active {
+  background: #f2f2f7;
+}
+
+.av-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.av-row-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.av-row-name.is-blank,
+.av-hero-name.is-blank {
+  color: #8e8e93;
+  font-style: italic;
+}
+
+.av-row-sub {
+  font-size: 0.85rem;
+  color: #8e8e93;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+.av-row-label {
+  font-size: 0.78rem;
+  color: #8e8e93;
+}
+
+.av-row-value {
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.av-blue {
+  color: #0077cc;
+}
+
+.av-row-icon {
+  flex: 0 0 auto;
+  color: #8e8e93;
+  font-size: 0.95rem;
+}
+
+.av-row-chevron {
+  flex: 0 0 auto;
+  color: #c7c7cc;
+  font-size: 0.8rem;
+}
+
+.av-row-count {
+  color: #8e8e93;
+}
+
+.av-muted-row {
+  padding: 14px;
+  color: #8e8e93;
+}
+
+/* ---------- Detail ---------- */
+.av-hero {
+  text-align: center;
+  padding: 8px 0 18px;
+}
+
+.av-hero-name {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.av-hero-sub {
+  margin-top: 8px;
+  color: #8e8e93;
+  font-size: 0.95rem;
+}
+
+.av-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0077cc;
+  background: #e6f1fa;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.av-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8e8e93;
+  padding: 6px 4px 6px;
+}
+
+.av-contact-head {
+  padding: 12px 14px 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.av-contact-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.av-contact-title {
+  font-size: 0.85rem;
+  color: #8e8e93;
+}
+
+.av-days {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.av-day {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  border-radius: 8px;
+  background: #fff;
+  color: #8e8e93;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.av-day.is-on {
+  background: #0077cc;
+  color: #fff;
+}
+
+.av-page .av-day-btn,
+.av-page .av-day-btn:hover {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 8px;
+  background: #fff;
+  color: #8e8e93;
+}
+
+.av-page .av-day-btn.is-on,
+.av-page .av-day-btn.is-on:hover {
+  background: #0077cc;
+  color: #fff;
+}
+
+/* ---------- Edit form ---------- */
+.av-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: none;
+  border-top: 1px solid #ececf0;
+  font-size: 16px;   /* 16px stops iPhone from zooming in */
+  font-family: inherit;
+  color: #1c1c1e;
+  background: transparent;
+  outline: none;
+}
+
+.av-group > .av-input:first-child,
+.av-contact-edit > .av-input:nth-child(2) {
+  border-top: none;
+}
+
+.av-contact-edit {
+  position: relative;
+}
+
+.av-page .av-remove-contact,
+.av-page .av-remove-contact:hover {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  font-size: 1.4rem;
+  line-height: 32px;
+  color: #c7c7cc;
+}
+
+.av-contact-edit > .av-input:nth-child(2) {
+  padding-right: 44px;
+}
+
+.av-page .av-add-contact,
+.av-page .av-add-contact:hover {
+  display: block;
+  width: 100%;
+  padding: 13px 14px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: #fff;
+  color: #0077cc;
+  font-weight: 600;
+}
+
+.av-page .av-delete,
+.av-page .av-delete:hover {
+  display: block;
+  width: 100%;
+  padding: 13px 0;
+  margin-top: 10px;
+  border-radius: 12px;
+  background: #fff;
+  color: #ff3b30;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ---------- Floating + ---------- */
+.av-page .av-fab,
+.av-page .av-fab:hover {
+  position: fixed;
+  right: 20px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0077cc;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 56px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 119, 204, 0.35);
+  z-index: 10;
+}
+
+/* ---------- Call/Text and Maps pop-up ---------- */
+.av-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: flex-end;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.av-sheet {
+  width: 100%;
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.av-sheet-group {
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.av-sheet-title {
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #8e8e93;
+  border-bottom: 1px solid #ececf0;
+}
+
+.av-sheet-action {
+  display: block;
+  padding: 16px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #0077cc;
+  text-decoration: none;
+  border-top: 1px solid #ececf0;
+}
+
+.av-sheet-title + .av-sheet-action,
+.av-sheet-group > .av-sheet-action:first-child {
+  border-top: none;
+}
+
+.av-sheet-backdrop .av-sheet-cancel,
+.av-sheet-backdrop .av-sheet-cancel:hover {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff;
+  color: #0077cc;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+}
