@@ -209,6 +209,14 @@ function niceShort(k) {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Customers: "Del: Mon, Wed" tag (green) next to the visit tag (blue)
+function DeliveryChip({ account, config }) {
+  if (!config.deliveryDaysField) return null;
+  const days = DAYS.filter((d) => (account[config.deliveryDaysField] || []).includes(d));
+  if (!days.length) return null;
+  return <span className="av-chip av-chip-delivery">Del: {days.join(', ')}</span>;
+}
+
 // "Snoozed · back Nov 24" (the first visit after the snooze ends)
 export function SnoozeChip({ account, daysField }) {
   if (!isSnoozed(account)) return null;
@@ -365,6 +373,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
               ) : (
                 <span className="av-chip av-chip-orange">No visit set</span>
               )}
+              <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} />}
               <SnoozeChip account={a} daysField={config.visitDaysField} />
             </span>
@@ -391,7 +400,8 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
             ) : (
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
-            {config.hasStage && <StageChip stage={a.stage} />}
+            <DeliveryChip account={a} config={config} />
+              {config.hasStage && <StageChip stage={a.stage} />}
             <SnoozeChip account={a} daysField={config.visitDaysField} />
           </div>
           <div className="av-quick">
@@ -623,6 +633,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             ) : (
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
+            <DeliveryChip account={account} config={config} />
             {config.hasStage && <StageChip stage={account.stage} />}
             <SnoozeChip account={account} daysField={config.visitDaysField} />
           </div>

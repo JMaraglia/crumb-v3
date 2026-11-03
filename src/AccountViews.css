@@ -954,3 +954,9 @@
   resize: none;
   font-family: inherit;
 }
+
+/* Customers' delivery days tag (green, "Del:") — visit tag stays blue */
+.av-chip-delivery {
+  background: #e3f6e8;
+  color: #1e8e3e;
+}
