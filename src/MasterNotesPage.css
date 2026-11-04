@@ -571,3 +571,27 @@
     -webkit-text-stroke: 0.15px #000;
   }
 }
+
+/* Date filter rows */
+.mn-sheet-gap {
+  margin-top: 12px;
+}
+
+.mn-sub-label {
+  color: #6e6e73;
+  padding-left: 12px;
+}
+
+.mn-date {
+  font-size: 16px;
+  font-family: inherit;
+  color: #0077cc;
+  background: #f2f2f7;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  outline: none;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}

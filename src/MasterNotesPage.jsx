@@ -111,6 +111,59 @@ function buildNotesPdf({ heading, groups, groupSide, whenText }) {
   return doc.save('Crumb notes');
 }
 
+// Date filter choices
+const DATE_RANGES = [
+  ['any', 'Any time'],
+  ['today', 'Today'],
+  ['yesterday', 'Yesterday'],
+  ['week', 'Last 7 days'],
+  ['month', 'This month'],
+  ['lastMonth', 'Last month'],
+  ['custom', 'Pick dates'],
+];
+
+const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+const fromInput = (v) => {
+  const [y, m, d] = (v || '').split('-').map(Number);
+  return y ? new Date(y, m - 1, d) : null;
+};
+const toInput = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// [start, end) in milliseconds for a date choice, or null for "any time"
+function rangeFor(choice, from, to) {
+  const now = new Date();
+  const today = dayStart(now);
+  const DAY = 86400000;
+  if (choice === 'today') return [today, today + DAY];
+  if (choice === 'yesterday') return [today - DAY, today];
+  if (choice === 'week') return [today - 6 * DAY, today + DAY];
+  if (choice === 'month') return [new Date(now.getFullYear(), now.getMonth(), 1).getTime(), today + DAY];
+  if (choice === 'lastMonth')
+    return [new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime(), new Date(now.getFullYear(), now.getMonth(), 1).getTime()];
+  if (choice === 'custom') {
+    const a = fromInput(from);
+    const b = fromInput(to);
+    if (!a && !b) return null;
+    return [a ? dayStart(a) : 0, b ? dayStart(b) + DAY : Infinity];
+  }
+  return null;
+}
+
+// "Oct 1 – Oct 31, 2026" style label for the printout / PDF heading
+function rangeLabel(range) {
+  if (!range) return '';
+  const [a, b] = range;
+  const fmt = (t, withYear) =>
+    new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}) });
+  if (!a) return `Through ${fmt(b - 1, true)}`;
+  if (b === Infinity) return `Since ${fmt(a, true)}`;
+  const last = b - 1;
+  if (dayStart(new Date(a)) === dayStart(new Date(last))) return fmt(a, true);
+  const sameYear = new Date(a).getFullYear() === new Date(last).getFullYear();
+  return `${fmt(a, !sameYear)} – ${fmt(last, true)}`;
+}
+
 export default function MasterNotesPage({ contacts = [], setContacts, prospects = [], setProspects }) {
   const navigate = useNavigate();
   const [grouping, setGrouping] = useState('Day');
@@ -119,6 +172,9 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   const [accountKey, setAccountKey] = useState('all'); // all | customer-1 | prospect-3
   const [label, setLabel] = useState('all');        // all | open | a category
   const [showFilters, setShowFilters] = useState(false);
+  const [dateChoice, setDateChoice] = useState('any');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [shareMsg, setShareMsg] = useState('');
 
   // Gather every note with where it came from.
@@ -146,6 +202,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   ].sort((a, b) => a.name.localeCompare(b.name));
 
   const q = search.trim().toLowerCase();
+  const range = rangeFor(dateChoice, dateFrom, dateTo);
   const shown = all
     .filter((n) => type === 'all' || n.kind === type)
     .filter((n) => accountKey === 'all' || `${n.kind}-${n.accountId}` === accountKey)
@@ -153,6 +210,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
       label === 'all' ? true : label === 'open' ? n.cat === 'Follow-up' && !n.done : n.cat === label
     )
     .filter((n) => !q || (n.text || '').toLowerCase().includes(q) || n.accountName.toLowerCase().includes(q))
+    .filter((n) => !range || (n.time >= range[0] && n.time < range[1]))
     .sort((a, b) => b.time - a.time);
 
   // Group in order (already newest first).
@@ -178,19 +236,23 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
     if (n.kind === 'customer' && setContacts) setContacts(update);
   };
 
-  const filtersOn = type !== 'all' || accountKey !== 'all' || label !== 'all' || q;
-  const filterCount = [type !== 'all', accountKey !== 'all', label !== 'all'].filter(Boolean).length;
+  const filtersOn = type !== 'all' || accountKey !== 'all' || label !== 'all' || q || range;
+  const filterCount = [type !== 'all', accountKey !== 'all', label !== 'all', Boolean(range)].filter(Boolean).length;
   const clearFilters = () => {
     setType('all');
     setAccountKey('all');
     setLabel('all');
     setSearch('');
+    setDateChoice('any');
+    setDateFrom('');
+    setDateTo('');
   };
 
   // What's being shown, in words: "All notes" or "Prospects · Nelly Rose Diner · Visit · "shrimp""
   const accountName = accountKey === 'all' ? '' : (accountOptions.find((a) => a.key === accountKey) || {}).name || '';
   const filterSummary =
     [
+      rangeLabel(range),
       type === 'customer' ? 'Customers' : type === 'prospect' ? 'Prospects' : '',
       accountName,
       label === 'all' ? '' : label === 'open' ? 'Open follow-ups' : label === 'General' ? 'No label' : label,
@@ -402,6 +464,42 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
               <button className="mn-sheet-link mn-bold" onClick={() => setShowFilters(false)}>Done</button>
             </div>
             <div className="mn-sheet-group">
+              <label className="mn-sheet-row">
+                <span>Dates</span>
+                <select
+                  className="mn-select"
+                  value={dateChoice}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setDateChoice(v);
+                    if (v === 'custom' && !dateFrom && !dateTo) {
+                      const t = toInput(new Date());
+                      setDateFrom(t);
+                      setDateTo(t);
+                    }
+                  }}
+                >
+                  {DATE_RANGES.map(([k, l]) => (
+                    <option key={k} value={k}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {dateChoice === 'custom' && (
+                <>
+                  <label className="mn-sheet-row">
+                    <span className="mn-sub-label">From</span>
+                    <input type="date" className="mn-date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                  </label>
+                  <label className="mn-sheet-row">
+                    <span className="mn-sub-label">To</span>
+                    <input type="date" className="mn-date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                  </label>
+                </>
+              )}
+            </div>
+            <div className="mn-sheet-group mn-sheet-gap">
               <label className="mn-sheet-row">
                 <span>Show</span>
                 <select
