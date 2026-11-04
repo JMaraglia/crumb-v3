@@ -138,7 +138,7 @@ function RevisitSheet({ account, onSave, onCancel }) {
             No revisit
           </button>
         )}
-        <div className="av-vs-hint">On that day it shows on your Itinerary and Calendar (with a reminder). It stays inactive until you make it active again.</div>
+        <div className="av-vs-hint">On that day it shows on your Itinerary and Calendar (with a reminder). It stays inactive until you tap Activate.</div>
       </div>
     </div>
   );
@@ -1456,11 +1456,11 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
                 setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, inactive: null } : x)))
               }
             >
-              Make active again
+              Activate
             </button>
           ) : (
             <button className="av-inactive-btn" onClick={() => setAskInactive(true)}>
-              Mark inactive (closed, dead lead…)
+              Make inactive
             </button>
           ))}
 
@@ -1495,8 +1495,8 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
 
       {askInactive && (
         <AskSheet
-          title={`Mark ${displayName(account)} inactive`}
-          message="It keeps all its notes, but comes off your lists, Itinerary, Calendar, Call Sheet and reminders. You can make it active again any time."
+          title={`Why is ${displayName(account)} inactive?`}
+          message="It keeps all its notes, but comes off your lists, Itinerary, Calendar, Call Sheet and reminders. You can activate it again any time."
           choices={INACTIVE_REASONS.map(([value, label]) => ({ value, label }))}
           onPick={(reason) => {
             setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, inactive: { reason, since: todayKey() } } : x)));
