@@ -10,6 +10,7 @@ export const CUSTOMER_CONFIG = {
   singular: 'Customer',
   plural: 'Customers',
   basePath: '/customers',
+  swipeToDelete: true, // swipe a row left to delete (asks first)
   notesPath: (id) => `/notes/${id}`,
   hasAccountNumber: true,
   daysLabel: 'Visit days',
