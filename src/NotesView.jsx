@@ -4,6 +4,9 @@
 // A note looks like: { text, category, timestamp, done? }  (done is for Follow-ups)
 import React, { useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
+import { IoShareOutline } from 'react-icons/io5';
+import { shareText, shareFile, safeFileName } from './share';
+import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
 import './NotesView.css';
 
@@ -69,6 +72,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const [category, setCategory] = useState('General');
   const [filter, setFilter] = useState('All');
   const [editing, setEditing] = useState(null); // { index, text, category }
+  const [shareMsg, setShareMsg] = useState('');
 
   const notes = (account.notes || []).map((n, index) => ({ ...n, index, cat: normalizeCategory(n.category) }));
   const byNewest = (a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0) || b.index - a.index;
@@ -121,6 +125,40 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     setEditing(null);
   };
 
+  // Share one note as text: "Charred Oak Tavern — Tue, Nov 3 · 2:40 PM (Visit)" + the note
+  const shareNote = async (n, textNow, catNow) => {
+    const cat = catNow && catNow !== 'General' ? ` (${catNow})` : '';
+    const msg = `${account.name || 'Note'} — ${noteDate(n.timestamp)}${cat}\n${textNow}`;
+    setShareMsg(await shareText(`${account.name || 'Crumb'} note`, msg));
+  };
+
+  // Share this account's notes (what's on screen: Background + the current filter) as a PDF
+  const shareAll = async () => {
+    const list = [...background, ...(filter === 'Background' ? [] : shown)];
+    const seen = new Set();
+    const items = list
+      .filter((n) => !seen.has(n.index) && seen.add(n.index))
+      .map((n) => ({
+        ...n,
+        time: Date.parse(n.timestamp) || 0,
+        accountName: account.name || '',
+        kind: (kindLabel || '').toLowerCase() === 'prospect' ? 'prospect' : 'customer',
+      }))
+      .sort((a, b) => b.time - a.time);
+    const groups = [];
+    items.forEach((n) => {
+      const label = n.time
+        ? new Date(n.time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+        : 'No date';
+      if (!groups.length || groups[groups.length - 1].label !== label) groups.push({ label, notes: [] });
+      groups[groups.length - 1].notes.push(n);
+    });
+    const whenText = (n) => (n.time ? new Date(n.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '');
+    const heading = `${account.name || 'Notes'}${filter !== 'All' ? ` · ${filter}` : ''}`;
+    const blob = buildNotesPdf({ heading, groups, groupSide: () => '', whenText, showAccount: false });
+    setShareMsg(await shareFile(blob, `${safeFileName(account.name)} notes.pdf`, `${account.name} notes`));
+  };
+
   const remove = (index) => {
     if (!window.confirm('Delete this note?')) return;
     onDeleteNote(index);
@@ -141,6 +179,9 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <CategoryChips value={editing.category} onChange={(c) => setEditing({ ...editing, category: c })} />
           <div className="nv-edit-actions">
             <button className="nv-btn-delete" onClick={() => remove(n.index)}>Delete</button>
+            <button className="nv-btn-share" onClick={() => shareNote(n, editing.text.trim(), editing.category)}>
+              Share
+            </button>
             <span className="nv-spacer" />
             <button className="nv-btn-plain" onClick={() => setEditing(null)}>Cancel</button>
             <button className="nv-btn-primary" onClick={saveEdit}>Save</button>
@@ -187,8 +228,15 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <div className="nv-header-title">{account.name || 'Notes'}</div>
           <div className="nv-header-sub">{kindLabel} notes</div>
         </div>
-        <span className="nv-header-right" />
+        {notes.length > 0 ? (
+          <button className="nv-icon-btn nv-share-btn" onClick={shareAll} aria-label="Share these notes as a PDF">
+            <IoShareOutline />
+          </button>
+        ) : (
+          <span className="nv-header-right" />
+        )}
       </header>
+      {shareMsg && <div className="nv-share-msg">{shareMsg}</div>}
 
       <div className="nv-content">
         {/* Background notes stay pinned at the top */}
@@ -249,7 +297,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
         ) : (
           <div className="nv-list">{shown.map(renderNote)}</div>
         )}
-        {notes.length > 0 && <div className="nv-hint">Tap a note to edit or delete it</div>}
+        {notes.length > 0 && <div className="nv-hint">Tap a note to edit, share, or delete it</div>}
       </div>
     </div>
   );

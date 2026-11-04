@@ -357,3 +357,28 @@
   padding: 8px 10px;
   line-height: 1.35;
 }
+
+/* Sharing */
+.nv-page .nv-btn-share,
+.nv-page .nv-btn-share:hover {
+  padding: 9px 4px;
+  color: #0077cc;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.nv-page .nv-share-btn,
+.nv-page .nv-share-btn:hover {
+  font-size: 1.3rem;
+  justify-content: center;
+}
+
+.nv-share-msg {
+  margin: 0 16px 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #e8f5ec;
+  color: #1e8e3e;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
