@@ -1454,3 +1454,14 @@
 .av-list-section {
   margin-top: 6px;
 }
+
+/* Website row is a link */
+.av-page a.av-row {
+  text-decoration: none;
+  color: inherit;
+  border-top: 1px solid #ececf0;
+}
+
+.av-page .av-group > a.av-row:first-child {
+  border-top: none;
+}

@@ -7,7 +7,7 @@
 // (+ accountNumber and visitDays for customers; prospects keep visit days in deliveryDays).
 // (+ accountNumber for customers).
 import React, { useState } from 'react';
-import { FaArrowLeft, FaChevronRight, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
+import { FaArrowLeft, FaChevronRight, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope, FaGlobe } from 'react-icons/fa';
 import { IoShareOutline } from 'react-icons/io5';
 import { shareText, shareFile, contactCards, safeFileName } from './share';
 import { makeXlsx } from './xlsx';
@@ -470,6 +470,14 @@ function cardReady(account) {
 }
 
 // Everything worth sending about one account, as plain text (pastes into a text or email).
+// "www.supremedonuts.com" → "https://www.supremedonuts.com"
+export function websiteUrl(site) {
+  const s = String(site || '').trim();
+  if (!s) return '';
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+}
+const websiteLabel = (site) => String(site || '').trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
+
 export function accountShareText(account, config) {
   const lines = [];
   const st = config.hasStage ? stageInfo(account.stage) : null;
@@ -479,6 +487,7 @@ export function accountShareText(account, config) {
     lines.push(`Address: ${account.address}`);
     lines.push(`Map: https://maps.google.com/?q=${encodeURIComponent(account.address)}`);
   }
+  if (account.website) lines.push(`Website: ${websiteUrl(account.website)}`);
   const people = (account.contacts || []).filter((c) => c && (c.name || c.title || c.phone || c.textPhone || c.email));
   if (people.length) {
     lines.push('', 'Contacts:');
@@ -1320,15 +1329,26 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </div>
         </div>
 
-        {account.address && (
+        {(account.address || account.website) && (
           <div className="av-group">
-            <button className="av-row" onClick={() => setSheet({ title: account.address, actions: mapActions(account.address) })}>
-              <FaMapMarkerAlt className="av-row-icon" />
-              <span className="av-row-text">
-                <span className="av-row-label">Address</span>
-                <span className="av-row-value av-blue">{account.address}</span>
-              </span>
-            </button>
+            {account.address && (
+              <button className="av-row" onClick={() => setSheet({ title: account.address, actions: mapActions(account.address) })}>
+                <FaMapMarkerAlt className="av-row-icon" />
+                <span className="av-row-text">
+                  <span className="av-row-label">Address</span>
+                  <span className="av-row-value av-blue">{account.address}</span>
+                </span>
+              </button>
+            )}
+            {account.website && (
+              <a className="av-row" href={websiteUrl(account.website)} target="_blank" rel="noreferrer">
+                <FaGlobe className="av-row-icon" />
+                <span className="av-row-text">
+                  <span className="av-row-label">Website</span>
+                  <span className="av-row-value av-blue">{websiteLabel(account.website)}</span>
+                </span>
+              </a>
+            )}
           </div>
         )}
 
@@ -1617,6 +1637,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [town, setTown] = useState(startAddr.town);
   const [addrState, setAddrState] = useState(startAddr.state);
   const [zip, setZip] = useState(startAddr.zip);
+  const [website, setWebsite] = useState((existing && existing.website) || '');
   const [group, setGroup] = useState(existing ? groupOf(existing) : '');
   // Add another location: creates its own account right away, linked by the (hidden) group id.
   const [newLoc, setNewLoc] = useState(null); // { street, town, state, zip } while the form is open
@@ -1735,6 +1756,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       zip: zip.trim(),
       address: joinAddress({ street, town, state: addrState.toUpperCase(), zip }),
       group: group.trim(), // locations of the same business share this (hidden) group id
+      website: website.trim(),
       // drop contact rows that were left completely empty
       contacts: contacts
         .map((c) => ({
@@ -1865,6 +1887,16 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
               onChange={(e) => setZip(e.target.value)}
             />
           </div>
+          <input
+            className="av-input"
+            placeholder="Website (optional)"
+            type="url"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
         </div>
 
         {!isNew && (

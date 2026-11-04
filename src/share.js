@@ -73,6 +73,7 @@ export function contactCards(account) {
     if (c && c.textPhone && c.textPhone !== c.phone) lines.push(`TEL;TYPE=CELL:${vEsc(c.textPhone)}`);
     if (c && c.email) lines.push(`EMAIL;TYPE=WORK:${vEsc(c.email)}`);
     if (adr) lines.push(adr);
+    if (account.website) lines.push(`URL:${vEsc(/^https?:\/\//i.test(account.website.trim()) ? account.website.trim() : `https://${account.website.trim()}`)}`);
     lines.push('END:VCARD');
     return lines.join('\r\n');
   };
