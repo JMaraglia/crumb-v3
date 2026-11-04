@@ -1423,3 +1423,16 @@
 .av-inactive-list {
   opacity: 0.85;
 }
+
+/* Hold a location (Edit screen) to open it */
+.av-loc-row {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.av-loc-hint {
+  margin: -6px 4px 14px;
+  font-size: 0.8rem;
+  color: #8e8e93;
+}

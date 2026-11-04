@@ -1587,6 +1587,29 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const otherLocations = existing
     ? groupMembers(group, typeOf(config), accounts).filter((x) => !(x.type === typeOf(config) && String(x.account.id) === String(existing.id)))
     : [];
+  // Hold a location to jump to its full screen (e.g. to add a note there).
+  const locHold = React.useRef(null);
+  const locHoldStart = (x, e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const h = { x: e.clientX, y: e.clientY };
+    h.timer = setTimeout(() => {
+      locHold.current = null;
+      if (navigator.vibrate) navigator.vibrate(10);
+      navigate(`${x.type === 'prospect' ? '/prospects' : '/customers'}/${x.account.id}`);
+    }, 500);
+    locHold.current = h;
+  };
+  const locHoldMove = (e) => {
+    const h = locHold.current;
+    if (h && (Math.abs(e.clientX - h.x) > 10 || Math.abs(e.clientY - h.y) > 10)) {
+      clearTimeout(h.timer);
+      locHold.current = null;
+    }
+  };
+  const locHoldEnd = () => {
+    if (locHold.current) clearTimeout(locHold.current.timer);
+    locHold.current = null;
+  };
   const ordinal = (n) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
   const addLocation = () => {
     if (!newLoc || !(newLoc.street.trim() || newLoc.town.trim())) return;
@@ -1812,7 +1835,15 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
             <div className="av-section-title">Locations</div>
             <div className="av-group">
               {otherLocations.map((x) => (
-                <div key={`${x.type}-${x.account.id}`} className="av-row av-static-row">
+                <div
+                  key={`${x.type}-${x.account.id}`}
+                  className="av-row av-static-row av-loc-row"
+                  onPointerDown={(e) => locHoldStart(x, e)}
+                  onPointerMove={locHoldMove}
+                  onPointerUp={locHoldEnd}
+                  onPointerCancel={locHoldEnd}
+                  onContextMenu={(e) => e.preventDefault()}
+                >
                   <span className="av-row-text">
                     <span className="av-row-value">{displayName(x.account)}</span>
                     <span className="av-row-sub">
@@ -1901,6 +1932,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
                 </button>
               )}
             </div>
+            {otherLocations.length > 0 && !locMsg && <div className="av-loc-hint">Hold a location to open it</div>}
             {locMsg && <div className="av-loc-msg">{locMsg}. It's in {config.plural} as its own {config.singular.toLowerCase()}, linked to this one.</div>}
           </>
         )}
