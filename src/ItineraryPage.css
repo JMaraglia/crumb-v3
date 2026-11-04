@@ -540,3 +540,129 @@
   color: #8e8e93;
   padding: 10px 4px 0;
 }
+
+/* ---------- Share / Print buttons ---------- */
+.it-share {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.it-page .it-share-btn,
+.it-page .it-share-btn:hover {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 10px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+}
+
+.it-page .it-share-plain,
+.it-page .it-share-plain:hover {
+  background: #fff;
+  color: #0077cc;
+  border: 1px solid #d1d1d6;
+}
+
+.it-share-msg {
+  font-size: 0.85rem;
+  color: #3a3a3c;
+  margin: -4px 0 10px;
+}
+
+/* ---------- Printed / PDF checklist ---------- */
+.it-print {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .it-page {
+    position: static;
+    overflow: visible;
+    background: #fff;
+  }
+
+  /* Hide the app; show only the checklist */
+  .it-page > *:not(.it-print) {
+    display: none !important;
+  }
+
+  .it-print {
+    display: block;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #000;
+  }
+
+  .it-print-brand {
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 800;
+    color: #0077cc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .it-print-heading {
+    text-align: center;
+    font-size: 22pt;
+    font-weight: 800;
+    margin: 2pt 0 4pt;
+  }
+
+  .it-print-sub {
+    text-align: center;
+    font-size: 12pt;
+    font-weight: 700;
+    padding-bottom: 10pt;
+    margin-bottom: 14pt;
+    border-bottom: 2px solid #0077cc;
+  }
+
+  .it-print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13pt;
+  }
+
+  .it-print-table th,
+  .it-print-table td {
+    border-bottom: 1.5px solid #000;
+    padding: 9pt 6pt;
+    text-align: left;
+    font-weight: 600;
+    color: #000;
+    -webkit-text-stroke: 0.25px #000;
+  }
+
+  .it-print-table th {
+    font-size: 10pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .it-print-table .it-print-box {
+    width: 24pt;
+    font-size: 17pt;
+    line-height: 1;
+  }
+
+  .it-print-table .it-print-town {
+    text-align: right;
+    white-space: nowrap;
+  }
+}

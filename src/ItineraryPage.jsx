@@ -40,6 +40,22 @@ function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
+// Town from an address like "12 Main St, Worcester, MA 01601" → "Worcester".
+// Blank if the address doesn't have a recognizable town in it.
+const STATE_ZIP = /^(?:[A-Za-z]{2}|\d{5}(?:-\d{4})?|[A-Za-z]{2}\s+\d{5}(?:-\d{4})?)$/;
+function townOf(address) {
+  if (!address) return '';
+  const parts = address.split(',').map((s) => s.trim()).filter(Boolean);
+  while (parts.length && /^(usa|us|united states)$/i.test(parts[parts.length - 1])) parts.pop();
+  if (parts.length && STATE_ZIP.test(parts[parts.length - 1])) parts.pop();
+  if (!parts.length) return '';
+  if (parts.length === 1) {
+    // A single piece is a town only if it isn't a street address ("123 Main St")
+    return /^\d/.test(parts[0]) ? '' : parts[0].replace(/\s+[A-Za-z]{2}(?:\s+\d{5}(?:-\d{4})?)?$/, '');
+  }
+  return parts[parts.length - 1].replace(/\s+[A-Za-z]{2}(?:\s+\d{5}(?:-\d{4})?)?$/, '');
+}
+
 /* ---------- page ---------- */
 function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspects }) {
   const navigate = useNavigate();
@@ -190,6 +206,46 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setOpenKey(null);
   };
 
+  /* ---- share / print the day as a checklist ---- */
+  const [shareMsg, setShareMsg] = useState('');
+  const listText = () =>
+    [
+      `Itinerary · ${niceDate(date)}`,
+      '',
+      ...stops.map((s) => {
+        const town = townOf(s.address);
+        return `${s.done ? '☑' : '☐'} ${s.title}${town ? ` — ${town}` : ''}`;
+      }),
+    ].join('\n');
+
+  const shareList = async () => {
+    setShareMsg('');
+    const text = listText();
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Itinerary · ${niceDate(date)}`, text });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // closed the share sheet
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareMsg('Checklist copied. Paste it into a text or email.');
+    } catch {
+      setShareMsg("Sharing isn't available here. Use Print / PDF instead.");
+    }
+  };
+
+  const printList = () => {
+    setShareMsg('');
+    try {
+      window.print();
+    } catch {
+      setShareMsg("Printing isn't available here. Use Share instead.");
+    }
+  };
+
   const changeDay = (n) => {
     setDate((d) => addDaysToKey(d, n));
     setOpenKey(null);
@@ -238,6 +294,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             </div>
           </div>
         )}
+
+        {stops.length > 0 && (
+          <div className="it-share">
+            <button className="it-share-btn" onClick={shareList}>Share</button>
+            <button className="it-share-btn it-share-plain" onClick={printList}>Print / PDF</button>
+          </div>
+        )}
+        {shareMsg && <div className="it-share-msg">{shareMsg}</div>}
 
         {stops.length === 0 ? (
           <div className="it-empty">
@@ -391,6 +455,35 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       )}
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
+
+      {/* Only shows on the printed / PDF copy */}
+      {stops.length > 0 && (
+        <div className="it-print">
+          <div className="it-print-brand">Crumb.</div>
+          <div className="it-print-heading">Itinerary</div>
+          <div className="it-print-sub">
+            {niceDate(date)} · {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
+          </div>
+          <table className="it-print-table">
+            <thead>
+              <tr>
+                <th className="it-print-box" />
+                <th>Account</th>
+                <th className="it-print-town">Town</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stops.map((s) => (
+                <tr key={s.key}>
+                  <td className="it-print-box">{s.done ? '☑' : '☐'}</td>
+                  <td>{s.title}</td>
+                  <td className="it-print-town">{townOf(s.address)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
