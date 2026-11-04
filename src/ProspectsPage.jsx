@@ -79,13 +79,19 @@ export function ProspectDetailPage({ prospects, setProspects, contacts = [], set
 }
 
 // /prospects/new and /prospects/:id/edit
-export function ProspectEditPage({ prospects, setProspects, isNew = false }) {
+export function ProspectEditPage({ prospects, setProspects, isNew = false, contacts = [], setContacts }) {
   return (
     <AccountEdit
       config={PROSPECT_CONFIG}
       accounts={prospects}
       setAccounts={setProspects}
       isNew={isNew}
+      onConvert={
+        setContacts
+          ? (prospect, accountNumber) =>
+              convertProspect(prospect, accountNumber, contacts, setContacts, setProspects)
+          : null
+      }
     />
   );
 }

@@ -938,11 +938,13 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
 /* ------------------------------------------------------------------ */
 const BLANK_CONTACT = { title: '', name: '', phone: '', textPhone: '', email: '' };
 
-export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
+export function AccountEdit({ config, accounts, setAccounts, isNew = false, onConvert = null }) {
   const navigate = useNavigate();
   const goBack = useGoBack();
   const { id } = useParams();
   const existing = isNew ? null : accounts.find((a) => String(a.id) === id);
+  const [converting, setConverting] = useState(false);
+  const [newAccountNumber, setNewAccountNumber] = useState('');
 
   const [name, setName] = useState(existing ? existing.name || '' : '');
   // Address pieces: use the saved ones, or split an older one-line address
@@ -1001,11 +1003,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   const toggleDay = (d) =>
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
-  const save = () => {
-    if (!name.trim()) {
-      window.alert(`Add a ${config.singular.toLowerCase()} name first.`);
-      return;
-    }
+  // Everything on the form, ready to save (also used by Convert, so unsaved edits carry over)
+  const buildFields = () => {
     const fields = {
       name: name.trim(),
       street: street.trim(),
@@ -1042,6 +1041,15 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     fields.showOnCalendar = showOnCalendar;
     if (config.hasAccountNumber) fields.accountNumber = accountNumber.trim();
 
+    return fields;
+  };
+
+  const save = () => {
+    if (!name.trim()) {
+      window.alert(`Add a ${config.singular.toLowerCase()} name first.`);
+      return;
+    }
+    const fields = buildFields();
     if (isNew) {
       const created = { id: Date.now(), ...fields, notes: [] };
       setAccounts((prev) => [...prev, created]);
@@ -1303,12 +1311,63 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
           </label>
         </div>
 
+        {!isNew && onConvert && (
+          <button
+            className="av-convert"
+            onClick={() => {
+              if (!name.trim()) {
+                window.alert(`Add a ${config.singular.toLowerCase()} name first.`);
+                return;
+              }
+              setConverting(true);
+            }}
+          >
+            Convert to customer
+          </button>
+        )}
+
         {!isNew && (
           <button className="av-delete" onClick={remove}>
             Delete {config.singular}
           </button>
         )}
       </div>
+
+      {converting && (
+        <div className="av-sheet-backdrop" onClick={() => setConverting(false)}>
+          <div className="av-convert-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="av-convert-title">Convert {name.trim()} to a customer</div>
+            <div className="av-convert-sub">
+              Your changes on this screen, plus notes, contacts, address, and visit schedule, move over. It leaves your
+              Prospects list.
+            </div>
+            <input
+              className="av-convert-input"
+              placeholder="Customer account number"
+              inputMode="numeric"
+              value={newAccountNumber}
+              onChange={(e) => setNewAccountNumber(e.target.value)}
+              autoFocus
+            />
+            <div className="av-convert-actions">
+              <button className="av-convert-cancel" onClick={() => setConverting(false)}>
+                Cancel
+              </button>
+              <button
+                className="av-convert-go"
+                disabled={!newAccountNumber.trim()}
+                onClick={() => {
+                  const path = onConvert({ ...existing, ...buildFields() }, newAccountNumber.trim());
+                  setConverting(false);
+                  if (path) navigate(path, { replace: true });
+                }}
+              >
+                Convert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
