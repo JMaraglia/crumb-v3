@@ -792,3 +792,13 @@
   cursor: pointer;
   overflow: hidden;
 }
+
+.it-move-warn {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff4e5;
+  color: #8a4b00;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}

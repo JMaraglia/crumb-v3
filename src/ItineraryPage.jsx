@@ -31,6 +31,8 @@ import {
   visitMoveInto,
   visitTimeOn,
   pruneMoves,
+  isDueOn,
+  PROSPECT_DAYS_FIELD,
   CUSTOMER_DAYS_FIELD,
   CUSTOMER_COLOR,
 } from './schedule';
@@ -564,6 +566,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       {moving && (
         <MoveSheet
           stop={moving.stop}
+          acct={moving.acct}
           viewDate={date}
           onCancel={() => setMoving(null)}
           onSave={(toKey, time) => saveMove(moving.stop, moving.acct, toKey, time)}
@@ -620,12 +623,31 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 }
 
 /* ---------- Move one visit to another day ---------- */
-function MoveSheet({ stop, viewDate, onSave, onCancel }) {
+// Other visits this account already has in the same Monday–Sunday week as `toKey`
+// (not counting the visit being moved). Used for the heads-up in the Move panel.
+function otherVisitsThatWeek(acct, stop, original, toKey) {
+  if (!acct || !/^\d{4}-\d{2}-\d{2}$/.test(toKey)) return [];
+  const field = stop.accountType === 'customer' ? CUSTOMER_DAYS_FIELD : PROSPECT_DAYS_FIELD;
+  const moves = { ...(acct.visitMoves || {}) };
+  delete moves[original]; // leave out the visit being moved
+  const others = { ...acct, visitMoves: moves };
+  const weekday = (fromKey(toKey).getDay() + 6) % 7; // Mon = 0
+  const monday = addDaysToKey(toKey, -weekday);
+  const found = [];
+  for (let i = 0; i < 7; i++) {
+    const k = addDaysToKey(monday, i);
+    if (k !== original && isDueOn(others, k, field)) found.push(k);
+  }
+  return found;
+}
+
+function MoveSheet({ stop, acct, viewDate, onSave, onCancel }) {
   const original = stop.movedFrom || viewDate;
   const [toKey, setToKey] = useState(stop.movedFrom ? viewDate : addDaysToKey(viewDate, 1));
   const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : '');
   const nice = (k) => fromKey(k).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(toKey) && toKey !== original;
+  const clash = valid ? otherVisitsThatWeek(acct, stop, original, toKey) : [];
 
   return (
     <div className="it-sheet-backdrop" onClick={onCancel}>
@@ -656,6 +678,12 @@ function MoveSheet({ stop, viewDate, onSave, onCancel }) {
             </select>
           </label>
         </div>
+        {clash.length > 0 && (
+          <div className="it-move-warn">
+            Heads up: {stop.title} already has a visit {clash.includes(toKey) ? 'on that day' : 'that week'} (
+            {clash.map(nice).join(', ')}). You can still move it.
+          </div>
+        )}
         {stop.movedFrom && (
           <button className="it-move-undo" onClick={() => onSave(null)}>
             Undo move (back to {nice(original)})
