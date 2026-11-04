@@ -129,6 +129,10 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
       stops.push({ key: `m-${v.id || idx}`, title: v.name || 'Stop', time: hhmmToMinutes(v.time), place: '', done: Boolean(v.done), url: '/itinerary' });
     });
 
+    // Stops swiped off this day's Itinerary list don't get reminders or count in the summary
+    const gone = (readJSON('crumb_itinerary_removed', {}) || {})[day] || [];
+    for (let j = stops.length - 1; j >= 0; j--) if (gone.includes(stops[j].key)) stops.splice(j, 1);
+
     // Reminders before visits and appointments (each one once, even if it's on both lists)
     if (settings.lead > 0) {
       const seen = new Set();

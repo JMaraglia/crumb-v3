@@ -24,7 +24,7 @@ function timeLabel(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${m === 0 ? '00' : m} ${h < 12 ? 'AM' : 'PM'}`;
+  return `${hour12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
 // 6 rows x 7 days, starting on the Monday on or before the 1st.

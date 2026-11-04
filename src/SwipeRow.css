@@ -1,0 +1,32 @@
+/* Swipe-left-to-delete rows (Itinerary). App.css styles every button, so this resets them. */
+.sw-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.sw-row {
+  position: relative;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.sw-wrap > .sw-del,
+.sw-wrap > .sw-del:hover,
+.sw-wrap > .sw-del:active {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 88px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: #ff3b30;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: center;
+}

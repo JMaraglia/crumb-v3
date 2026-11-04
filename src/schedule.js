@@ -176,13 +176,16 @@ export const CUSTOMER_COLOR = '#1e8e3e'; // customers' scheduled visits (green) 
 // for every day from startKey to endKey. These are built on the fly, never saved.
 export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, customers = []) {
   const blocks = [];
+  const removed = readJSON('crumb_itinerary_removed', {}) || {}; // visits swiped off a day on the Itinerary
   for (let k = startKey; k <= endKey; k = addDaysToKey(k, 1)) {
+    const gone = removed[k] || [];
     customers.forEach((c) => {
       if (!c.name || !c.name.trim()) return;
       if (c.showOnCalendar === false) return;
       const cTime = visitTimeOn(c, k);
       if (cTime == null) return;
       if (!isDueOn(c, k, CUSTOMER_DAYS_FIELD)) return;
+      if (gone.includes(`c-${c.id}`)) return;
       blocks.push({
         id: `visit-c-${c.id}-${k}`,
         virtual: true,
@@ -204,6 +207,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
       const pTime = visitTimeOn(p, k);
       if (pTime == null) return; // no usual time = can't place it on the grid
       if (!isDueOn(p, k)) return;
+      if (gone.includes(`p-${p.id}`)) return;
       const st = stageInfo(p.stage);
       blocks.push({
         id: `visit-p-${p.id}-${k}`,

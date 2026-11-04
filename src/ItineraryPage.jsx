@@ -37,12 +37,14 @@ import {
   CUSTOMER_COLOR,
 } from './schedule';
 import { PdfDoc } from './pdf';
+import SwipeRow from './SwipeRow';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
 const DONE_KEY = 'crumb_itinerary_done';            // checkmarks for scheduled/event stops
 const LOCKS_KEY = 'crumb_itinerary_locks';          // { date: { stopKey: minutes } } times locked for one day
 const EVENTS_KEY = 'crumb_calendar_events';         // calendar events (read only here)
+const REMOVED_KEY = 'crumb_itinerary_removed';      // { date: [stopKey] } visits/events swiped off one day's list
 
 function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -139,6 +141,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [lockMap, setLockMap] = useState(() => readJSON(LOCKS_KEY, {}));
   const [locking, setLocking] = useState(null); // stop whose time is being locked
   const [timing, setTiming] = useState(null);   // stop whose time is being changed (tapped the time)
+  const [removedMap, setRemovedMap] = useState(() => readJSON(REMOVED_KEY, {}) || {});
+  const [undoIt, setUndoIt] = useState(null);   // { text, restore, timer } after swiping a stop away
   const events = toVisitList(readJSON(EVENTS_KEY, []));
 
   const saveVisits = (next) => {
@@ -251,6 +255,10 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       });
     });
 
+    // Stops swiped off this day's list
+    const gone = removedMap[day] || [];
+    for (let i = list.length - 1; i >= 0; i--) if (gone.includes(list[i].key)) list.splice(i, 1);
+
     // Locked times: a lock for just this day wins; otherwise "Always at this time" accounts
     // and calendar events (real appointments) count as locked.
     const dayLocks = lockMap[day] || {};
@@ -309,6 +317,48 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     if (!window.confirm('Remove this stop?')) return;
     saveVisits(visits.filter((_, i) => i !== stop.index));
     setOpenKey(null);
+  };
+
+  // Swipe left on a stop. Hand-added stops are deleted. Scheduled visits and calendar events
+  // only come off this day's list (the regular schedule and the calendar stay the same).
+  const saveRemoved = (next) => {
+    setRemovedMap(next);
+    localStorage.setItem(REMOVED_KEY, JSON.stringify(next));
+  };
+  const swipeRemove = (stop) => {
+    let restore;
+    if (stop.kind === 'manual') {
+      const v = visits[stop.index];
+      saveVisits(visits.filter((_, i) => i !== stop.index));
+      restore = () => {
+        const cur = toVisitList(readJSON(VISITS_KEY, []));
+        cur.splice(Math.min(stop.index, cur.length), 0, v);
+        saveVisits(cur);
+      };
+    } else {
+      const day = date;
+      const next = { ...removedMap, [day]: [...(removedMap[day] || []), stop.key] };
+      const cutoff = addDaysToKey(today, -60); // forget old ones
+      Object.keys(next).forEach((k) => k < cutoff && delete next[k]);
+      saveRemoved(next);
+      restore = () => {
+        const cur = readJSON(REMOVED_KEY, {}) || {};
+        const left = (cur[day] || []).filter((k) => k !== stop.key);
+        const back = { ...cur, [day]: left };
+        if (!left.length) delete back[day];
+        saveRemoved(back);
+      };
+    }
+    if (openKey === stop.key) setOpenKey(null);
+    if (undoIt && undoIt.timer) clearTimeout(undoIt.timer);
+    const timer = setTimeout(() => setUndoIt(null), 6000);
+    setUndoIt({ text: stop.kind === 'manual' ? 'Stop deleted' : 'Removed from this day', restore, timer });
+  };
+  const undoRemove = () => {
+    if (!undoIt) return;
+    clearTimeout(undoIt.timer);
+    undoIt.restore();
+    setUndoIt(null);
   };
 
   /* ---- share / print the day as a checklist ---- */
@@ -578,7 +628,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
               const latest = acct ? lastNote(acct) : null;
               return (
                 <div key={stop.key} className={`it-stop ${stop.done ? 'is-done' : ''} ${open ? 'is-open' : ''}`}>
-                  <div className="it-stop-row">
+                  <SwipeRow className="it-stop-row" label={stop.kind === 'manual' ? 'Delete' : 'Remove'} onDelete={() => swipeRemove(stop)}>
                     <button className="it-stop-main" onClick={() => openStop(stop)}>
                       <span
                         className={`it-time ${stop.locked ? 'is-locked' : ''}`}
@@ -610,7 +660,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                     >
                       {stop.done ? '✓' : ''}
                     </button>
-                  </div>
+                  </SwipeRow>
 
                   {open && (
                     <div className="it-expand">
@@ -738,7 +788,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             })}
           </div>
         )}
-        {stops.length > 0 && <div className="it-hint">Tap a stop for details and a quick note · Tap ○ when done</div>}
+        {stops.length > 0 && <div className="it-hint">Tap a stop for details and a quick note · Tap ○ when done · Swipe left to remove</div>}
       </div>
 
       <button className="it-fab" onClick={() => setAdding(true)} aria-label="Add stop">
@@ -771,6 +821,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           onCancel={() => setLocking(null)}
           onSave={(time) => saveLock(locking, time)}
         />
+      )}
+
+      {undoIt && (
+        <div className="it-undo">
+          <span>{undoIt.text}</span>
+          <button className="it-undo-btn" onClick={undoRemove}>
+            Undo
+          </button>
+        </div>
       )}
 
       {timing && (

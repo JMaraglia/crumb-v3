@@ -167,6 +167,7 @@
 .it-stop-row {
   display: flex;
   align-items: center;
+  background: #fff; /* covers the red Remove button until swiped */
 }
 
 .it-page .it-stop-main,
@@ -1012,4 +1013,42 @@
   text-align: center;
   -webkit-appearance: none;
   appearance: none;
+}
+
+/* Undo bar after swiping a stop away */
+.it-undo {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.it-page .it-undo-btn,
+.it-page .it-undo-btn:hover {
+  color: #64b5ff;
+  font-weight: 700;
+  background: none;
+  border: none;
+  padding: 4px 0;
+}
+
+@media print {
+  .it-undo {
+    display: none;
+  }
+}
+
+/* the row now has its own white background (for swiping), so show the open marker on it too */
+.it-stop.is-open .it-stop-row {
+  box-shadow: inset 3px 0 0 #0077cc;
 }
