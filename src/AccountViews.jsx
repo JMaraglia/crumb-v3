@@ -1382,6 +1382,9 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const ordinal = (n) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
   const addLocation = () => {
     if (!newLoc || !(newLoc.street.trim() || newLoc.town.trim())) return;
+    const carried = filledContacts
+      .filter((c, i) => isOwner(c) || (newLoc.copy || []).includes(i))
+      .map((c) => ({ ...c, title: c.title.trim(), name: c.name.trim(), phone: c.phone.trim(), textPhone: c.textPhone.trim(), email: c.email.trim() }));
     const g = group || `${(name || existing.name || 'Group').trim()} · ${Date.now().toString(36)}`;
     const loc = {
       id: Date.now(),
@@ -1392,7 +1395,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       zip: newLoc.zip.trim(),
       address: joinAddress({ street: newLoc.street, town: newLoc.town, state: newLoc.state.toUpperCase(), zip: newLoc.zip }),
       group: g,
-      contacts: [],
+      contacts: carried,
       notes: [],
       [config.visitDaysField]: [],
       visitFrequency: 'weekly',
@@ -1407,6 +1410,10 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [contacts, setContacts] = useState(
     existing && existing.contacts ? existing.contacts.map((c) => ({ ...BLANK_CONTACT, ...c })) : []
   );
+  // Contacts on this location: owners always carry over to a new location; anyone else only if checked
+  // (for when the same person does the ordering there).
+  const filledContacts = contacts.filter((c) => c.title.trim() || c.name.trim() || c.phone.trim() || c.textPhone.trim() || c.email.trim());
+  const isOwner = (c) => /owner/i.test(c.title || '');
   const [days, setDays] = useState(
     existing && existing[config.visitDaysField] ? [...existing[config.visitDaysField]] : []
   );
@@ -1620,6 +1627,37 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
                       onChange={(e) => setNewLoc({ ...newLoc, zip: e.target.value })}
                     />
                   </div>
+                  {filledContacts.length > 0 && (
+                    <div className="av-loc-contacts">
+                      {filledContacts.some(isOwner) && (
+                        <div className="av-loc-owner">
+                          Owner added automatically: {filledContacts.filter(isOwner).map((c) => c.name || c.title).join(', ')}
+                        </div>
+                      )}
+                      {filledContacts.some((c) => !isOwner(c)) && (
+                        <>
+                          <div className="av-loc-q">Same person orders at this location?</div>
+                          {filledContacts.map((c, i) =>
+                            isOwner(c) ? null : (
+                              <label key={i} className="av-loc-check">
+                                <input
+                                  type="checkbox"
+                                  checked={(newLoc.copy || []).includes(i)}
+                                  onChange={(e) =>
+                                    setNewLoc({
+                                      ...newLoc,
+                                      copy: e.target.checked ? [...(newLoc.copy || []), i] : (newLoc.copy || []).filter((x) => x !== i),
+                                    })
+                                  }
+                                />
+                                <span>{[c.name, c.title].filter(Boolean).join(' · ') || c.phone || c.email}</span>
+                              </label>
+                            )
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                   <div className="av-loc-actions">
                     <button type="button" className="av-loc-cancel" onClick={() => setNewLoc(null)}>Cancel</button>
                     <button type="button" className="av-loc-add" disabled={!(newLoc.street.trim() || newLoc.town.trim())} onClick={addLocation}>
@@ -1633,7 +1671,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
                   className="av-row av-add-loc"
                   onClick={() => {
                     setLocMsg('');
-                    setNewLoc({ street: '', town: '', state: addrState || '', zip: '' });
+                    setNewLoc({ street: '', town: '', state: addrState || '', zip: '', copy: [] });
                   }}
                 >
                   + Add {ordinal(otherLocations.length + 2)} location
