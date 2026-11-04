@@ -31,6 +31,7 @@ import {
   CUSTOMER_DAYS_FIELD,
   CUSTOMER_COLOR,
 } from './schedule';
+import { PdfDoc } from './pdf';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -65,6 +66,54 @@ function townOf(address) {
     town = town.replace(TRAILING_STATE_ZIP, '');
   }
   return state ? `${town}, ${state.toUpperCase()}` : town;
+}
+
+// The shared PDF: same as the printout — this day on the left, the next day on the right,
+// checkbox + account + town, then write-in lines.
+function buildItineraryPdf(days) {
+  const doc = new PdfDoc();
+  const BLUE = '#0077cc';
+  const gap = 24;
+  const colW = (doc.right - doc.left - gap) / 2;
+  const ROW = 22;
+  const LINES = 16;
+
+  days.forEach(({ dayKey, list }, i) => {
+    const x0 = doc.left + i * (colW + gap);
+    const x1 = x0 + colW;
+    let y = doc.top;
+    doc.text('Crumb.', x0, y, { size: 15, bold: true, color: BLUE });
+    doc.text('ITINERARY', x1, y + 4, { size: 7.5, bold: true, align: 'right', spacing: 1.3 });
+    y += 21;
+    const heading = fromKey(dayKey).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    doc.text(heading, x0, y, { size: 13, bold: true });
+    doc.text(`${list.length} ${list.length === 1 ? 'stop' : 'stops'}`, x1, y + 3, { size: 8.5, bold: true, align: 'right' });
+    y += 18;
+    doc.line(x0, y, x1, y, { width: 2, color: BLUE });
+
+    const rows = Math.max(LINES, list.length);
+    for (let r = 0; r < rows; r++) {
+      const s = list[r];
+      const top = y + 7;
+      if (s) {
+        doc.checkbox(x0 + 2, top + 1, 9, s.done);
+        const town = s.townLine || townOf(s.address);
+        const townW = town ? doc.widthOf(town, { size: 9 }) + 8 : 0;
+        const nameLines = doc.wrap(s.title, colW - 20 - townW, { size: 10, bold: true });
+        doc.text(nameLines[0] + (nameLines.length > 1 ? '…' : ''), x0 + 18, top, { size: 10, bold: true });
+        if (town) doc.text(town, x1, top + 1, { size: 9, align: 'right' });
+      } else {
+        doc.rect(x0 + 2, top + 1, 9, 9, { stroke: '#aaaaaa', width: 0.8 });
+      }
+      y += ROW;
+      doc.line(x0, y, x1, y, { width: s ? 0.8 : 0.5, color: s ? '#000000' : '#c4c4c4' });
+    }
+    // dashed fold line between the two columns
+    if (i === 0) {
+      for (let dy = doc.top; dy < y; dy += 6) doc.line(x1 + gap / 2, dy, x1 + gap / 2, dy + 3, { width: 0.5, color: '#999999' });
+    }
+  });
+  return doc.save('Crumb itinerary');
 }
 
 /* ---------- page ---------- */
@@ -225,30 +274,33 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
   /* ---- share / print the day as a checklist ---- */
   const [shareMsg, setShareMsg] = useState('');
-  const listText = () =>
-    [
-      `Itinerary · ${niceDate(date)}`,
-      '',
-      ...stops.map((s) => `${s.done ? '☑' : '☐'} ${s.title}`),
-    ].join('\n');
-
   const shareList = async () => {
     setShareMsg('');
-    const text = listText();
+    const nextKey = addDaysToKey(date, 1);
+    const blob = buildItineraryPdf([
+      { dayKey: date, list: stops },
+      { dayKey: nextKey, list: buildStops(nextKey) },
+    ]);
+    const fileName = `Crumb itinerary - ${fromKey(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.pdf`;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: `Itinerary · ${niceDate(date)}`, text });
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Crumb itinerary' });
         return;
       }
     } catch (err) {
       if (err && err.name === 'AbortError') return; // closed the share sheet
     }
-    try {
-      await navigator.clipboard.writeText(text);
-      setShareMsg('Checklist copied. Paste it into a text or email.');
-    } catch {
-      setShareMsg("Sharing isn't available here. Use Print / PDF instead.");
-    }
+    // Fallback: download the PDF
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setShareMsg('PDF downloaded.');
   };
 
   const printList = () => {
