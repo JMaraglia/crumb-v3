@@ -200,7 +200,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       });
 
     events
-      .filter((ev) => ev.day === day)
+      .filter((ev) => ev.date === day)
       .filter((ev) => (typeof ev.showInItinerary === 'boolean' ? ev.showInItinerary : Boolean(ev.accountId)))
       .forEach((ev) => {
         const key = `e-${ev.id}`;
@@ -220,7 +220,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       });
 
     visits.forEach((v, index) => {
-      if (v.day !== day) return;
+      if (v.date !== day) return;
       const acct = v.accountId ? findAccount(v.accountType, v.accountId) : null;
       list.push({
         key: `m-${v.id || index}`,
