@@ -300,15 +300,14 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
           </div>
           <div className="mn-print-bottom">
             <div className="mn-print-heading">{filterSummary}</div>
-            <div className="mn-print-count">
-              {shown.length} {shown.length === 1 ? 'note' : 'notes'}
-            </div>
           </div>
           {groups.map((g) => (
             <div key={g.label} className="mn-print-group">
               <div className="mn-print-group-head">
                 <span>{g.label}</span>
-                <span className="mn-print-group-side">{groupSide(g)}</span>
+                {(g.label === 'Today' || g.label === 'Yesterday') && (
+                  <span className="mn-print-group-side">{groupSide(g)}</span>
+                )}
               </div>
               {g.notes.map((n) => (
                 <div key={`${n.kind}-${n.accountId}-${n.index}`} className="mn-print-row">
