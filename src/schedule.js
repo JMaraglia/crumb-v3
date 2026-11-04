@@ -96,8 +96,42 @@ function regularDueOn(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
   return weeks % freq.weeks === 0;
 }
 
+// One-off moves: account.visitMoves = { 'original date': { to: 'new date', time: minutes | null } }
+// The regular schedule never changes; a moved visit just leaves its day and shows up on the new one.
+export function visitMoveInto(account, dateKey) {
+  const moves = account.visitMoves || {};
+  return Object.keys(moves).find((from) => moves[from] && moves[from].to === dateKey) || null;
+}
+
+function movedAway(account, dateKey) {
+  const m = (account.visitMoves || {})[dateKey];
+  return Boolean(m && m.to && m.to !== dateKey);
+}
+
+// The visit time for that date (a moved visit can have its own time).
+export function visitTimeOn(account, dateKey) {
+  const from = visitMoveInto(account, dateKey);
+  const moved = from ? account.visitMoves[from] : null;
+  if (moved && typeof moved.time === 'number') return moved.time;
+  return typeof account.visitTime === 'number' ? account.visitTime : null;
+}
+
+// Moves to keep when saving: drops ones where both dates are more than 60 days ago.
+export function pruneMoves(moves) {
+  const cutoff = addDaysToKey(todayKeyLocal(), -60);
+  const out = {};
+  Object.keys(moves || {}).forEach((from) => {
+    const m = moves[from];
+    if (m && m.to && (from >= cutoff || m.to >= cutoff)) out[from] = m;
+  });
+  return out;
+}
+
 // Due on this date, and not snoozed (snoozeUntil = first date visits come back).
+// A visit moved INTO this date always counts; one moved AWAY never does.
 export function isDueOn(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
+  if (visitMoveInto(account, dateKey)) return true;
+  if (movedAway(account, dateKey)) return false;
   if (account.snoozeUntil && dateKey < account.snoozeUntil) return false;
   return regularDueOn(account, dateKey, daysField);
 }
@@ -146,7 +180,8 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
     customers.forEach((c) => {
       if (!c.name || !c.name.trim()) return;
       if (c.showOnCalendar === false) return;
-      if (typeof c.visitTime !== 'number') return;
+      const cTime = visitTimeOn(c, k);
+      if (cTime == null) return;
       if (!isDueOn(c, k, CUSTOMER_DAYS_FIELD)) return;
       blocks.push({
         id: `visit-c-${c.id}-${k}`,
@@ -154,8 +189,8 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
         source: 'schedule',
         title: c.name,
         date: k,
-        start: c.visitTime,
-        end: Math.min(c.visitTime + VISIT_BLOCK_MINUTES, 1440),
+        start: cTime,
+        end: Math.min(cTime + VISIT_BLOCK_MINUTES, 1440),
         color: CUSTOMER_COLOR,
         location: c.address || '',
         accountType: 'customer',
@@ -166,7 +201,8 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
     prospects.forEach((p) => {
       if (!p.name || !p.name.trim()) return;
       if (p.showOnCalendar === false) return;
-      if (typeof p.visitTime !== 'number') return; // no usual time = can't place it on the grid
+      const pTime = visitTimeOn(p, k);
+      if (pTime == null) return; // no usual time = can't place it on the grid
       if (!isDueOn(p, k)) return;
       const st = stageInfo(p.stage);
       blocks.push({
@@ -175,8 +211,8 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
         source: 'schedule',
         title: p.name,
         date: k,
-        start: p.visitTime,
-        end: Math.min(p.visitTime + VISIT_BLOCK_MINUTES, 1440),
+        start: pTime,
+        end: Math.min(pTime + VISIT_BLOCK_MINUTES, 1440),
         color: st ? st.color : '#0077cc',
         location: p.address || '',
         accountType: 'prospect',

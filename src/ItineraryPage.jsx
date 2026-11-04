@@ -28,6 +28,9 @@ import {
   hhmmToMinutes,
   minutesToHhmm,
   onItinerary,
+  visitMoveInto,
+  visitTimeOn,
+  pruneMoves,
   CUSTOMER_DAYS_FIELD,
   CUSTOMER_COLOR,
 } from './schedule';
@@ -126,6 +129,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [savedFlash, setSavedFlash] = useState('');
   const [sheet, setSheet] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [moving, setMoving] = useState(null); // { stop, acct } while the Move panel is open
 
   const [visits, setVisits] = useState(() => toVisitList(readJSON(VISITS_KEY, [])));
   const [doneMap, setDoneMap] = useState(() => readJSON(DONE_KEY, {}));
@@ -160,7 +164,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         list.push({
           key,
           kind: 'scheduled',
-          time: typeof p.visitTime === 'number' ? p.visitTime : null,
+          time: visitTimeOn(p, day),
+          movedFrom: visitMoveInto(p, day),
           title: p.name,
           address: p.address,
           townLine: p.town ? [p.town, p.state].filter(Boolean).join(', ') : '',
@@ -179,7 +184,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         list.push({
           key,
           kind: 'scheduled',
-          time: typeof c.visitTime === 'number' ? c.visitTime : null,
+          time: visitTimeOn(c, day),
+          movedFrom: visitMoveInto(c, day),
           title: c.name,
           address: c.address,
           townLine: c.town ? [c.town, c.state].filter(Boolean).join(', ') : '',
@@ -312,6 +318,24 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     }
   };
 
+  // Move one visit to another day (and maybe time). The regular schedule doesn't change.
+  // `fromKey` is the visit's original date; moving an already-moved visit updates the same move.
+  const saveMove = (stop, acct, toKey, time) => {
+    const fromKeyDate = stop.movedFrom || date;
+    const setList = stop.accountType === 'customer' ? setContacts : setProspects;
+    setList((prev) =>
+      prev.map((x) => {
+        if (x.id !== acct.id) return x;
+        const moves = { ...(x.visitMoves || {}) };
+        if (toKey === null) delete moves[fromKeyDate]; // undo
+        else moves[fromKeyDate] = { to: toKey, time: typeof time === 'number' ? time : null };
+        return { ...x, visitMoves: pruneMoves(moves) };
+      })
+    );
+    setMoving(null);
+    setOpenKey(null);
+  };
+
   const changeDay = (n) => {
     setDate((d) => addDaysToKey(d, n));
     setOpenKey(null);
@@ -396,6 +420,9 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                       <span className="it-stop-text">
                         <span className="it-stop-title">{stop.title}</span>
                         {stop.address && <span className="it-stop-sub">{stop.address}</span>}
+                        {stop.movedFrom && (
+                          <span className="it-moved">Moved from {fromKey(stop.movedFrom).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        )}
                         <span className="it-tag" style={{ color: stop.tag.color, borderColor: stop.tag.color }}>
                           {stop.tag.label}
                         </span>
@@ -465,6 +492,11 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             Snooze
                           </button>
                         )}
+                        {stop.kind === 'scheduled' && acct && (
+                          <button className="it-quick-btn" onClick={() => setMoving({ stop, acct })}>
+                            Move
+                          </button>
+                        )}
                       </div>
                       {acct ? (
                         <div className="it-note">
@@ -526,6 +558,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         />
       )}
 
+      {moving && (
+        <MoveSheet
+          stop={moving.stop}
+          viewDate={date}
+          onCancel={() => setMoving(null)}
+          onSave={(toKey, time) => saveMove(moving.stop, moving.acct, toKey, time)}
+        />
+      )}
+
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
 
       {/* Only shows on the printed / PDF copy: this day on the left, the next day on the right */}
@@ -571,6 +612,53 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- Move one visit to another day ---------- */
+function MoveSheet({ stop, viewDate, onSave, onCancel }) {
+  const original = stop.movedFrom || viewDate;
+  const [toKey, setToKey] = useState(stop.movedFrom ? viewDate : addDaysToKey(viewDate, 1));
+  const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : '');
+  const nice = (k) => fromKey(k).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const valid = /^\d{4}-\d{2}-\d{2}$/.test(toKey) && toKey !== original;
+
+  return (
+    <div className="it-sheet-backdrop" onClick={onCancel}>
+      <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="it-sheet-top">
+          <button className="it-link" onClick={onCancel}>Cancel</button>
+          <div className="it-sheet-title">Move visit</div>
+          <button className="it-link it-bold" disabled={!valid} onClick={() => onSave(toKey, time === '' ? null : Number(time))}>
+            Save
+          </button>
+        </div>
+        <div className="it-move-who">
+          <strong>{stop.title}</strong>
+          <span>Normally {nice(original)}. Only this one visit moves; the regular schedule stays the same.</span>
+        </div>
+        <div className="it-sheet-group">
+          <label className="it-sheet-row">
+            <span>New day</span>
+            <input type="date" className="it-move-date" value={toKey} onChange={(e) => setToKey(e.target.value)} />
+          </label>
+          <label className="it-sheet-row">
+            <span>Time</span>
+            <select className="it-sheet-select" value={time} onChange={(e) => setTime(e.target.value)}>
+              <option value="">No set time</option>
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{timeLabel(t)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {stop.movedFrom && (
+          <button className="it-move-undo" onClick={() => onSave(null)}>
+            Undo move (back to {nice(original)})
+          </button>
+        )}
+      </div>
     </div>
   );
 }
