@@ -676,6 +676,13 @@
     line-height: 1;
   }
 
+  .it-print-table .it-print-town {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 400;
+    -webkit-text-stroke: 0.15px #000;
+  }
+
   /* Write-in lines: lighter so printed stops stand out */
   .it-print-table tr.it-print-blank td {
     border-bottom-color: #9a9a9a;
