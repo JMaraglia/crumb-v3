@@ -214,6 +214,17 @@
   margin-top: 1px;
 }
 
+.it-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.it-tags .it-tag {
+  margin-top: 0;
+}
+
 .it-tag {
   margin-top: 5px;
   font-size: 0.72rem;

@@ -182,7 +182,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           title: p.name,
           address: p.address,
           townLine: p.town ? [p.town, p.state].filter(Boolean).join(', ') : '',
-          tag: { label: st ? st.label : 'Prospect', color: st ? st.color : '#0077cc' },
+          tag: { label: 'Prospect', color: '#8e8e93' },
+          stage: st ? { label: st.label, color: st.color } : null, // shown next to "Prospect"
           color: st ? st.color : '#0077cc',
           accountType: 'prospect',
           accountId: p.id,
@@ -243,6 +244,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         }
       }
       const acct = v.accountId ? findAccount(v.accountType, v.accountId) : null;
+      const isCustomerStop = v.accountType === 'customer' || v.type === 'contact';
+      const mst = acct && !isCustomerStop ? stageInfo(acct.stage) : null;
       list.push({
         key: `m-${v.id || index}`,
         kind: 'manual',
@@ -250,7 +253,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         time: hhmmToMinutes(v.time),
         title: (acct && acct.name) || v.name || '(No name)',
         address: (acct && acct.address) || '',
-        tag: { label: v.accountType === 'customer' || v.type === 'contact' ? 'Customer' : 'Prospect', color: '#8e8e93' },
+        tag: { label: isCustomerStop ? 'Customer' : 'Prospect', color: '#8e8e93' },
+        stage: mst ? { label: mst.label, color: mst.color } : null,
         color: '#8e8e93',
         accountType: v.accountType || null,
         accountId: v.accountId || null,
@@ -660,8 +664,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                         {stop.movedFrom && (
                           <span className="it-moved">Moved from {fromKey(stop.movedFrom).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                         )}
-                        <span className="it-tag" style={{ color: stop.tag.color, borderColor: stop.tag.color }}>
-                          {stop.tag.label}
+                        <span className="it-tags">
+                          <span className="it-tag" style={{ color: stop.tag.color, borderColor: stop.tag.color }}>
+                            {stop.tag.label}
+                          </span>
+                          {stop.stage && (
+                            <span className="it-tag" style={{ color: stop.stage.color, borderColor: stop.stage.color }}>
+                              {stop.stage.label}
+                            </span>
+                          )}
                         </span>
                       </span>
                     </button>
