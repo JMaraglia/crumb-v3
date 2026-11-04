@@ -198,6 +198,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           townLine: p.town ? [p.town, p.state].filter(Boolean).join(', ') : '',
           tag: { label: 'Prospect', color: '#8e8e93' },
           stage: st ? { label: st.label, color: st.color } : null, // shown next to "Prospect"
+          revisit: Boolean(p.inactive), // an inactive account's revisit day
           color: st ? st.color : '#0077cc',
           accountType: 'prospect',
           accountId: p.id,
@@ -218,6 +219,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           address: c.address,
           townLine: c.town ? [c.town, c.state].filter(Boolean).join(', ') : '',
           tag: { label: 'Customer', color: CUSTOMER_COLOR },
+          revisit: Boolean(c.inactive),
           color: CUSTOMER_COLOR,
           accountType: 'customer',
           accountId: c.id,
@@ -753,6 +755,11 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                           <span className="it-tag" style={{ color: stop.tag.color, borderColor: stop.tag.color }}>
                             {stop.tag.label}
                           </span>
+                          {stop.revisit && (
+                            <span className="it-tag" style={{ color: '#3a3a3c', borderColor: '#3a3a3c' }}>
+                              Revisit
+                            </span>
+                          )}
                           {stop.stage && (
                             <span
                               className="it-tag it-tag-tap"

@@ -85,6 +85,65 @@ export const INACTIVE_REASONS = [
   ['competitor', 'Went with a competitor'],
   ['other', 'Other'],
 ];
+function revisitText(r) {
+  if (!r || !r.revisit) return '';
+  const d = new Date(r.revisit + 'T00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return typeof r.revisitTime === 'number' ? `${d} at ${timeLabel(r.revisitTime)}` : d;
+}
+
+// Revisit an inactive account on a set day: it shows on that day's Itinerary and Calendar.
+function RevisitSheet({ account, onSave, onCancel }) {
+  const r = account.inactive || {};
+  const plus = (months) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const [day, setDay] = useState(r.revisit || plus(3));
+  const [time, setTime] = useState(typeof r.revisitTime === 'number' ? r.revisitTime : 600);
+  return (
+    <div className="av-sheet-backdrop" onClick={onCancel}>
+      <div className="av-sheet av-vs-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="av-vs-top">
+          <button className="av-vs-link" onClick={onCancel}>Cancel</button>
+          <div className="av-vs-title">Revisit · {displayName(account)}</div>
+          <button className="av-vs-link av-vs-bold" disabled={!/^\d{4}-\d{2}-\d{2}$/.test(day)} onClick={() => onSave({ revisit: day, revisitTime: time })}>
+            Save
+          </button>
+        </div>
+        <div className="av-vs-group">
+          <div className="av-vs-label">Come back in</div>
+          <div className="av-revisit-quick">
+            {[1, 3, 6, 12].map((m) => (
+              <button key={m} type="button" className={`av-day-btn ${day === plus(m) ? 'is-on' : ''}`} onClick={() => setDay(plus(m))}>
+                {m === 12 ? '1 yr' : `${m} mo`}
+              </button>
+            ))}
+          </div>
+          <label className="av-vs-row">
+            <span>Day</span>
+            <input type="date" className="av-vs-select" value={day} onChange={(e) => setDay(e.target.value)} />
+          </label>
+          <label className="av-vs-row">
+            <span>Time</span>
+            <select className="av-vs-select" value={time} onChange={(e) => setTime(Number(e.target.value))}>
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{timeLabel(t)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {r.revisit && (
+          <button className="av-revisit-remove" onClick={() => onSave({ revisit: null, revisitTime: null })}>
+            No revisit
+          </button>
+        )}
+        <div className="av-vs-hint">On that day it shows on your Itinerary and Calendar (with a reminder). It stays inactive until you make it active again.</div>
+      </div>
+    </div>
+  );
+}
+
 export function inactiveLabel(account) {
   const r = account && account.inactive;
   if (!r) return '';
@@ -784,6 +843,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
           {!expanded && (
             <span className="av-chips">
               {a.inactive && <span className="av-chip av-chip-inactive">{inactiveLabel(a)}</span>}
+              {a.inactive && a.inactive.revisit && <span className="av-chip av-chip-revisit">Revisit {revisitText({ revisit: a.inactive.revisit })}</span>}
               {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
               {!a.inactive && <VisitChips account={a} config={config} onPick={pickVisit} />}
               <DeliveryChip account={a} config={config} />
@@ -1042,6 +1102,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const [newAccountNumber, setNewAccountNumber] = useState('');
   const [visitOpen, setVisitOpen] = useState(false); // quick visit panel
   const [askInactive, setAskInactive] = useState(false); // "Mark inactive" reason picker
+  const [revisitOpen, setRevisitOpen] = useState(false); // revisit date panel (inactive accounts)
   const [shareMsg, setShareMsg] = useState('');
   const account = accounts.find((a) => String(a.id) === id);
 
@@ -1113,8 +1174,14 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
               {account.inactive.since
                 ? new Date(account.inactive.since + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                 : '—'}
-              . Not on your Itinerary, Calendar, Call Sheet or reminders.
+              . Not on your Itinerary, Calendar, Call Sheet or reminders
+              {account.inactive.revisit ? ', except its revisit day' : ''}.
             </span>
+            {setAccounts && (
+              <button className="av-revisit-btn" onClick={() => setRevisitOpen(true)}>
+                {account.inactive.revisit ? `Revisit: ${revisitText(account.inactive)} ›` : 'Set a revisit date ›'}
+              </button>
+            )}
           </div>
         )}
         {/* Summary card: who, last note, visit schedule, quick buttons */}
@@ -1396,6 +1463,17 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           Delete {config.singular}
         </button>
       </div>
+
+      {revisitOpen && account && account.inactive && (
+        <RevisitSheet
+          account={account}
+          onCancel={() => setRevisitOpen(false)}
+          onSave={(fields) => {
+            setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, inactive: { ...x.inactive, ...fields } } : x)));
+            setRevisitOpen(false);
+          }}
+        />
+      )}
 
       {askInactive && (
         <AskSheet

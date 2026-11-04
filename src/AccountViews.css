@@ -1345,3 +1345,52 @@
   font-weight: 700;
   text-align: center;
 }
+
+/* Revisit (inactive accounts) */
+.av-chip-revisit {
+  background: #e8e8ed;
+  color: #3a3a3c;
+}
+
+.av-page .av-revisit-btn,
+.av-page .av-revisit-btn:hover {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  width: auto;
+}
+
+.av-revisit-quick {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.av-sheet-backdrop .av-revisit-remove,
+.av-sheet-backdrop .av-revisit-remove:hover {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: #fff;
+  color: #ff3b30;
+  font-weight: 600;
+  text-align: center;
+}
+
+.av-vs-sheet .av-revisit-quick .av-day-btn {
+  background: #f2f2f7;
+  color: #3a3a3c;
+  font-weight: 600;
+}
+
+.av-vs-sheet .av-revisit-quick .av-day-btn.is-on {
+  background: #0077cc;
+  color: #fff;
+}

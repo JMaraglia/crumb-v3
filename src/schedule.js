@@ -110,6 +110,10 @@ function movedAway(account, dateKey) {
 
 // The visit time for that date (a moved visit can have its own time).
 export function visitTimeOn(account, dateKey) {
+  if (account.inactive) {
+    const r = account.inactive;
+    return r.revisit === dateKey && typeof r.revisitTime === 'number' ? r.revisitTime : null;
+  }
   const from = visitMoveInto(account, dateKey);
   const moved = from ? account.visitMoves[from] : null;
   if (moved && typeof moved.time === 'number') return moved.time;
@@ -130,7 +134,8 @@ export function pruneMoves(moves) {
 // Due on this date, and not snoozed (snoozeUntil = first date visits come back).
 // A visit moved INTO this date always counts; one moved AWAY never does.
 export function isDueOn(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
-  if (account.inactive) return false; // closed / dead accounts drop off the Itinerary, Calendar and reminders
+  // Closed / dead accounts drop off the Itinerary, Calendar and reminders, except on their revisit day.
+  if (account.inactive) return Boolean(account.inactive.revisit && account.inactive.revisit === dateKey);
   if (visitMoveInto(account, dateKey)) return true;
   if (movedAway(account, dateKey)) return false;
   if (account.snoozeUntil && dateKey < account.snoozeUntil) return false;
@@ -191,7 +196,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
         id: `visit-c-${c.id}-${k}`,
         virtual: true,
         source: 'schedule',
-        title: c.name,
+        title: c.inactive ? `Revisit: ${c.name}` : c.name,
         date: k,
         start: cTime,
         end: Math.min(cTime + VISIT_BLOCK_MINUTES, 1440),
@@ -215,7 +220,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
         id: `visit-p-${p.id}-${k}`,
         virtual: true,
         source: 'schedule',
-        title: p.name,
+        title: p.inactive ? `Revisit: ${p.name}` : p.name,
         date: k,
         start: pTime,
         end: Math.min(pTime + VISIT_BLOCK_MINUTES, 1440),
