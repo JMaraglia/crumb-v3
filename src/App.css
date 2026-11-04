@@ -159,3 +159,21 @@ button:hover {
   background: #fff4e5;
   color: #c26a00;
 }
+
+/* Home: Notifications + Backup links under the tiles */
+.home-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.home-links .home-backup {
+  margin-top: 0;
+}
+
+.home-backup.home-notify {
+  background: #e5f0fa;
+  color: #0077cc;
+}

@@ -59,6 +59,16 @@ export default function HomePage() {
           </div>
         ))}
       </div>
+      <div className="home-links">
+      <div
+        className="home-backup home-notify"
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate('/notifications')}
+        onKeyPress={e => { if (e.key === 'Enter') navigate('/notifications'); }}
+      >
+        🔔 Notifications ›
+      </div>
       <div
         className={`home-backup ${backupStale ? 'is-stale' : ''}`}
         role="button"
@@ -67,6 +77,7 @@ export default function HomePage() {
         onKeyPress={e => { if (e.key === 'Enter') navigate('/backup'); }}
       >
         {backupText} ›
+      </div>
       </div>
     </div>
   );

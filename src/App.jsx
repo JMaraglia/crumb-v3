@@ -13,6 +13,8 @@ import CalendarPage from './CalendarPage';
 import ItineraryPage from './ItineraryPage';
 import BackupPage from './BackupPage';
 import TodoPage from './TodoPage';
+import NotificationsPage from './NotificationsPage';
+import { syncReminders } from './notify';
 
 // Simple hook to sync state with localStorage
 function usePersistedState(key, initialValue) {
@@ -96,11 +98,24 @@ export default function App() {
   const [prospects, setProspects] = usePersistedState('crumb_prospects', []);
   const [itinerary, setItinerary] = usePersistedState('visitData', {});
 
+  // Notifications: keep the server's reminder list fresh — when Crumb opens, when your
+  // customers/prospects change, and when you leave the app. (Does nothing if they're off.)
+  React.useEffect(() => {
+    const t = setTimeout(() => syncReminders(), 2000);
+    return () => clearTimeout(t);
+  }, [contacts, prospects]);
+  React.useEffect(() => {
+    const onVis = () => syncReminders(document.visibilityState === 'hidden');
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/backup" element={<BackupPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route
           path="/todo"
           element={
