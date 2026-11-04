@@ -301,7 +301,9 @@
 }
 
 .av-page .av-day-btn,
-.av-page .av-day-btn:hover {
+.av-page .av-day-btn:hover,
+.av-vs-sheet .av-day-btn,
+.av-vs-sheet .av-day-btn:hover {
   flex: 1;
   text-align: center;
   padding: 10px 0;
@@ -311,7 +313,9 @@
 }
 
 .av-page .av-day-btn.is-on,
-.av-page .av-day-btn.is-on:hover {
+.av-page .av-day-btn.is-on:hover,
+.av-vs-sheet .av-day-btn.is-on,
+.av-vs-sheet .av-day-btn.is-on:hover {
   background: #0077cc;
   color: #fff;
 }
@@ -1116,7 +1120,9 @@
 }
 
 .av-page .av-vs-link,
-.av-page .av-vs-link:hover {
+.av-page .av-vs-link:hover,
+.av-vs-sheet .av-vs-link,
+.av-vs-sheet .av-vs-link:hover {
   background: none;
   border: none;
   padding: 4px 2px;
@@ -1126,7 +1132,8 @@
   width: auto;
 }
 
-.av-page .av-vs-bold {
+.av-page .av-vs-bold,
+.av-vs-sheet .av-vs-bold {
   font-weight: 700;
 }
 

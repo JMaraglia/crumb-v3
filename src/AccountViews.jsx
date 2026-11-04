@@ -114,7 +114,7 @@ function visitSummary(account, config) {
 
 
 // onPick (optional): tapping the stage opens a quick stage picker.
-function StageChip({ stage, onPick }) {
+export function StageChip({ stage, onPick }) {
   const st = stageInfo(stage);
   if (!st && !onPick) return null;
   const pick = onPick
@@ -141,7 +141,7 @@ function StageChip({ stage, onPick }) {
 }
 
 // Visit day/time + how often chips. onPick (optional): tapping them opens the quick visit panel.
-function VisitChips({ account, config, onPick }) {
+export function VisitChips({ account, config, onPick }) {
   const visit = visitSummary(account, config);
   const pick = onPick
     ? {
@@ -166,7 +166,7 @@ function VisitChips({ account, config, onPick }) {
 
 // Quick visit panel: days, usual time, how often (+ start date). Same fields as the Edit screen,
 // so the Itinerary, Calendar and reminders pick the change up right away.
-function VisitSheet({ account, config, onSave, onCancel }) {
+export function VisitSheet({ account, config, onSave, onCancel }) {
   const field = config.visitDaysField;
   const [days, setDays] = useState(account[field] || []);
   const [time, setTime] = useState(typeof account.visitTime === 'number' ? account.visitTime : '');
@@ -231,7 +231,7 @@ function VisitSheet({ account, config, onSave, onCancel }) {
 }
 
 // Quick stage picker (Cold → Ready to close). The current stage has a check mark.
-function stageSheet(account, onChoose) {
+export function stageSheet(account, onChoose) {
   return {
     title: `${displayName(account)}: stage`,
     actions: STAGES.map((st) => ({

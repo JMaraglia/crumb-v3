@@ -1070,3 +1070,12 @@
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* Visit + stage chips inside an opened stop (tap to change; same as Customers / Prospects) */
+.it-acct-chips {
+  margin: 0 0 10px;
+}
+
+.it-tag-tap {
+  cursor: pointer;
+}

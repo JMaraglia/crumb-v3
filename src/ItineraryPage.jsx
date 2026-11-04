@@ -18,6 +18,10 @@ import {
   mapActions,
   contactSheet,
   snoozeSheet,
+  StageChip,
+  VisitChips,
+  VisitSheet,
+  stageSheet,
 } from './AccountViews';
 import {
   keyOf,
@@ -145,6 +149,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [timing, setTiming] = useState(null);   // stop whose time is being changed (tapped the time)
   const [removedMap, setRemovedMap] = useState(() => readJSON(REMOVED_KEY, {}) || {});
   const [meetingFor, setMeetingFor] = useState(null); // account getting a meeting set
+  const [visitFor, setVisitFor] = useState(null);     // { acct, type } whose visits are being changed
+  // Same fields as the Customers / Prospects screens, so changes show everywhere.
+  const daysConfig = (type) => ({ visitDaysField: type === 'prospect' ? PROSPECT_DAYS_FIELD : CUSTOMER_DAYS_FIELD });
+  const updateAccount = (type, id, fields) => {
+    const up = (list) => list.map((a) => (String(a.id) === String(id) ? { ...a, ...fields } : a));
+    if (type === 'prospect' && setProspects) setProspects(up);
+    if (type === 'customer' && setContacts) setContacts(up);
+  };
+  const pickStage = (acct) => setSheet(stageSheet(acct, (key) => updateAccount('prospect', acct.id, { stage: key })));
   const [undoIt, setUndoIt] = useState(null);   // { text, restore, timer } after swiping a stop away
   const events = toVisitList(readJSON(EVENTS_KEY, []));
 
@@ -726,7 +739,17 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             {stop.tag.label}
                           </span>
                           {stop.stage && (
-                            <span className="it-tag" style={{ color: stop.stage.color, borderColor: stop.stage.color }}>
+                            <span
+                              className="it-tag it-tag-tap"
+                              style={{ color: stop.stage.color, borderColor: stop.stage.color }}
+                              role="button"
+                              onClick={(e) => {
+                                e.stopPropagation(); // tapping the stage changes it (doesn't open the stop)
+                                const acct = findAccount('prospect', stop.accountId);
+                                if (acct) pickStage(acct);
+                              }}
+                              onDoubleClick={(e) => e.stopPropagation()}
+                            >
                               {stop.stage.label}
                             </span>
                           )}
@@ -744,6 +767,16 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
                   {open && (
                     <div className="it-expand">
+                      {acct && (stop.accountType === 'prospect' || stop.accountType === 'customer') && (
+                        <div className="av-chips it-acct-chips">
+                          <VisitChips
+                            account={acct}
+                            config={daysConfig(stop.accountType)}
+                            onPick={() => setVisitFor({ acct, type: stop.accountType })}
+                          />
+                          {stop.accountType === 'prospect' && <StageChip stage={acct.stage} onPick={() => pickStage(acct)} />}
+                        </div>
+                      )}
                       {latest && (
                         <div className="it-last-note">
                           <span className="it-last-note-date">{shortDate(latest.timestamp)}</span>
@@ -906,6 +939,18 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           stop={locking}
           onCancel={() => setLocking(null)}
           onSave={(time) => saveLock(locking, time)}
+        />
+      )}
+
+      {visitFor && (
+        <VisitSheet
+          account={visitFor.acct}
+          config={daysConfig(visitFor.type)}
+          onCancel={() => setVisitFor(null)}
+          onSave={(fields) => {
+            updateAccount(visitFor.type, visitFor.acct.id, fields);
+            setVisitFor(null);
+          }}
         />
       )}
 
