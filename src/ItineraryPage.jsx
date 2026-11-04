@@ -41,6 +41,7 @@ import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
 const DONE_KEY = 'crumb_itinerary_done';            // checkmarks for scheduled/event stops
+const LOCKS_KEY = 'crumb_itinerary_locks';          // { date: { stopKey: minutes } } times locked for one day
 const EVENTS_KEY = 'crumb_calendar_events';         // calendar events (read only here)
 
 function niceDate(k) {
@@ -135,6 +136,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
   const [visits, setVisits] = useState(() => toVisitList(readJSON(VISITS_KEY, [])));
   const [doneMap, setDoneMap] = useState(() => readJSON(DONE_KEY, {}));
+  const [lockMap, setLockMap] = useState(() => readJSON(LOCKS_KEY, {}));
+  const [locking, setLocking] = useState(null); // stop whose time is being locked
   const events = toVisitList(readJSON(EVENTS_KEY, []));
 
   const saveVisits = (next) => {
@@ -237,6 +240,23 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       });
     });
 
+    // Locked times: a lock for just this day wins; otherwise "Always at this time" accounts
+    // and calendar events (real appointments) count as locked.
+    const dayLocks = lockMap[day] || {};
+    list.forEach((st) => {
+      const acct = st.accountId ? findAccount(st.accountType, st.accountId) : null;
+      st.visitLength = acct && typeof acct.visitLength === 'number' ? acct.visitLength : null;
+      if (typeof dayLocks[st.key] === 'number') {
+        st.time = dayLocks[st.key];
+        st.locked = 'day';
+      } else if (st.kind === 'scheduled' && acct && acct.fixedTime && typeof st.time === 'number') {
+        st.locked = 'always';
+      } else if (st.kind === 'event' && typeof st.time === 'number') {
+        st.locked = 'event';
+      } else {
+        st.locked = null;
+      }
+    });
     list.sort((a, b) => (a.time == null ? 9999 : a.time) - (b.time == null ? 9999 : b.time));
     return list;
   };
@@ -338,6 +358,21 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setOpenKey(null);
   };
 
+  // Lock (or unlock, with time = null) one stop's time for this day only.
+  const saveLock = (stop, time) => {
+    const forDay = { ...(lockMap[date] || {}) };
+    if (time == null) delete forDay[stop.key];
+    else forDay[stop.key] = time;
+    const next = { ...lockMap, [date]: forDay };
+    if (!Object.keys(forDay).length) delete next[date];
+    // forget locks older than 60 days
+    const cutoff = addDaysToKey(today, -60);
+    Object.keys(next).forEach((k) => k < cutoff && delete next[k]);
+    setLockMap(next);
+    localStorage.setItem(LOCKS_KEY, JSON.stringify(next));
+    setLocking(null);
+  };
+
   const changeDay = (n) => {
     setDate((d) => addDaysToKey(d, n));
     setOpenKey(null);
@@ -420,7 +455,10 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                 <div key={stop.key} className={`it-stop ${stop.done ? 'is-done' : ''} ${open ? 'is-open' : ''}`}>
                   <div className="it-stop-row">
                     <button className="it-stop-main" onClick={() => openStop(stop)}>
-                      <span className="it-time">{stop.time == null ? 'Anytime' : timeLabel(stop.time)}</span>
+                      <span className={`it-time ${stop.locked ? 'is-locked' : ''}`}>
+                        {stop.time == null ? 'Anytime' : timeLabel(stop.time)}
+                        {stop.locked && <span className="it-lock-icon">🔒</span>}
+                      </span>
                       <span className="it-bar" style={{ background: stop.color }} />
                       <span className="it-stop-text">
                         <span className="it-stop-title">{stop.title}</span>
@@ -503,6 +541,22 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                           </button>
                         )}
                       </div>
+                      <div className="it-lock-row">
+                        <span className="it-lock-text">
+                          {stop.locked === 'day'
+                            ? `🔒 Locked at ${timeLabel(stop.time)} today`
+                            : stop.locked === 'always'
+                            ? `🔒 Always at ${timeLabel(stop.time)} (set on the account)`
+                            : stop.locked === 'event'
+                            ? `🔒 Calendar appointment at ${timeLabel(stop.time)}`
+                            : 'Time not locked: route planning can move it'}
+                        </span>
+                        {stop.locked !== 'event' && (
+                          <button className="it-lock-btn" onClick={() => setLocking(stop)}>
+                            {stop.locked === 'day' ? 'Change' : 'Lock time'}
+                          </button>
+                        )}
+                      </div>
                       {acct ? (
                         <div className="it-note">
                           <textarea
@@ -563,6 +617,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         />
       )}
 
+      {locking && (
+        <LockSheet
+          stop={locking}
+          onCancel={() => setLocking(null)}
+          onSave={(time) => saveLock(locking, time)}
+        />
+      )}
+
       {moving && (
         <MoveSheet
           stop={moving.stop}
@@ -618,6 +680,41 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- Lock a stop's time for one day ---------- */
+function LockSheet({ stop, onSave, onCancel }) {
+  const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : 9 * 60);
+  return (
+    <div className="it-sheet-backdrop" onClick={onCancel}>
+      <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="it-sheet-top">
+          <button className="it-link" onClick={onCancel}>Cancel</button>
+          <div className="it-sheet-title">Lock time</div>
+          <button className="it-link it-bold" onClick={() => onSave(Number(time))}>Lock</button>
+        </div>
+        <div className="it-move-who">
+          <strong>{stop.title}</strong>
+          <span>For this day only. When you plan the route, this stop stays at this time and the others fit around it.</span>
+        </div>
+        <div className="it-sheet-group">
+          <label className="it-sheet-row">
+            <span>Be there at</span>
+            <select className="it-sheet-select" value={time} onChange={(e) => setTime(Number(e.target.value))}>
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{timeLabel(t)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {stop.locked === 'day' && (
+          <button className="it-move-undo" onClick={() => onSave(null)}>
+            Unlock
+          </button>
+        )}
+      </div>
     </div>
   );
 }

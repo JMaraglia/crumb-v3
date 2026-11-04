@@ -988,3 +988,16 @@
 .av-addr-zip {
   flex: 0 0 92px;
 }
+
+/* Small gray helper line under a row label (e.g. "Route planning won't move it") */
+.av-row-help {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #8e8e93;
+}
+
+.av-group-gap {
+  margin-top: 12px;
+}

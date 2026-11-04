@@ -81,6 +81,16 @@ export function timeLabel(minutes) {
 
 // 5:00 AM … 11:30 PM first, then 12:00 AM … 4:30 AM at the bottom
 // (iPhone's time wheel starts at the top, so this avoids landing on 3:30 AM by accident).
+// How long a visit takes, for route planning (minutes)
+export const DEFAULT_VISIT_LENGTH = 30;
+export const VISIT_LENGTHS = [10, 15, 20, 30, 45, 60, 90, 120];
+export function lengthLabel(m) {
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return r ? `${h} hr ${r} min` : `${h} hr`;
+}
+
 export const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => ((i + 10) % 48) * 30);
 
 export function todayKey() {
@@ -831,11 +841,18 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
               <span className="av-row-label-inline">Usual time</span>
               <span className="av-row-value">
                 {typeof account.visitTime === 'number' ? timeLabel(account.visitTime) : 'Not set'}
+                {typeof account.visitTime === 'number' && account.fixedTime ? ' · 🔒 always' : ''}
               </span>
             </div>
             <div className="av-row av-static-row">
               <span className="av-row-label-inline">How often</span>
               <span className="av-row-value">{frequencyLabel(account.visitFrequency)}</span>
+            </div>
+            <div className="av-row av-static-row">
+              <span className="av-row-label-inline">Visit length</span>
+              <span className="av-row-value">
+                {lengthLabel(typeof account.visitLength === 'number' ? account.visitLength : DEFAULT_VISIT_LENGTH)}
+              </span>
             </div>
             {account.visitFrequency && account.visitFrequency !== 'weekly' && account.visitStart && (
               <div className="av-row av-static-row">
@@ -947,6 +964,10 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     existing && typeof existing.visitTime === 'number' ? existing.visitTime : ''
   );
   const [visitFrequency, setVisitFrequency] = useState((existing && existing.visitFrequency) || 'weekly');
+  const [fixedTime, setFixedTime] = useState(Boolean(existing && existing.fixedTime));
+  const [visitLength, setVisitLength] = useState(
+    existing && typeof existing.visitLength === 'number' ? existing.visitLength : DEFAULT_VISIT_LENGTH
+  );
   const [visitStart, setVisitStart] = useState((existing && existing.visitStart) || todayKey());
   const [stage, setStage] = useState((existing && existing.stage) || '');
   const [showInItinerary, setShowInItinerary] = useState(!(existing && existing.showInItinerary === false));
@@ -996,6 +1017,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
       visitTime: visitTime === '' ? null : Number(visitTime),
       visitFrequency,
       visitStart: visitFrequency === 'weekly' ? null : visitStart,
+      fixedTime: visitTime !== '' && fixedTime, // only means something with a usual time
+      visitLength: Number(visitLength) || DEFAULT_VISIT_LENGTH,
     };
     if (config.hasStage) fields.stage = stage || null;
     if (config.deliveryDaysField) fields[config.deliveryDaysField] = DAYS.filter((d) => deliveryDays.includes(d));
@@ -1201,6 +1224,20 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
                 ))}
               </select>
             </label>
+            {visitTime !== '' && (
+              <label className="av-row av-static-row">
+                <span className="av-row-label-inline">
+                  Always at this time
+                  <span className="av-row-help">Route planning won't move it</span>
+                </span>
+                <input
+                  type="checkbox"
+                  className="av-switch"
+                  checked={fixedTime}
+                  onChange={(e) => setFixedTime(e.target.checked)}
+                />
+              </label>
+            )}
             <label className="av-row av-static-row">
               <span className="av-row-label-inline">How often</span>
               <select className="av-select" value={visitFrequency} onChange={(e) => setVisitFrequency(e.target.value)}>
@@ -1240,6 +1277,20 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
             )}
           </div>
         )}
+
+        <div className="av-group av-group-gap">
+          <label className="av-row av-static-row">
+            <span className="av-row-label-inline">
+              Visit length
+              <span className="av-row-help">Used to plan your route</span>
+            </span>
+            <select className="av-select" value={visitLength} onChange={(e) => setVisitLength(Number(e.target.value))}>
+              {VISIT_LENGTHS.map((m) => (
+                <option key={m} value={m}>{lengthLabel(m)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {!isNew && (
           <button className="av-delete" onClick={remove}>
