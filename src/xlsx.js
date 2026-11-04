@@ -2,7 +2,7 @@
 // Builds a small, formatted Excel (.xlsx) file in the browser with no extra packages.
 // An .xlsx is a zip of a few XML files; this writes them and zips them (uncompressed).
 //
-// makeXlsx({ title, subtitle, sheetName, columns, rows }) — see makeXlsx below for the details.
+// makeXlsx({ sheets: [tab, ...], activeSheet }) — see sheetXml / makeXlsx below for the details.
 // → Blob you can share or download.
 
 const enc = new TextEncoder();
@@ -88,6 +88,10 @@ const FONTS = [
   '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>', // 3 header
   '<font><b/><sz val="11"/><color rgb="FF1C1C1E"/><name val="Arial"/></font>', // 4 bold
   '<font><sz val="11"/><color rgb="FFAEAEB2"/><name val="Arial"/></font>', // 5 muted (N/A rows)
+  '<font><b/><sz val="16"/><color rgb="FF0077CC"/><name val="Arial"/></font>', // 6 brand "Crumb."
+  '<font><b/><sz val="9"/><color rgb="FF3A3A3C"/><name val="Arial"/></font>', // 7 kicker "CALL SHEET"
+  '<font><b/><sz val="17"/><color rgb="FF1C1C1E"/><name val="Arial"/></font>', // 8 date heading
+  '<font><sz val="10"/><color rgb="FF6E6E73"/><name val="Arial"/></font>', // 9 detail line
 ];
 const FILLS = [
   '<fill><patternFill patternType="none"/></fill>',
@@ -99,6 +103,7 @@ const BORDERS = [
   '<border><left/><right/><top/><bottom/><diagonal/></border>',
   '<border><left style="thin"><color rgb="FF9A9AA0"/></left><right style="thin"><color rgb="FF9A9AA0"/></right><top style="thin"><color rgb="FF9A9AA0"/></top><bottom style="thin"><color rgb="FF9A9AA0"/></bottom><diagonal/></border>', // 1 grid lines
   '<border><left/><right/><top/><bottom style="medium"><color rgb="FF0077CC"/></bottom><diagonal/></border>', // 2 blue rule
+  '<border><left style="thin"><color rgb="FF5FA8E0"/></left><right style="thin"><color rgb="FF5FA8E0"/></right><top/><bottom/><diagonal/></border>', // 3 header dividers
 ];
 
 // Excel's built-in cell checkbox (Microsoft 365). Older Excel shows TRUE / FALSE instead.
@@ -141,18 +146,30 @@ function cell(ref, value, style) {
   return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
 }
 
-// One tab: { name, title, subtitle, columns, rows, emptyText }
+// One tab: { name, brand, kicker, heading, detail, columns, rows, emptyText }
+//   brand / kicker = small top line ("Crumb." left, "CALL SHEET" right)
+//   heading / detail = big line under it ("Tuesday, November 3" left, details right)
 //   columns: [{ label, width, kind }] where kind is 'text' (default), 'bold', 'quiet' (gray),
 //            'center', or 'check' (value true/false → a tappable checkbox in Excel).
 //   rows:    [{ cells: [...], muted }]   muted = grayed-out row (e.g. N/A, no call)
-function sheetXml(st, { title, subtitle, columns, rows, emptyText }, selected) {
+function sheetXml(st, { brand = '', kicker = '', heading = '', detail = '', columns, rows, emptyText }, selected) {
   const last = colLetter(columns.length - 1);
   const headRow = 4;
 
-  const titleStyle = st.get({ font: 1, v: 'bottom' });
-  const subStyle = st.get({ font: 2, border: 2, v: 'top' });
+  const n = columns.length;
+  const half = Math.ceil(n / 2);
+  const brandStyle = st.get({ font: 6, v: 'bottom' });
+  const kickerStyle = st.get({ font: 7, h: 'right', v: 'bottom' });
+  const headingStyle = st.get({ font: 8, border: 2, v: 'center' });
+  const detailStyle = st.get({ font: 9, border: 2, h: 'right', v: 'center' });
   const headStyle = (c) =>
-    st.get({ font: 3, fill: 2, h: c.kind === 'check' || c.kind === 'center' ? 'center' : undefined, indent: c.kind === 'check' || c.kind === 'center' ? 0 : 1 });
+    st.get({
+      font: 3,
+      fill: 2,
+      border: 3,
+      h: c.kind === 'check' || c.kind === 'center' ? 'center' : undefined,
+      indent: c.kind === 'check' || c.kind === 'center' ? 0 : 1,
+    });
 
   const bodyStyle = (c, stripe, muted) => {
     const fill = stripe ? 3 : 0;
@@ -164,11 +181,17 @@ function sheetXml(st, { title, subtitle, columns, rows, emptyText }, selected) {
   };
 
   const xmlRows = [
-    `<row r="1" ht="30" customHeight="1">${cell('A1', title, titleStyle)}</row>`,
-    `<row r="2" ht="22" customHeight="1">${columns
-      .map((_, i) => cell(`${colLetter(i)}2`, i === 0 ? subtitle : '', subStyle))
+    `<row r="1" ht="24" customHeight="1">${cell('A1', brand, brandStyle)}${cell(`${colLetter(n - 1)}1`, kicker, kickerStyle)}</row>`,
+    `<row r="2" ht="32" customHeight="1">${columns
+      .map((_, i) =>
+        i === 0
+          ? cell('A2', heading, headingStyle)
+          : i === half
+          ? cell(`${colLetter(i)}2`, detail, detailStyle)
+          : cell(`${colLetter(i)}2`, '', i < half ? headingStyle : detailStyle)
+      )
       .join('')}</row>`,
-    `<row r="3" ht="10" customHeight="1"/>`,
+    `<row r="3" ht="12" customHeight="1"/>`,
     `<row r="${headRow}" ht="26" customHeight="1">${columns
       .map((c, i) => cell(`${colLetter(i)}${headRow}`, c.label.toUpperCase(), headStyle(c)))
       .join('')}</row>`,
@@ -181,7 +204,7 @@ function sheetXml(st, { title, subtitle, columns, rows, emptyText }, selected) {
         .join('')}</row>`;
     }),
   ];
-  const merges = [`A1:${last}1`, `A2:${last}2`];
+  const merges = [`A1:${colLetter(half - 1)}1`, `A2:${colLetter(half - 1)}2`, `${colLetter(half)}2:${last}2`];
   if (!rows.length && emptyText) {
     const n = headRow + 1;
     xmlRows.push(`<row r="${n}" ht="30" customHeight="1">${cell(`A${n}`, emptyText, st.get({ font: 2, indent: 1 }))}</row>`);

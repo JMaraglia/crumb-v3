@@ -125,10 +125,10 @@ function toWeekXlsx(customers, orderedMap, currentDay) {
     const rows = rowsFor(customers, orderDay, orderedMap[keyOf(date)] || []);
     return {
       name: FULL_DAY[orderDay],
-      title: 'Crumb. Call Sheet',
-      subtitle: `${FULL_DAY[orderDay]}, ${dateText} · Orders for ${FULL_DAY[nextDay(orderDay)]} delivery · ${rows.length} ${
-        rows.length === 1 ? 'account' : 'accounts'
-      }`,
+      brand: 'Crumb.',
+      kicker: 'CALL SHEET',
+      heading: date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+      detail: `Orders for ${FULL_DAY[nextDay(orderDay)]} delivery · ${rows.length} ${rows.length === 1 ? 'account' : 'accounts'}`,
       columns: XLSX_COLUMNS,
       rows: rows.map((r) => ({
         cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online, r.callNote, r.ordered],
