@@ -14,6 +14,7 @@ import ItineraryPage from './ItineraryPage';
 import BackupPage from './BackupPage';
 import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
+import SettingsPage from './SettingsPage';
 import { syncReminders } from './notify';
 
 // Simple hook to sync state with localStorage
@@ -116,6 +117,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/backup" element={<BackupPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/todo"
           element={

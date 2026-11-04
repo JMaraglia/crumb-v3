@@ -1,0 +1,105 @@
+/* Settings hub (st-). App.css styles every button and pads the body, so reset here. */
+.st-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  text-align: left;
+}
+
+.st-header {
+  padding: calc(10px + env(safe-area-inset-top)) 12px 4px;
+}
+
+.st-page button,
+.st-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  box-shadow: none;
+  cursor: pointer;
+  width: auto;
+}
+
+.st-page .st-icon-btn {
+  padding: 8px;
+  color: #0077cc;
+  font-size: 1.3rem;
+}
+
+.st-content {
+  padding: 0 16px 40px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.st-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 6px 0 16px;
+  text-align: left;
+  color: #1c1c1e;
+}
+
+.st-group {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.st-page .st-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border-top: 1px solid #ececf0;
+  text-align: left;
+}
+
+.st-page .st-group > .st-row:first-child {
+  border-top: none;
+}
+
+.st-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #e9f2fb;
+  color: #0077cc;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.st-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.st-row-label {
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.st-row-sub {
+  font-size: 0.8rem;
+  color: #8e8e93;
+  margin-top: 2px;
+}
+
+.st-row-chev {
+  color: #c7c7cc;
+  flex-shrink: 0;
+}

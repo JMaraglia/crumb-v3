@@ -183,3 +183,19 @@ button:hover {
   background: #e5f0fa;
   color: #0077cc;
 }
+
+/* Settings gear, top-right of Home */
+.home-container {
+  position: relative;
+}
+
+.home-gear {
+  position: absolute;
+  top: calc(4px + env(safe-area-inset-top));
+  right: 4px;
+  padding: 8px;
+  font-size: 1.7rem;
+  color: #8e8e93;
+  cursor: pointer;
+  line-height: 0;
+}

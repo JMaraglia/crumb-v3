@@ -2,6 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt, FaCheckSquare } from 'react-icons/fa';
+import { IoSettingsOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 
 export default function HomePage() {
@@ -36,6 +37,16 @@ export default function HomePage() {
 
   return (
     <div className="home-container">
+      <div
+        className="home-gear"
+        role="button"
+        tabIndex={0}
+        aria-label="Settings"
+        onClick={() => navigate('/settings')}
+        onKeyPress={e => { if (e.key === 'Enter') navigate('/settings'); }}
+      >
+        <IoSettingsOutline />
+      </div>
       <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem', marginBottom: '10px' }}>
         Crumb.
       </h1>

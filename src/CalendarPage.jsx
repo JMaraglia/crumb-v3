@@ -76,7 +76,16 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   const [viewStart, setViewStart] = useState(startOfToday);
 
   const [settings, setSettings] = useState(loadSettings);
-  const [showSettings, setShowSettings] = useState(false);
+  // Opened from Settings → show the calendar settings right away
+  const [showSettings, setShowSettings] = useState(() => {
+    try {
+      const v = sessionStorage.getItem('crumb_open_cal_settings') === '1';
+      sessionStorage.removeItem('crumb_open_cal_settings');
+      return v;
+    } catch {
+      return false;
+    }
+  });
   const updateSettings = (patch) =>
     setSettings((prev) => {
       const next = { ...prev, ...patch };
