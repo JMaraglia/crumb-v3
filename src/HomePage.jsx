@@ -3,23 +3,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt, FaCheckSquare } from 'react-icons/fa';
 import { IoSettingsOutline } from 'react-icons/io5';
-import { readLastBackup } from './BackupPage';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  // Backup reminder under the tiles: orange if never backed up or it's been a week or more
-  const last = readLastBackup();
-  const lastTime = Date.parse(last);
-  const days = lastTime ? Math.floor((Date.now() - lastTime) / 86400000) : null;
-  const backupText = !lastTime
-    ? 'Back up your data'
-    : days === 0
-    ? 'Backup · today'
-    : days === 1
-    ? 'Backup · yesterday'
-    : `Backup · ${days} days ago`;
-  const backupStale = !lastTime || days >= 7;
-
   const iconStyle = { fontSize: '3rem', marginBottom: '10px', transition: 'transform 0.3s' };
 
   const handleHover = e => e.currentTarget.style.transform = 'scale(1.2)';
@@ -69,26 +55,6 @@ export default function HomePage() {
             <span>{tile.label}</span>
           </div>
         ))}
-      </div>
-      <div className="home-links">
-      <div
-        className="home-backup home-notify"
-        role="button"
-        tabIndex={0}
-        onClick={() => navigate('/notifications')}
-        onKeyPress={e => { if (e.key === 'Enter') navigate('/notifications'); }}
-      >
-        🔔 Notifications ›
-      </div>
-      <div
-        className={`home-backup ${backupStale ? 'is-stale' : ''}`}
-        role="button"
-        tabIndex={0}
-        onClick={() => navigate('/backup')}
-        onKeyPress={e => { if (e.key === 'Enter') navigate('/backup'); }}
-      >
-        {backupText} ›
-      </div>
       </div>
     </div>
   );
