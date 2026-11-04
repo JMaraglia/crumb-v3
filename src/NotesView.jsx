@@ -67,10 +67,47 @@ function CategoryChips({ value, onChange }) {
   );
 }
 
+// Due date for a Follow-up / Sample note: Today, Tomorrow, or pick a date (tap again to clear).
+const dayKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const plusDays = (n) => {
+  const d = new Date();
+  return dayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n));
+};
+export function dueLabel(k) {
+  if (!k) return '';
+  if (k === plusDays(0)) return 'Today';
+  if (k === plusDays(1)) return 'Tomorrow';
+  const [y, m, d] = k.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function DueChips({ value, onChange }) {
+  const today = plusDays(0);
+  const tomorrow = plusDays(1);
+  const picked = value && value !== today && value !== tomorrow;
+  return (
+    <div className="nv-cats nv-due-row">
+      <span className="nv-cats-label">Due:</span>
+      <button type="button" className={`nv-due-chip ${value === today ? 'is-on' : ''}`} onClick={() => onChange(value === today ? null : today)}>
+        Today
+      </button>
+      <button type="button" className={`nv-due-chip ${value === tomorrow ? 'is-on' : ''}`} onClick={() => onChange(value === tomorrow ? null : tomorrow)}>
+        Tomorrow
+      </button>
+      <label className={`nv-due-chip ${picked ? 'is-on' : ''}`}>
+        {picked ? dueLabel(value) : 'Pick date'}
+        <input type="date" className="nv-due-input" value={value || ''} onChange={(e) => onChange(e.target.value || null)} />
+      </label>
+    </div>
+  );
+}
+
 export default function NotesView({ account, kindLabel, goBack, onAddNote, onDeleteNote }) {
   const navigate = useNavigate();
   const [text, setText] = useState('');
   const [category, setCategory] = useState('General');
+  const [due, setDue] = useState(null); // due date for a new Follow-up / Sample
   const [filter, setFilter] = useState('All');
   const [editing, setEditing] = useState(null); // { index, text, category }
   const [shareMsg, setShareMsg] = useState('');
@@ -106,10 +143,14 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const add = () => {
     if (!text.trim()) return;
     const note = { text: text.trim(), category, timestamp: new Date().toLocaleString() };
-    if (isCheckable(category)) note.done = false; // Follow-ups and Samples get a checkbox
+    if (isCheckable(category)) {
+      note.done = false; // Follow-ups and Samples get a checkbox
+      if (due) note.due = due; // shows on the To-Do list with this date
+    }
     onAddNote(account.id, note);
     setText('');
     setCategory('General');
+    setDue(null);
   };
 
   const toggleDone = (n) => {
@@ -121,6 +162,10 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     if (!editing.text.trim()) return;
     const original = account.notes[editing.index];
     const updated = { ...original, text: editing.text.trim(), category: editing.category };
+    if (isCheckable(editing.category)) {
+      if (editing.due) updated.due = editing.due;
+      else delete updated.due;
+    }
     // Switched to Follow-up / Sample: starts unchecked (an existing old Sample keeps its state)
     if (isCheckable(editing.category) && normalizeCategory(original.category) !== editing.category) updated.done = false;
     onAddNote(account.id, updated, editing.index);
@@ -179,6 +224,9 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
             autoFocus
           />
           <CategoryChips value={editing.category} onChange={(c) => setEditing({ ...editing, category: c })} />
+          {isCheckable(editing.category) && (
+            <DueChips value={editing.due} onChange={(d) => setEditing({ ...editing, due: d })} />
+          )}
           <div className="nv-edit-actions">
             <button className="nv-btn-delete" onClick={() => remove(n.index)}>Delete</button>
             <button className="nv-btn-share" onClick={() => shareNote(n, editing.text.trim(), editing.category)}>
@@ -207,13 +255,16 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
         )}
         <button
           className="nv-note-body"
-          onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat })}
+          onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat, due: n.due || null })}
         >
           <span className="nv-note-meta">
             {n.cat !== 'General' && (
               <span className="nv-tag" style={{ background: st.bg, color: st.fg }}>{n.cat}</span>
             )}
             <span className="nv-date">{noteDate(n.timestamp)}</span>
+            {hasCheck && n.due && !isDone && (
+              <span className={`nv-due ${n.due < plusDays(0) ? 'is-late' : ''}`}>Due {dueLabel(n.due)}</span>
+            )}
           </span>
           <span className="nv-note-text">{n.text}</span>
         </button>
@@ -253,7 +304,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
                 <button
                   key={n.index}
                   className="nv-pinned-item"
-                  onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat })}
+                  onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat, due: n.due || null })}
                 >
                   {n.text}
                 </button>
@@ -272,6 +323,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
             onChange={(e) => setText(e.target.value)}
           />
           <CategoryChips value={category} onChange={setCategory} />
+          {isCheckable(category) && <DueChips value={due} onChange={setDue} />}
           <div className="nv-compose-actions">
             <span className="nv-spacer" />
             <button className="nv-btn-primary" disabled={!text.trim()} onClick={add}>
