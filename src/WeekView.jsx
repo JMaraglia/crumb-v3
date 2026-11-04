@@ -88,7 +88,8 @@ function hourLabel(h) {
 export default function WeekView({
   startDate,
   onShift,
-  daysPerPage = DAYS_PER_PAGE, // 3 for Week view, 1 for Day view
+  daysPerPage = DAYS_PER_PAGE, // 3 or 5 for Week view, 1 for Day view
+  pageStep,              // days between pages (7 for Mon–Fri); defaults to daysPerPage
   events = [],
   pendingEvent = null,   // the blue block shown while the add panel is open
   onHoldSlot,            // (dateKey, startMinutes) when a thumb is held on an empty spot
@@ -128,15 +129,16 @@ export default function WeekView({
   }, []);
 
   // Previous page + current page + next page.
+  const step = pageStep || daysPerPage;
   const days = Array.from({ length: daysPerPage * 3 }, (_, i) =>
-    addDays(startDate, i - daysPerPage)
+    addDays(startDate, (Math.floor(i / daysPerPage) - 1) * step + (i % daysPerPage))
   );
 
   const finishSwipe = (direction) => {
     setPhase(direction);
     setTimeout(() => {
-      if (direction === 'next') onShift(daysPerPage);
-      if (direction === 'prev') onShift(-daysPerPage);
+      if (direction === 'next') onShift(step);
+      if (direction === 'prev') onShift(-step);
       setDragX(0);
       setPhase('idle');
     }, SWIPE_MS);

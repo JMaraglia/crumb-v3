@@ -18,7 +18,7 @@ const SETTINGS_KEY = 'crumb_calendar_settings';
 const DEFAULT_SETTINGS = {
   eventLength: 60,      // minutes for a new event
   startHour: 7,         // grid opens scrolled to this hour
-  weekDays: DAYS_PER_PAGE, // Week view shows 3 or 5 days (swipe moves that many)
+  weekDays: 5,          // Week view: 5 = Monday–Friday (swipe moves a week), 3 = 3 days from today
   showVisits: true,     // customers' / prospects' scheduled visits
   showStops: true,      // stops added by hand on the Itinerary
   defaultColor: DEFAULT_EVENT_COLOR,
@@ -191,10 +191,16 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
     setSheet(null);
   };
 
-  const weekDays = settings.weekDays === 5 ? 5 : 3;
+  const weekDays = settings.weekDays === 3 ? 3 : 5;
+  // 5-day Week view always starts on a Monday: this week's, or next week's on a Saturday/Sunday.
+  const mondayFor = (d) => {
+    const wd = d.getDay(); // 0 = Sun … 6 = Sat
+    return addDays(d, wd === 6 ? 2 : wd === 0 ? 1 : 1 - wd);
+  };
+  const weekStart = viewMode === 'Week' && weekDays === 5 ? mondayFor(viewStart) : viewStart;
   const monthLabel =
     viewMode === 'Week'
-      ? visibleRangeLabel(viewStart, weekDays)
+      ? visibleRangeLabel(weekStart, weekDays)
       : visibleRangeLabel(viewStart, 1);
 
   return (
@@ -233,7 +239,8 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
         {viewMode === 'Week' || viewMode === 'Day' ? (
           <WeekView
             daysPerPage={viewMode === 'Day' ? 1 : weekDays}
-            startDate={viewStart}
+            pageStep={viewMode === 'Week' && weekDays === 5 ? 7 : undefined}
+            startDate={weekStart}
             onShift={shiftDays}
             events={allEvents}
             pendingEvent={sheet && sheet.isNew ? sheet.draft : null}
@@ -312,11 +319,11 @@ function CalendarSettings({ settings, onChange, onClose }) {
             <span>Week view shows</span>
             <select
               className="cal-set-select"
-              value={settings.weekDays === 5 ? 5 : 3}
+              value={settings.weekDays === 3 ? 3 : 5}
               onChange={(e) => onChange({ weekDays: Number(e.target.value) })}
             >
+              <option value={5}>Mon–Fri</option>
               <option value={3}>3 days</option>
-              <option value={5}>5 days</option>
             </select>
           </label>
           <label className="cal-set-row">
