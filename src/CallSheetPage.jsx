@@ -24,11 +24,14 @@ function keyOf(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// The date of `day` in THIS week (Mon–Sun), e.g. Tue → Nov 3
+// Call Sheet weeks run Sunday → Saturday (order days), shown in this order.
+const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// The date of `day` in THIS Sunday–Saturday week, e.g. on Tue Nov 3: Sun → Nov 1, Tue → Nov 3
 function dateThisWeek(day) {
   const now = new Date();
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
-  return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + DAYS.indexOf(day));
+  const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+  return new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + WEEK_DAYS.indexOf(day));
 }
 
 function readOrdered() {
@@ -175,7 +178,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
 
   const shareCSV = async () => {
     setMessage('');
-    const weekOf = dateThisWeek('Mon').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const weekOf = dateThisWeek('Sun').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const fileName = `Crumb call sheet - week of ${weekOf}.xlsx`;
     const blob = toWeekXlsx(contacts, orderedMap, day);
     try {
@@ -235,7 +238,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
 
         {/* Day switcher: the ORDER day */}
         <div className="cs-days">
-          {DAYS.map((d) => (
+          {WEEK_DAYS.map((d) => (
             <button key={d} className={`cs-day ${d === day ? 'is-on' : ''}`} onClick={() => setDay(d)}>
               {d}
             </button>
