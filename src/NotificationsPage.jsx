@@ -12,11 +12,13 @@ import {
   syncReminders,
   buildReminders,
   pushSupport,
+  DEFAULT_NOTIFY,
+  END_OF_DAY_KINDS,
 } from './notify';
 import './NotificationsPage.css';
 
 const MORNING_TIMES = Array.from({ length: 13 }, (_, i) => 300 + i * 30); // 5:00 – 11:00 AM
-const AFTERNOON_TIMES = Array.from({ length: 13 }, (_, i) => 720 + i * 30); // 12:00 – 6:00 PM
+const AFTERNOON_TIMES = Array.from({ length: 17 }, (_, i) => 720 + i * 30); // 12:00 – 8:00 PM
 const LEADS = [
   [0, 'Off'],
   [10, '10 min before'],
@@ -140,8 +142,8 @@ export default function NotificationsPage() {
           )}
           <label className="nt-row">
             <span>
-              Afternoon check
-              <span className="nt-help">To-dos due today or overdue that aren't done yet</span>
+              End-of-day reminder
+              <span className="nt-help">What's still open from today (and overdue), in the kinds you pick</span>
             </span>
             <input type="checkbox" className="nt-switch" checked={settings.afternoon} onChange={(e) => change({ afternoon: e.target.checked })} />
           </label>
@@ -155,6 +157,21 @@ export default function NotificationsPage() {
               </select>
             </label>
           )}
+          {settings.afternoon &&
+            END_OF_DAY_KINDS.map(([k, label]) => {
+              const kinds = { ...DEFAULT_NOTIFY.afternoonInclude, ...(settings.afternoonInclude || {}) };
+              return (
+                <label key={k} className="nt-row nt-sub-row">
+                  <span>{label}</span>
+                  <input
+                    type="checkbox"
+                    className="nt-switch"
+                    checked={Boolean(kinds[k])}
+                    onChange={(e) => change({ afternoonInclude: { ...kinds, [k]: e.target.checked } })}
+                  />
+                </label>
+              );
+            })}
           <label className="nt-row">
             <span>
               Visit & appointment reminders

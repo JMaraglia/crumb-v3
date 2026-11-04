@@ -25,9 +25,17 @@ export const DEFAULT_NOTIFY = {
   morning: true,       // morning summary
   morningTime: 420,    // minutes from midnight (7:00 AM)
   lead: 30,            // minutes before visits / appointments (0 = off)
-  afternoon: true,     // afternoon check: to-dos still open
+  afternoon: true,     // end-of-day reminder: what's still open
   afternoonTime: 960,  // 4:00 PM
+  afternoonInclude: { tasks: true, followups: true, samples: true, stops: false }, // what it lists
 };
+
+export const END_OF_DAY_KINDS = [
+  ['tasks', 'Tasks'],
+  ['followups', 'Follow-ups'],
+  ['samples', 'Samples'],
+  ['stops', 'Itinerary stops not checked off'],
+];
 
 export function loadNotifySettings() {
   return { ...DEFAULT_NOTIFY, ...readJSON(SETTINGS_KEY, {}) };
@@ -154,26 +162,30 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     }
 
     // To-dos (tasks + follow-up/sample notes) not done and due that day or earlier
-    const dueBy = () => {
+    const dueBy = (kinds = { tasks: true, followups: true, samples: true }) => {
       const due = [];
-      todos.forEach((t) => t && !t.done && t.due && t.due <= day && due.push({ text: t.text, who: t.accountName, late: t.due < day }));
+      if (kinds.tasks)
+        todos.forEach((t) => t && !t.done && t.due && t.due <= day && due.push({ text: t.text, who: t.accountName, late: t.due < day }));
       [...contacts, ...prospects].filter(hasName).forEach((a) =>
         (a.notes || []).forEach((n) => {
           const c = noteCat(n.category);
-          if ((c === 'Follow-up' || c === 'Sample') && n.due && n.due <= day && !isNoteDone(n))
-            due.push({ text: n.text, who: a.name, late: n.due < day });
+          const wanted = (c === 'Follow-up' && kinds.followups) || (c === 'Sample' && kinds.samples);
+          if (wanted && n.due && n.due <= day && !isNoteDone(n)) due.push({ text: n.text, who: a.name, late: n.due < day });
         })
       );
       return due;
     };
 
-    // Afternoon check: the to-dos still open (nothing is sent if they're all done)
+    // End-of-day reminder: what's still open, in the kinds picked (nothing is sent if it's all done)
     if (settings.afternoon && typeof settings.afternoonTime === 'number') {
+      const kinds = { ...DEFAULT_NOTIFY.afternoonInclude, ...(settings.afternoonInclude || {}) };
       const when = at(day, settings.afternoonTime);
-      const due = dueBy();
+      const due = dueBy(kinds);
+      if (kinds.stops)
+        stops.filter((st) => !st.done).forEach((st) => due.push({ text: st.title, who: '', late: false, stop: true }));
       if (Date.parse(when) > nowMs && due.length) {
         const late = due.filter((d) => d.late).length;
-        const list = due.slice(0, 4).map((d) => `${d.text}${d.who ? ` (${d.who})` : ''}`);
+        const list = due.slice(0, 4).map((d) => `${d.stop ? 'Stop: ' : ''}${d.text}${d.who ? ` (${d.who})` : ''}`);
         if (due.length > 4) list.push(`+${due.length - 4} more`);
         out.push({
           id: `a-${day}-${settings.afternoonTime}`,
@@ -189,7 +201,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     if (settings.morning) {
       const when = at(day, settings.morningTime);
       if (Date.parse(when) > nowMs) {
-        const due = dueBy();
+        const due = dueBy(); // morning summary always counts every kind
         const open = stops.filter((s) => !s.done);
         if (open.length || due.length) {
           const late = due.filter((d) => d.late).length;

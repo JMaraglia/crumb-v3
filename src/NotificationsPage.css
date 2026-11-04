@@ -259,3 +259,10 @@
   line-height: 1.4;
   color: #8e8e93;
 }
+
+/* End-of-day reminder: which kinds it lists */
+.nt-sub-row {
+  padding-left: 32px;
+  font-size: 0.95rem;
+  color: #3a3a3c;
+}
