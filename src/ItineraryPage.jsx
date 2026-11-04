@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import {
   TIME_OPTIONS,
   timeLabel,
@@ -297,8 +298,20 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
         {stops.length > 0 && (
           <div className="it-progress">
-            <div className="it-progress-text">
-              {doneCount} of {stops.length} done
+            <div className="it-progress-row">
+              <div className="it-progress-text">
+                {doneCount} of {stops.length} done
+              </div>
+              <div className="it-share">
+                <button className="it-pill" onClick={shareList}>
+                  <IoShareOutline className="it-pill-icon" />
+                  Share
+                </button>
+                <button className="it-pill" onClick={printList}>
+                  <IoPrintOutline className="it-pill-icon" />
+                  Print
+                </button>
+              </div>
             </div>
             <div className="it-progress-bar">
               <div className="it-progress-fill" style={{ width: `${(doneCount / stops.length) * 100}%` }} />
@@ -306,12 +319,6 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           </div>
         )}
 
-        {stops.length > 0 && (
-          <div className="it-share">
-            <button className="it-share-btn" onClick={shareList}>Share</button>
-            <button className="it-share-btn it-share-plain" onClick={printList}>Print / PDF</button>
-          </div>
-        )}
         {shareMsg && <div className="it-share-msg">{shareMsg}</div>}
 
         {stops.length === 0 ? (

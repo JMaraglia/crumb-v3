@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
+import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel, formatPhone } from './AccountViews';
 import { makeXlsx } from './xlsx';
 import './CallSheetPage.css';
@@ -218,7 +219,19 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
       </header>
 
       <div className="cs-content">
-        <h1 className="cs-title">Call Sheet</h1>
+        <div className="cs-title-row">
+          <h1 className="cs-title">Call Sheet</h1>
+          <div className="cs-actions">
+            <button className="cs-pill" disabled={!anyCustomers} onClick={shareCSV}>
+              <IoShareOutline className="cs-pill-icon" />
+              Share
+            </button>
+            <button className="cs-pill" disabled={!rows.length} onClick={printSheet}>
+              <IoPrintOutline className="cs-pill-icon" />
+              Print
+            </button>
+          </div>
+        </div>
 
         {/* Day switcher: the ORDER day */}
         <div className="cs-days">
@@ -242,14 +255,6 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
           )}
         </div>
 
-        <div className="cs-actions">
-          <button className="cs-btn" disabled={!anyCustomers} onClick={shareCSV}>
-            Share spreadsheet
-          </button>
-          <button className="cs-btn cs-btn-plain" disabled={!rows.length} onClick={printSheet}>
-            Print / PDF
-          </button>
-        </div>
         {message && <div className="cs-message">{message}</div>}
 
         {rows.length === 0 ? (

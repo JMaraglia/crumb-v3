@@ -518,3 +518,56 @@
     font-weight: 700;
   }
 }
+
+/* Title row: "Call Sheet" on the left, small Share / Print pills on the right */
+.cs-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cs-title-row .cs-title {
+  margin: 0;
+}
+
+.cs-title-row .cs-actions {
+  margin: 0;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cs-page .cs-pill,
+.cs-page .cs-pill:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: #e5f0fa;
+  color: #0077cc;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cs-page .cs-pill:active {
+  background: #cfe3f5;
+}
+
+.cs-page .cs-pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cs-pill-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+@media print {
+  .cs-title-row {
+    display: none !important;
+  }
+}

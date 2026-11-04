@@ -541,29 +541,46 @@
   padding: 10px 4px 0;
 }
 
-/* ---------- Share / Print buttons ---------- */
+/* ---------- Share / Print pills (on the progress line) ---------- */
+.it-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.it-progress-row .it-progress-text {
+  margin-bottom: 0;
+}
+
 .it-share {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.it-page .it-share-btn,
-.it-page .it-share-btn:hover {
-  flex: 1;
-  padding: 10px 0;
-  border-radius: 10px;
-  background: #0077cc;
-  color: #fff;
-  font-weight: 600;
-  text-align: center;
-}
-
-.it-page .it-share-plain,
-.it-page .it-share-plain:hover {
-  background: #fff;
+.it-page .it-pill,
+.it-page .it-pill:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: #e5f0fa;
   color: #0077cc;
-  border: 1px solid #d1d1d6;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.it-page .it-pill:active {
+  background: #cfe3f5;
+}
+
+.it-pill-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
 }
 
 .it-share-msg {
