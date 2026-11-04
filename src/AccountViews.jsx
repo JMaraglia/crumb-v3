@@ -880,6 +880,17 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             Convert to customer
           </button>
         )}
+
+        <button
+          className="av-delete"
+          onClick={() => {
+            if (!window.confirm(`Delete ${displayName(account)}? This also deletes its notes.`)) return;
+            setAccounts((prev) => prev.filter((a) => a.id !== account.id));
+            navigate(config.basePath, { replace: true });
+          }}
+        >
+          Delete {config.singular}
+        </button>
       </div>
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
