@@ -7,6 +7,7 @@ import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoDownloadOutline, IoArrowUndoOutline } from 'react-icons/io5';
+import { photosForBackup, restorePhotos } from './photos';
 import './BackupPage.css';
 
 const LAST_BACKUP_KEY = 'crumb_last_backup'; // when the last backup file was made
@@ -61,7 +62,10 @@ function summarize(backup) {
     plural(prospects.length, 'prospect'),
     plural(notes, 'note'),
     plural(Array.isArray(events) ? events.length : 0, 'calendar event'),
-  ].join(' · ');
+    Array.isArray(backup.photos) && backup.photos.length ? plural(backup.photos.length, 'photo') : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 function niceWhen(iso) {
@@ -111,6 +115,7 @@ export default function BackupPage() {
   const backUp = async () => {
     setMessage('');
     const backup = snapshot();
+    backup.photos = await photosForBackup(); // account photos ride along in the file
     const now = new Date();
     const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // local date
     const fileName = `Crumb backup ${day}.json`;
@@ -169,7 +174,10 @@ export default function BackupPage() {
       return;
     }
     writeBackup(pending);
-    window.location.replace('/'); // reload so every screen uses the restored data
+    // Photos in the file are added back (photos already on the phone are kept).
+    restorePhotos(pending.photos)
+      .catch(() => {})
+      .finally(() => window.location.replace('/')); // reload so every screen uses the restored data
   };
 
   const undoRestore = () => {

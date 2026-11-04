@@ -14,6 +14,7 @@ import { makeXlsx } from './xlsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
+import AccountPhotos from './AccountPhotos';
 import './AccountViews.css';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, readJSON } from './schedule';
 
@@ -1504,6 +1505,8 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             <FaChevronRight className="av-row-chevron" />
           </button>
         </div>
+
+        <AccountPhotos type={typeOf(config)} id={account.id} name={displayName(account)} />
 
         {setAccounts &&
           (account.inactive ? (
