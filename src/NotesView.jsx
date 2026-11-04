@@ -4,7 +4,7 @@
 // A note looks like: { text, category, timestamp, done? }  (done is for Follow-ups and Samples)
 import React, { useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
-import { IoShareOutline } from 'react-icons/io5';
+import { IoShareOutline, IoCalendarOutline } from 'react-icons/io5';
 import { shareText, shareFile, safeFileName } from './share';
 import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
@@ -328,7 +328,8 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           {isCheckable(category) && <DueChips value={due} onChange={setDue} />}
           <div className="nv-compose-actions">
             <button className="mt-open-btn" onClick={() => setMeeting(true)}>
-              📅 Meeting
+              <IoCalendarOutline className="mt-open-icon" />
+              Meeting
             </button>
             <span className="nv-spacer" />
             <button className="nv-btn-primary" disabled={!text.trim()} onClick={add}>

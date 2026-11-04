@@ -138,9 +138,13 @@ button.mt-open-btn:hover,
   margin: 0;
   padding: 7px 12px;
   border-radius: 999px;
-  background: #e9f2fb;
-  color: #0077cc;
+  background: #fff1e0;
+  color: #d96b00;
   font-size: 0.88rem;
   font-weight: 600;
   width: auto;
+}
+
+.mt-open-icon {
+  font-size: 1.05rem;
 }

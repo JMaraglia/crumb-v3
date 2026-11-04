@@ -47,7 +47,7 @@ export default function MeetingSheet({ account, presetNotes = '', onSaved, onCan
       showInItinerary: true,
     };
     localStorage.setItem(EVENTS_KEY, JSON.stringify([...list, event]));
-    onSaved(`📅 Meeting added to Calendar and Itinerary: ${niceMeeting(day, start)}`);
+    onSaved(`Meeting added to Calendar and Itinerary: ${niceMeeting(day, start)}`);
   };
 
   return (
