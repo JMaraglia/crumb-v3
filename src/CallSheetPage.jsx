@@ -127,7 +127,6 @@ function toWeekXlsx(customers, orderedMap, currentDay) {
       }`,
       columns: XLSX_COLUMNS,
       rows: rows.map((r) => ({
-        muted: r.noCall,
         cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online, r.callNote, r.ordered],
       })),
       emptyText: `No customers order on ${FULL_DAY[orderDay]}.`,

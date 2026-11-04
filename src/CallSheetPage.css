@@ -454,14 +454,6 @@
   color: #1e8e3e;
 }
 
-/* N/A (no call needed): grayed out, at the bottom */
-.cs-table tbody tr.is-no-call td {
-  color: #aeaeb2;
-}
-
-.cs-table tbody tr.is-no-call .cs-link {
-  color: #8e9bb0;
-}
 
 /* Darker printout. iPhone's own font prints thin and light, so the printout
    uses Arial, semi-bold black text, slightly thickened letters, 11pt, and
@@ -524,13 +516,5 @@
     font-size: 15pt;
     line-height: 1;
     font-weight: 700;
-  }
-
-  /* N/A rows: a bit lighter than the rest, still easy to read */
-  .cs-table tbody tr.is-no-call td,
-  .cs-table tbody tr.is-no-call .cs-link,
-  .cs-table tbody tr.is-no-call .cs-print-only {
-    color: #444 !important;
-    -webkit-text-stroke: 0;
   }
 }
