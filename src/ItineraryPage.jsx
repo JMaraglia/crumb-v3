@@ -4,7 +4,7 @@
 //   2. calendar events linked to an account (or any event switched to "Show in itinerary")
 //   3. stops added by hand (saved in visitData, same as before; old saved visits still show)
 // Tap a stop for Contact / Map and a quick note that saves to that account as a "Visit" note.
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { IoShareOutline, IoPrintOutline, IoCalendarOutline, IoNavigate } from 'react-icons/io5';
@@ -305,6 +305,55 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setNoteText('');
     setSavedFlash('');
     setOpenKey((cur) => (cur === stop.key ? null : stop.key));
+  };
+
+  // Double-tap or hold a stop → that customer's / prospect's Edit screen.
+  const lastTap = useRef({ key: null, time: 0 });
+  const hold = useRef(null); // { timer, x, y, fired }
+  const editPath = (stop) => {
+    const acct = stop.accountId ? findAccount(stop.accountType, stop.accountId) : null;
+    if (!acct) return null;
+    return stop.accountType === 'prospect' ? `/prospects/${acct.id}/edit` : `/customers/${acct.id}/edit`;
+  };
+  const tapStop = (stop) => {
+    if (hold.current && hold.current.fired) {
+      hold.current = null; // the lift after a hold
+      return;
+    }
+    const now = Date.now();
+    const path = editPath(stop);
+    if (path && lastTap.current.key === stop.key && now - lastTap.current.time < 350) {
+      lastTap.current = { key: null, time: 0 };
+      navigate(path);
+      return;
+    }
+    lastTap.current = { key: stop.key, time: now };
+    openStop(stop);
+  };
+  const holdStart = (stop, e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const path = editPath(stop);
+    if (!path) return;
+    const h = { x: e.clientX, y: e.clientY, fired: false };
+    h.timer = setTimeout(() => {
+      h.fired = true;
+      navigate(path);
+    }, 550);
+    hold.current = h;
+  };
+  const holdMove = (e) => {
+    const h = hold.current;
+    if (h && !h.fired && (Math.abs(e.clientX - h.x) > 10 || Math.abs(e.clientY - h.y) > 10)) {
+      clearTimeout(h.timer);
+      hold.current = null;
+    }
+  };
+  const holdEnd = () => {
+    const h = hold.current;
+    if (h && !h.fired) {
+      clearTimeout(h.timer);
+      hold.current = null;
+    }
   };
 
   // Quick note → saved on the account as a "Visit" note
@@ -645,7 +694,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
               return (
                 <div key={stop.key} className={`it-stop ${stop.done ? 'is-done' : ''} ${open ? 'is-open' : ''}`}>
                   <SwipeRow className="it-stop-row" label={stop.kind === 'manual' ? 'Delete' : 'Remove'} onDelete={() => swipeRemove(stop)}>
-                    <button className="it-stop-main" onClick={() => openStop(stop)}>
+                    <button
+                      className="it-stop-main"
+                      onClick={() => tapStop(stop)}
+                      onPointerDown={(e) => holdStart(stop, e)}
+                      onPointerMove={holdMove}
+                      onPointerUp={holdEnd}
+                      onPointerCancel={holdEnd}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
                       <span
                         className={`it-time ${stop.locked ? 'is-locked' : ''}`}
                         role="button"
@@ -712,10 +769,10 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                           <button
                             className="it-quick-btn"
                             onClick={() =>
-                              navigate(stop.accountType === 'prospect' ? `/prospects/${acct.id}` : `/customers/${acct.id}`)
+                              navigate(stop.accountType === 'prospect' ? `/prospect-notes/${acct.id}` : `/notes/${acct.id}`)
                             }
                           >
-                            Open
+                            Notes
                           </button>
                         )}
                         {stop.kind === 'scheduled' && acct && (
@@ -817,7 +874,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             })}
           </div>
         )}
-        {stops.length > 0 && <div className="it-hint">Tap a stop for details and a quick note · Tap ○ when done · Swipe left to remove</div>}
+        {stops.length > 0 && <div className="it-hint">Tap a stop for details · Double-tap or hold to edit · Tap ○ when done · Swipe left to remove</div>}
       </div>
 
       <button className="it-fab" onClick={() => setAdding(true)} aria-label="Add stop">

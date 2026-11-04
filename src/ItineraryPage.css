@@ -1063,3 +1063,10 @@
 .it-stop.is-open .it-stop-row {
   box-shadow: inset 3px 0 0 #0077cc;
 }
+
+/* holding a stop opens its Edit screen: no iPhone pop-up menu or text selection */
+.it-stop-main {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
