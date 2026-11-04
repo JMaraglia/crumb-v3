@@ -38,6 +38,7 @@ import {
 } from './schedule';
 import { PdfDoc } from './pdf';
 import SwipeRow from './SwipeRow';
+import MeetingSheet from './MeetingSheet';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -142,6 +143,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [locking, setLocking] = useState(null); // stop whose time is being locked
   const [timing, setTiming] = useState(null);   // stop whose time is being changed (tapped the time)
   const [removedMap, setRemovedMap] = useState(() => readJSON(REMOVED_KEY, {}) || {});
+  const [meetingFor, setMeetingFor] = useState(null); // account getting a meeting set
   const [undoIt, setUndoIt] = useState(null);   // { text, restore, timer } after swiping a stop away
   const events = toVisitList(readJSON(EVENTS_KEY, []));
 
@@ -752,6 +754,12 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             }}
                           />
                           <div className="it-note-actions">
+                            <button
+                              className="mt-open-btn"
+                              onClick={() => setMeetingFor({ type: stop.accountType, id: acct.id, name: acct.name, address: acct.address })}
+                            >
+                              📅 Meeting
+                            </button>
                             <span className="it-flash">{savedFlash}</span>
                             <button
                               className="it-note-save"
@@ -820,6 +828,19 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           stop={locking}
           onCancel={() => setLocking(null)}
           onSave={(time) => saveLock(locking, time)}
+        />
+      )}
+
+      {meetingFor && (
+        <MeetingSheet
+          account={meetingFor}
+          presetNotes={noteText.trim()}
+          onCancel={() => setMeetingFor(null)}
+          onSaved={(msg) => {
+            setMeetingFor(null);
+            setSavedFlash('Meeting set');
+            setShareMsg(msg);
+          }}
         />
       )}
 

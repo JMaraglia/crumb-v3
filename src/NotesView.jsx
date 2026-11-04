@@ -9,6 +9,7 @@ import { shareText, shareFile, safeFileName } from './share';
 import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
 import { isCheckable, isNoteDone } from './noteStatus';
+import MeetingSheet from './MeetingSheet';
 import './NotesView.css';
 
 export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Background'];
@@ -111,6 +112,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const [filter, setFilter] = useState('All');
   const [editing, setEditing] = useState(null); // { index, text, category }
   const [shareMsg, setShareMsg] = useState('');
+  const [meeting, setMeeting] = useState(false); // "Set a meeting" panel open
 
   const notes = (account.notes || []).map((n, index) => ({ ...n, index, cat: normalizeCategory(n.category) }));
   const byNewest = (a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0) || b.index - a.index;
@@ -325,6 +327,9 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <CategoryChips value={category} onChange={setCategory} />
           {isCheckable(category) && <DueChips value={due} onChange={setDue} />}
           <div className="nv-compose-actions">
+            <button className="mt-open-btn" onClick={() => setMeeting(true)}>
+              📅 Meeting
+            </button>
             <span className="nv-spacer" />
             <button className="nv-btn-primary" disabled={!text.trim()} onClick={add}>
               Add note
@@ -354,6 +359,22 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
         )}
         {notes.length > 0 && <div className="nv-hint">Tap a note to edit, share, or delete it</div>}
       </div>
+      {meeting && (
+        <MeetingSheet
+          account={{
+            type: (kindLabel || '').toLowerCase() === 'prospect' ? 'prospect' : 'customer',
+            id: account.id,
+            name: account.name,
+            address: account.address,
+          }}
+          presetNotes={text.trim()}
+          onCancel={() => setMeeting(false)}
+          onSaved={(msg) => {
+            setMeeting(false);
+            setShareMsg(msg);
+          }}
+        />
+      )}
     </div>
   );
 }

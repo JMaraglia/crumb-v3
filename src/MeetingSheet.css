@@ -1,0 +1,146 @@
+/* Set a meeting (from notes / Itinerary). App.css styles every button, so buttons are reset here. */
+.mt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+}
+
+.mt-sheet {
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #f2f2f7;
+  border-radius: 16px 16px 0 0;
+  padding: 14px 16px calc(20px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.mt-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.mt-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.mt-sheet .mt-link,
+.mt-sheet .mt-link:hover {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 4px 2px;
+  margin: 0;
+  color: #0077cc;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.mt-sheet .mt-bold {
+  font-weight: 700;
+}
+
+.mt-sheet .mt-link:disabled {
+  color: #b0b0b5;
+}
+
+.mt-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 2px 12px;
+  font-size: 0.85rem;
+  color: #6e6e73;
+}
+
+.mt-who strong {
+  font-size: 1rem;
+  color: #1c1c1e;
+}
+
+.mt-group {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.mt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 14px;
+  border-top: 1px solid #ececf0;
+  font-size: 1rem;
+}
+
+.mt-row:first-child {
+  border-top: none;
+}
+
+.mt-input {
+  border: none;
+  background: #e9f2fb;
+  color: #0077cc;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mt-date {
+  min-width: 140px;
+  text-align: center;
+}
+
+.mt-full {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-top: 1px solid #ececf0;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 1rem;
+  background: #fff;
+  resize: none;
+}
+
+.mt-full:first-child {
+  border-top: none;
+}
+
+/* The "Meeting" button itself (notes page + Itinerary stop) */
+.mt-open-btn,
+button.mt-open-btn,
+button.mt-open-btn:hover,
+.nv-page button.mt-open-btn,
+.nv-page button.mt-open-btn:hover,
+.it-page button.mt-open-btn,
+.it-page button.mt-open-btn:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #e9f2fb;
+  color: #0077cc;
+  font-size: 0.88rem;
+  font-weight: 600;
+  width: auto;
+}
