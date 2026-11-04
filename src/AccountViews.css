@@ -1394,3 +1394,32 @@
   background: #0077cc;
   color: #fff;
 }
+
+/* Inactive drop-down at the bottom of Customers / Prospects */
+.av-page .av-inactive-toggle,
+.av-page .av-inactive-toggle:hover {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 18px 0 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #e8e8ed;
+  color: #3a3a3c;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.av-inactive-chev {
+  transition: transform 0.2s;
+  color: #8e8e93;
+}
+
+.av-inactive-chev.is-open {
+  transform: rotate(90deg);
+}
+
+.av-inactive-list {
+  opacity: 0.85;
+}

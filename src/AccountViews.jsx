@@ -918,6 +918,7 @@ export function AccountList({ config, accounts, setAccounts }) {
   const [sortAZ, setSortAZ] = useState(true);
   const [openId, setOpenId] = useState(null); // the one row that's opened up
   const [stageFilter, setStageFilter] = useState('all');
+  const [showInactive, setShowInactive] = useState(false); // the Inactive drop-down at the bottom
   const [sheet, setSheet] = useState(null);   // Call/Text or Maps pop-up
   const [listMsg, setListMsg] = useState('');
   const [visitFor, setVisitFor] = useState(null); // account whose visits are being changed (quick panel)
@@ -926,8 +927,15 @@ export function AccountList({ config, accounts, setAccounts }) {
   const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
   const activeAccounts = realAccounts.filter((a) => !a.inactive);
   const inactiveCount = realAccounts.length - activeAccounts.length;
-  const shown = (stageFilter === 'inactive' ? realAccounts.filter((a) => a.inactive) : activeAccounts)
-    .filter((a) => stageFilter === 'all' || stageFilter === 'inactive' || (a.stage || 'none') === stageFilter)
+  const matches = (a) =>
+    !q ||
+    (a.name || '').toLowerCase().includes(q) ||
+    (a.address || '').toLowerCase().includes(q) ||
+    groupOf(a).toLowerCase().includes(q) ||
+    (config.hasAccountNumber && String(a.accountNumber || '').toLowerCase().includes(q));
+  const inactiveShown = realAccounts.filter((a) => a.inactive && matches(a)).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const shown = activeAccounts
+    .filter((a) => stageFilter === 'all' || (a.stage || 'none') === stageFilter)
     .filter((a) => {
       if (!q) return true;
       return (
@@ -945,6 +953,45 @@ export function AccountList({ config, accounts, setAccounts }) {
       return sortAZ ? an.localeCompare(bn) : bn.localeCompare(an);
     });
 
+  const renderRow = (a) => (
+          <ListRow
+            key={a.id}
+            account={a}
+            config={config}
+            expanded={openId === a.id}
+            onToggle={() => setOpenId((cur) => (cur === a.id ? null : a.id))}
+            onOpenFull={() => navigate(`${config.basePath}/${a.id}`)}
+            onEdit={() => navigate(`${config.basePath}/${a.id}/edit`)}
+            onSnooze={
+              setAccounts
+                ? (id, until) =>
+                    setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, snoozeUntil: until } : x)))
+                : null
+            }
+            onSheet={(info) => info && setSheet(info)}
+            onVisit={setAccounts ? (acct) => setVisitFor(acct) : null}
+            onStage={
+              config.hasStage && setAccounts
+                ? (id, key) => setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, stage: key } : x)))
+                : null
+            }
+            onDelete={
+              config.swipeToDelete && setAccounts
+                ? () => {
+                    if (
+                      !window.confirm(
+                        `Permanently delete ${displayName(a)}?\n\nThis deletes the ${config.singular.toLowerCase()} and all of its notes. It can't be undone.`
+                      )
+                    )
+                      return;
+                    if (openId === a.id) setOpenId(null);
+                    setAccounts((prev) => prev.filter((x) => x.id !== a.id));
+                  }
+                : null
+            }
+          />
+  );
+
   return (
     <div className="av-page">
       <Header onBack={() => navigate('/')} title="" />
@@ -960,8 +1007,6 @@ export function AccountList({ config, accounts, setAccounts }) {
               const heading = [
                 st
                   ? `${st.label} ${config.plural.toLowerCase()}`
-                  : stageFilter === 'inactive'
-                  ? `Inactive ${config.plural.toLowerCase()}`
                   : stageFilter === 'none'
                   ? `${config.plural} with no stage`
                   : `All ${config.plural.toLowerCase()}`,
@@ -1000,12 +1045,6 @@ export function AccountList({ config, accounts, setAccounts }) {
                   {st.label} ({activeAccounts.filter((a) => a.stage === st.key).length})
                 </option>
               ))}
-              <option value="inactive">Inactive ({inactiveCount})</option>
-            </select>
-          ) : inactiveCount > 0 || stageFilter === 'inactive' ? (
-            <select className="av-stage-select" value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
-              <option value="all">All {config.plural.toLowerCase()} ({activeAccounts.length})</option>
-              <option value="inactive">Inactive ({inactiveCount})</option>
             </select>
           ) : (
             <span className="av-count">
@@ -1023,50 +1062,29 @@ export function AccountList({ config, accounts, setAccounts }) {
           <div className="av-empty">No matches.</div>
         ) : (
           <div className="av-group">
-            {shown.map((a) => (
-              <ListRow
-                key={a.id}
-                account={a}
-                config={config}
-                expanded={openId === a.id}
-                onToggle={() => setOpenId((cur) => (cur === a.id ? null : a.id))}
-                onOpenFull={() => navigate(`${config.basePath}/${a.id}`)}
-                onEdit={() => navigate(`${config.basePath}/${a.id}/edit`)}
-                onSnooze={
-                  setAccounts
-                    ? (id, until) =>
-                        setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, snoozeUntil: until } : x)))
-                    : null
-                }
-                onSheet={(info) => info && setSheet(info)}
-                onVisit={setAccounts ? (acct) => setVisitFor(acct) : null}
-                onStage={
-                  config.hasStage && setAccounts
-                    ? (id, key) => setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, stage: key } : x)))
-                    : null
-                }
-                onDelete={
-                  config.swipeToDelete && setAccounts
-                    ? () => {
-                        if (
-                          !window.confirm(
-                            `Permanently delete ${displayName(a)}?\n\nThis deletes the ${config.singular.toLowerCase()} and all of its notes. It can't be undone.`
-                          )
-                        )
-                          return;
-                        if (openId === a.id) setOpenId(null);
-                        setAccounts((prev) => prev.filter((x) => x.id !== a.id));
-                      }
-                    : null
-                }
-              />
-            ))}
+            {shown.map(renderRow)}
           </div>
         )}
         {shown.length > 0 && (
           <div className="av-hint">
             Tap to open · Double-tap to edit · Hold for full details{config.swipeToDelete ? ' · Swipe left to delete' : ''}
           </div>
+        )}
+
+        {/* Inactive (closed, dead lead…): their own drop-down at the bottom */}
+        {inactiveCount > 0 && (
+          <>
+            <button className="av-inactive-toggle" onClick={() => setShowInactive((v) => !v)}>
+              <span>Inactive ({q ? `${inactiveShown.length} of ${inactiveCount}` : inactiveCount})</span>
+              <FaChevronRight className={`av-inactive-chev ${showInactive ? 'is-open' : ''}`} />
+            </button>
+            {showInactive &&
+              (inactiveShown.length ? (
+                <div className="av-group av-inactive-list">{inactiveShown.map(renderRow)}</div>
+              ) : (
+                <div className="av-empty">No inactive matches.</div>
+              ))}
+          </>
         )}
       </div>
 
