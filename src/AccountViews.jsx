@@ -14,7 +14,37 @@ import { makeXlsx } from './xlsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import './AccountViews.css';
-import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed } from './schedule';
+import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, readJSON } from './schedule';
+
+/* ---------- Groups: one business, several locations ----------
+   Each location is its own customer or prospect. Locations share a `group` name
+   (customers and prospects can be in the same group). */
+export function groupOf(account) {
+  return String((account && account.group) || '').trim();
+}
+// Every customer + prospect, as { type, account }. `current` = the list on screen (freshest copy).
+function bothLists(currentType, current) {
+  const customers = currentType === 'customer' ? current : readJSON('crumb_contacts', []) || [];
+  const prospects = currentType === 'prospect' ? current : readJSON('crumb_prospects', []) || [];
+  return [
+    ...customers.map((a) => ({ type: 'customer', account: a })),
+    ...prospects.map((a) => ({ type: 'prospect', account: a })),
+  ].filter((x) => x.account && x.account.name && String(x.account.name).trim());
+}
+export function groupMembers(group, currentType, current) {
+  const g = String(group || '').trim().toLowerCase();
+  if (!g) return [];
+  return bothLists(currentType, current).filter((x) => groupOf(x.account).toLowerCase() === g);
+}
+function knownGroups(currentType, current) {
+  const seen = new Map();
+  bothLists(currentType, current).forEach((x) => {
+    const g = groupOf(x.account);
+    if (g && !seen.has(g.toLowerCase())) seen.set(g.toLowerCase(), g);
+  });
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+const typeOf = (config) => (config.basePath === '/prospects' ? 'prospect' : 'customer');
 
 // Re-exported so other files can keep importing these from here.
 export { DAYS, FREQUENCIES, STAGES, stageInfo };
@@ -706,6 +736,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
           )}
           {!expanded && (
             <span className="av-chips">
+              {groupOf(a) && <span className="av-chip av-chip-group">{groupOf(a)}</span>}
               <VisitChips account={a} config={config} onPick={pickVisit} />
               <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
@@ -792,6 +823,7 @@ export function AccountList({ config, accounts, setAccounts }) {
       return (
         (a.name || '').toLowerCase().includes(q) ||
         (a.address || '').toLowerCase().includes(q) ||
+        groupOf(a).toLowerCase().includes(q) ||
         (config.hasAccountNumber && String(a.accountNumber || '').toLowerCase().includes(q))
       );
     })
@@ -1103,6 +1135,40 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </div>
         )}
 
+        {groupOf(account) && (() => {
+          const others = groupMembers(groupOf(account), typeOf(config), accounts).filter(
+            (x) => !(x.type === typeOf(config) && String(x.account.id) === String(account.id))
+          );
+          return (
+            <>
+              <div className="av-section-title">
+                {groupOf(account)} · {others.length + 1} location{others.length === 0 ? '' : 's'}
+              </div>
+              <div className="av-group">
+                {others.length === 0 ? (
+                  <div className="av-row av-static-row av-muted-row">No other locations yet. Give another account the same group name.</div>
+                ) : (
+                  others.map((x) => (
+                    <button
+                      key={`${x.type}-${x.account.id}`}
+                      className="av-row"
+                      onClick={() => navigate(`${x.type === 'prospect' ? '/prospects' : '/customers'}/${x.account.id}`)}
+                    >
+                      <span className="av-row-text">
+                        <span className="av-row-value">{displayName(x.account)}</span>
+                        <span className="av-row-sub">
+                          {[x.account.town, x.type === 'prospect' ? 'Prospect' : 'Customer'].filter(Boolean).join(' · ')}
+                        </span>
+                      </span>
+                      <FaChevronRight className="av-row-chevron" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          );
+        })()}
+
         <div className="av-section-title">Contacts</div>
         {contacts.length === 0 ? (
           <div className="av-group av-muted-row">No contacts yet.</div>
@@ -1314,6 +1380,10 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [town, setTown] = useState(startAddr.town);
   const [addrState, setAddrState] = useState(startAddr.state);
   const [zip, setZip] = useState(startAddr.zip);
+  const [group, setGroup] = useState(existing ? groupOf(existing) : '');
+  const groupChoices = knownGroups(typeOf(config), accounts).filter(
+    (g) => g.toLowerCase() !== group.trim().toLowerCase() && (!group.trim() || g.toLowerCase().includes(group.trim().toLowerCase()))
+  );
   const [accountNumber, setAccountNumber] = useState(existing ? existing.accountNumber || '' : '');
   const [contacts, setContacts] = useState(
     existing && existing.contacts ? existing.contacts.map((c) => ({ ...BLANK_CONTACT, ...c })) : []
@@ -1370,6 +1440,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       state: addrState.trim().toUpperCase(),
       zip: zip.trim(),
       address: joinAddress({ street, town, state: addrState.toUpperCase(), zip }),
+      group: group.trim(), // locations of the same business share this name
       // drop contact rows that were left completely empty
       contacts: contacts
         .map((c) => ({
@@ -1486,6 +1557,25 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
             />
           </div>
         </div>
+
+        <div className="av-section-title">Group (more than one location)</div>
+        <div className="av-group">
+          <input
+            className="av-input"
+            placeholder="Leave blank if it's one location"
+            value={group}
+            onChange={(e) => setGroup(e.target.value)}
+          />
+        </div>
+        {groupChoices.length > 0 && (
+          <div className="av-group-pick">
+            {groupChoices.slice(0, 8).map((g) => (
+              <button key={g} type="button" className="av-group-choice" onClick={() => setGroup(g)}>
+                {g}
+              </button>
+            ))}
+          </div>
+        )}
 
         {config.hasStage && (
           <>
