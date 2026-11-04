@@ -63,7 +63,7 @@ function phoneText(c) {
 function rowsFor(customers, orderDay, orderedIds = []) {
   const delivers = nextDay(orderDay);
   return customers
-    .filter((c) => c.name && c.name.trim() && (c.deliveryDays || []).includes(delivers))
+    .filter((c) => c.name && c.name.trim() && !c.inactive && (c.deliveryDays || []).includes(delivers))
     // In calling order: by "Call at" time, then name; no time set next; N/A (no call) last.
     .sort((a, b) => {
       const rank = (c) => (typeof c.callTime === 'number' ? c.callTime : c.callTime === 'na' ? 20000 : 10000);

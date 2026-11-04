@@ -74,6 +74,23 @@ export function findRepeats({ name, street, town, group }, skip = null) {
     });
 }
 
+/* ---------- Inactive accounts (closed, dead, etc.) ----------
+   account.inactive = { reason, since: 'YYYY-MM-DD' }. Kept with all notes; just off the
+   lists, Itinerary, Calendar, Call Sheet and reminders until made active again. */
+export const INACTIVE_REASONS = [
+  ['closed', 'Closed'],
+  ['dead', 'Dead lead'],
+  ['credit', 'Credit risk'],
+  ['notfit', 'Not a fit'],
+  ['competitor', 'Went with a competitor'],
+  ['other', 'Other'],
+];
+export function inactiveLabel(account) {
+  const r = account && account.inactive;
+  if (!r) return '';
+  return (INACTIVE_REASONS.find(([k]) => k === r.reason) || [null, 'Inactive'])[1];
+}
+
 const typeOf = (config) => (config.basePath === '/prospects' ? 'prospect' : 'customer');
 
 // Re-exported so other files can keep importing these from here.
@@ -766,8 +783,9 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
           )}
           {!expanded && (
             <span className="av-chips">
+              {a.inactive && <span className="av-chip av-chip-inactive">{inactiveLabel(a)}</span>}
               {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
-              <VisitChips account={a} config={config} onPick={pickVisit} />
+              {!a.inactive && <VisitChips account={a} config={config} onPick={pickVisit} />}
               <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
               <SnoozeChip account={a} daysField={config.visitDaysField} />
@@ -846,8 +864,10 @@ export function AccountList({ config, accounts, setAccounts }) {
 
   const q = search.trim().toLowerCase();
   const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
-  const shown = realAccounts
-    .filter((a) => stageFilter === 'all' || (a.stage || 'none') === stageFilter)
+  const activeAccounts = realAccounts.filter((a) => !a.inactive);
+  const inactiveCount = realAccounts.length - activeAccounts.length;
+  const shown = (stageFilter === 'inactive' ? realAccounts.filter((a) => a.inactive) : activeAccounts)
+    .filter((a) => stageFilter === 'all' || stageFilter === 'inactive' || (a.stage || 'none') === stageFilter)
     .filter((a) => {
       if (!q) return true;
       return (
@@ -878,7 +898,13 @@ export function AccountList({ config, accounts, setAccounts }) {
             onClick={async () => {
               const st = stageInfo(stageFilter);
               const heading = [
-                st ? `${st.label} ${config.plural.toLowerCase()}` : stageFilter === 'none' ? `${config.plural} with no stage` : `All ${config.plural.toLowerCase()}`,
+                st
+                  ? `${st.label} ${config.plural.toLowerCase()}`
+                  : stageFilter === 'inactive'
+                  ? `Inactive ${config.plural.toLowerCase()}`
+                  : stageFilter === 'none'
+                  ? `${config.plural} with no stage`
+                  : `All ${config.plural.toLowerCase()}`,
                 q ? `matching "${search.trim()}"` : '',
               ]
                 .filter(Boolean)
@@ -908,12 +934,18 @@ export function AccountList({ config, accounts, setAccounts }) {
               onChange={(e) => setStageFilter(e.target.value)}
               style={stageInfo(stageFilter) ? { color: stageInfo(stageFilter).color } : undefined}
             >
-              <option value="all">All {config.plural.toLowerCase()} ({realAccounts.length})</option>
+              <option value="all">All {config.plural.toLowerCase()} ({activeAccounts.length})</option>
               {STAGES.map((st) => (
                 <option key={st.key} value={st.key}>
-                  {st.label} ({realAccounts.filter((a) => a.stage === st.key).length})
+                  {st.label} ({activeAccounts.filter((a) => a.stage === st.key).length})
                 </option>
               ))}
+              <option value="inactive">Inactive ({inactiveCount})</option>
+            </select>
+          ) : inactiveCount > 0 || stageFilter === 'inactive' ? (
+            <select className="av-stage-select" value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
+              <option value="all">All {config.plural.toLowerCase()} ({activeAccounts.length})</option>
+              <option value="inactive">Inactive ({inactiveCount})</option>
             </select>
           ) : (
             <span className="av-count">
@@ -1009,6 +1041,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const [converting, setConverting] = useState(false);
   const [newAccountNumber, setNewAccountNumber] = useState('');
   const [visitOpen, setVisitOpen] = useState(false); // quick visit panel
+  const [askInactive, setAskInactive] = useState(false); // "Mark inactive" reason picker
   const [shareMsg, setShareMsg] = useState('');
   const account = accounts.find((a) => String(a.id) === id);
 
@@ -1072,6 +1105,18 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
       {shareMsg && <div className="av-share-msg">{shareMsg}</div>}
 
       <div className="av-content">
+        {account.inactive && (
+          <div className="av-inactive-banner">
+            <strong>Inactive · {inactiveLabel(account)}</strong>
+            <span>
+              Since{' '}
+              {account.inactive.since
+                ? new Date(account.inactive.since + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : '—'}
+              . Not on your Itinerary, Calendar, Call Sheet or reminders.
+            </span>
+          </div>
+        )}
         {/* Summary card: who, last note, visit schedule, quick buttons */}
         <div className="av-group av-summary">
           <div className="av-summary-top">
@@ -1318,6 +1363,22 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </button>
         </div>
 
+        {setAccounts &&
+          (account.inactive ? (
+            <button
+              className="av-reactivate"
+              onClick={() =>
+                setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, inactive: null } : x)))
+              }
+            >
+              Make active again
+            </button>
+          ) : (
+            <button className="av-inactive-btn" onClick={() => setAskInactive(true)}>
+              Mark inactive (closed, dead lead…)
+            </button>
+          ))}
+
         {onConvert && (
           <button className="av-convert" onClick={() => setConverting(true)}>
             Convert to customer
@@ -1335,6 +1396,19 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           Delete {config.singular}
         </button>
       </div>
+
+      {askInactive && (
+        <AskSheet
+          title={`Mark ${displayName(account)} inactive`}
+          message="It keeps all its notes, but comes off your lists, Itinerary, Calendar, Call Sheet and reminders. You can make it active again any time."
+          choices={INACTIVE_REASONS.map(([value, label]) => ({ value, label }))}
+          onPick={(reason) => {
+            setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, inactive: { reason, since: todayKey() } } : x)));
+            setAskInactive(false);
+          }}
+          onCancel={() => setAskInactive(false)}
+        />
+      )}
 
       {visitOpen && account && (
         <VisitSheet
@@ -1978,7 +2052,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           title="Looks like a repeat account"
           message={`Already in Crumb: ${repeats
             .slice(0, 3)
-            .map((x) => `${displayName(x.account)}${x.account.address ? ` (${x.account.address})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}`)
+            .map((x) => `${displayName(x.account)}${x.account.address ? ` (${x.account.address})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}${x.account.inactive ? ' (inactive)' : ''}`)
             .join('; ')}`}
           choices={[
             { label: `Open ${displayName(repeats[0].account)}`, value: 'open' },

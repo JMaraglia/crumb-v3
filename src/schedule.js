@@ -130,6 +130,7 @@ export function pruneMoves(moves) {
 // Due on this date, and not snoozed (snoozeUntil = first date visits come back).
 // A visit moved INTO this date always counts; one moved AWAY never does.
 export function isDueOn(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
+  if (account.inactive) return false; // closed / dead accounts drop off the Itinerary, Calendar and reminders
   if (visitMoveInto(account, dateKey)) return true;
   if (movedAway(account, dateKey)) return false;
   if (account.snoozeUntil && dateKey < account.snoozeUntil) return false;

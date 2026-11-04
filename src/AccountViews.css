@@ -1297,3 +1297,51 @@
   height: 20px;
   accent-color: #0077cc;
 }
+
+/* Inactive accounts */
+.av-chip-inactive {
+  background: #3a3a3c;
+  color: #fff;
+}
+
+.av-inactive-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: #3a3a3c;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.av-inactive-banner strong {
+  font-size: 1rem;
+}
+
+.av-page .av-inactive-btn,
+.av-page .av-inactive-btn:hover {
+  display: block;
+  width: 100%;
+  padding: 13px 0;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: #fff;
+  color: #636366;
+  font-weight: 600;
+  text-align: center;
+}
+
+.av-page .av-reactivate,
+.av-page .av-reactivate:hover {
+  display: block;
+  width: 100%;
+  padding: 13px 0;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
