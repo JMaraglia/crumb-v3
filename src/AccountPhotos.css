@@ -157,3 +157,54 @@
   object-fit: contain;
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* After taking a photo: offer to save it to the camera roll */
+.ap-saveroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -4px 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #e9f2fb;
+  font-size: 0.88rem;
+  color: #1c1c1e;
+}
+
+.ap-saveroll-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.av-page .ap-saveroll-no,
+.av-page .ap-saveroll-no:hover,
+.av-page .ap-saveroll-yes,
+.av-page .ap-saveroll-yes:hover {
+  padding: 6px 12px;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  width: auto;
+}
+
+.av-page .ap-saveroll-no,
+.av-page .ap-saveroll-no:hover {
+  background: #fff;
+  color: #3a3a3c;
+}
+
+.av-page .ap-saveroll-yes,
+.av-page .ap-saveroll-yes:hover {
+  background: #0077cc;
+  color: #fff;
+}
+
+.ap-saveroll-hint {
+  flex-basis: 100%;
+  font-size: 0.78rem;
+  color: #6e6e73;
+}

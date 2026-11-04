@@ -35,6 +35,7 @@ export default function AccountPhotos({ type, id, name }) {
   const [open, setOpen] = useState(null); // photo being viewed
   const [openUrl, setOpenUrl] = useState('');
   const fileRef = useRef(null);
+  const [justTaken, setJustTaken] = useState([]); // photos taken with the camera just now (offer: save to camera roll)
 
   const load = () =>
     listPhotos(key)
@@ -61,6 +62,9 @@ export default function AccountPhotos({ type, id, name }) {
     try {
       await addPhotos(key, files);
       await load();
+      // "Take Photo" pictures aren't in the camera roll; library picks have an older date.
+      const fresh = files.filter((f) => !f.lastModified || Date.now() - f.lastModified < 2 * 60 * 1000);
+      setJustTaken(fresh);
     } catch (err) {
       setMsg(err.message || "Couldn't save that photo.");
     }
@@ -97,6 +101,35 @@ export default function AccountPhotos({ type, id, name }) {
         </div>
       ) : (
         <div className="ap-empty">Take a photo or pick one from your camera roll. It stays with {name || 'this account'}, dated.</div>
+      )}
+      {justTaken.length > 0 && (
+        <div className="ap-saveroll">
+          <span>Also save {justTaken.length === 1 ? 'it' : 'them'} to your camera roll?</span>
+          <span className="ap-saveroll-btns">
+            <button className="ap-saveroll-no" onClick={() => setJustTaken([])}>No</button>
+            <button
+              className="ap-saveroll-yes"
+              onClick={async () => {
+                const files = justTaken.map((f, i) =>
+                  f.name ? f : new File([f], `Crumb photo ${i + 1}.jpg`, { type: f.type || 'image/jpeg' })
+                );
+                try {
+                  if (navigator.canShare && navigator.canShare({ files })) {
+                    await navigator.share({ files });
+                    setJustTaken([]);
+                    return;
+                  }
+                  setMsg("This phone can't save from here. Open the photo, tap Share, then Save Image.");
+                } catch (err) {
+                  if (!err || err.name !== 'AbortError') setMsg("Couldn't open the share menu. Open the photo, tap Share, then Save Image.");
+                }
+              }}
+            >
+              Save to camera roll
+            </button>
+          </span>
+          <span className="ap-saveroll-hint">Then tap “Save Image”.</span>
+        </div>
       )}
       {msg && <div className="ap-msg">{msg}</div>}
 
