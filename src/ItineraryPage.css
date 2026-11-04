@@ -845,8 +845,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  margin: 0 0 12px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
   padding: 11px 14px;
   border-radius: 14px;
   background: #0077cc;
@@ -872,6 +873,9 @@
 .it-route-main {
   font-size: 1rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .it-route-sub {
@@ -948,4 +952,47 @@
 
 .it-switch:checked::after {
   transform: translateX(20px);
+}
+
+/* Start route row: big button + maps app picker */
+.it-route-row {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.it-maps-pick {
+  position: relative;
+  flex-shrink: 0;
+  width: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #e5f0fa;
+  color: #0077cc;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.it-maps-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+.it-maps-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.it-maps-select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  font-size: 16px;
+  cursor: pointer;
 }

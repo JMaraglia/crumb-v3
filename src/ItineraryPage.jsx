@@ -373,17 +373,43 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setLocking(null);
   };
 
-  // Google Maps takes up to 4 stops per link on a phone (3 in between + the last one).
-  // Starts from wherever the phone is. Check stops off and tap again for the next ones.
-  const ROUTE_MAX = 4;
+  // Navigation. Apple Maps and Waze take ONE destination per link, so they go stop by stop
+  // ("Next stop"); Google Maps takes up to 4 stops per link on a phone (3 in between + the last).
+  // Starts from wherever the phone is. Check stops off and tap again for the next one(s).
+  const [mapsApp, setMapsAppState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('crumb_maps_app');
+      if (saved === 'apple' || saved === 'google' || saved === 'waze') return saved;
+    } catch {
+      /* ignore */
+    }
+    return /iPhone|iPad|Macintosh/.test(navigator.userAgent) ? 'apple' : 'google';
+  });
+  const setMapsApp = (v) => {
+    setMapsAppState(v);
+    try {
+      localStorage.setItem('crumb_maps_app', v);
+    } catch {
+      /* ignore */
+    }
+  };
+  const MAPS_NAMES = { apple: 'Apple Maps', google: 'Google Maps', waze: 'Waze' };
+  const ROUTE_MAX = mapsApp === 'google' ? 4 : 1;
   const remainingStops = stops.filter((st) => !st.done && st.address && st.address.trim());
   const remainingWithAddress = remainingStops.length;
   const routeStops = remainingStops.slice(0, ROUTE_MAX);
   const startRoute = () => {
     const places = routeStops.map((st) => st.address.trim());
-    const params = new URLSearchParams({ api: '1', destination: places[places.length - 1], travelmode: 'driving' });
-    if (places.length > 1) params.set('waypoints', places.slice(0, -1).join('|'));
-    window.open(`https://www.google.com/maps/dir/?${params.toString()}`, '_blank');
+    const last = places[places.length - 1];
+    if (mapsApp === 'apple') {
+      window.open(`https://maps.apple.com/?daddr=${encodeURIComponent(last)}&dirflg=d`, '_blank');
+    } else if (mapsApp === 'waze') {
+      window.open(`https://waze.com/ul?q=${encodeURIComponent(last)}&navigate=yes`, '_blank');
+    } else {
+      const params = new URLSearchParams({ api: '1', destination: last, travelmode: 'driving' });
+      if (places.length > 1) params.set('waypoints', places.slice(0, -1).join('|'));
+      window.open(`https://www.google.com/maps/dir/?${params.toString()}`, '_blank');
+    }
   };
 
   // A new prospect from a name (from a hand-added stop). Returns its id.
@@ -469,19 +495,32 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           </div>
         )}
 
-        {/* Start route: the next unfinished stops (with an address), in list order, in Google Maps */}
+        {/* Start route / Next stop in the maps app you pick (remembered) */}
         {routeStops.length > 0 && (
-          <button className="it-route-btn" onClick={startRoute}>
-            <IoNavigate className="it-route-icon" />
-            <span className="it-route-text">
-              <span className="it-route-main">Start route</span>
-              <span className="it-route-sub">
-                {routeStops.length === 1
-                  ? `Next stop: ${routeStops[0].title}`
-                  : `Next ${routeStops.length} stops in Google Maps${remainingWithAddress > routeStops.length ? ` (of ${remainingWithAddress} left)` : ''}`}
+          <div className="it-route-row">
+            <button className="it-route-btn" onClick={startRoute}>
+              <IoNavigate className="it-route-icon" />
+              <span className="it-route-text">
+                <span className="it-route-main">
+                  {routeStops.length === 1 ? `Next stop: ${routeStops[0].title}` : 'Start route'}
+                </span>
+                <span className="it-route-sub">
+                  {routeStops.length === 1
+                    ? `${MAPS_NAMES[mapsApp]}${remainingWithAddress > 1 ? ` · ${remainingWithAddress - 1} more after this` : ''}`
+                    : `Next ${routeStops.length} stops in Google Maps${remainingWithAddress > routeStops.length ? ` (of ${remainingWithAddress} left)` : ''}`}
+                </span>
               </span>
-            </span>
-          </button>
+            </button>
+            <label className="it-maps-pick" aria-label="Maps app">
+              <span className="it-maps-label">Maps</span>
+              <span className="it-maps-value">{mapsApp === 'apple' ? 'Apple' : mapsApp === 'google' ? 'Google' : 'Waze'} ▾</span>
+              <select className="it-maps-select" value={mapsApp} onChange={(e) => setMapsApp(e.target.value)}>
+                <option value="apple">Apple Maps</option>
+                <option value="google">Google Maps</option>
+                <option value="waze">Waze</option>
+              </select>
+            </label>
+          </div>
         )}
 
         {shareMsg && <div className="it-share-msg">{shareMsg}</div>}
