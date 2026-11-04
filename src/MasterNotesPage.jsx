@@ -106,6 +106,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   const [search, setSearch] = useState('');
   const [type, setType] = useState('all');          // all | customer | prospect
   const [accountKey, setAccountKey] = useState('all'); // all | customer-1 | prospect-3
+  const [groupKey, setGroupKey] = useState('all');     // all | a group id (businesses with several locations)
   const [label, setLabel] = useState('all');        // all | open | a category
   const [showFilters, setShowFilters] = useState(false);
   const [dateChoice, setDateChoice] = useState('any');
@@ -126,6 +127,8 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
           kind,
           accountId: acct.id,
           accountName: acct.name,
+          group: String(acct.group || '').trim(),
+          town: acct.town || '',
         });
       })
     );
@@ -133,14 +136,29 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   collect(prospects, 'prospect');
 
   const accountOptions = [
-    ...contacts.filter(hasName).map((a) => ({ key: `customer-${a.id}`, name: a.name, kind: 'Customer' })),
-    ...prospects.filter(hasName).map((a) => ({ key: `prospect-${a.id}`, name: a.name, kind: 'Prospect' })),
-  ].sort((a, b) => a.name.localeCompare(b.name));
+    ...contacts.filter(hasName).map((a) => ({ key: `customer-${a.id}`, name: a.name, town: a.town || '', group: String(a.group || '').trim(), kind: 'Customer' })),
+    ...prospects.filter(hasName).map((a) => ({ key: `prospect-${a.id}`, name: a.name, town: a.town || '', group: String(a.group || '').trim(), kind: 'Prospect' })),
+  ].sort((a, b) => a.name.localeCompare(b.name) || a.town.localeCompare(b.town));
+  // Several locations with the same name → show the town too
+  const nameCount = {};
+  accountOptions.forEach((a) => (nameCount[a.name] = (nameCount[a.name] || 0) + 1));
+  const optionLabel = (a) => (a.group || nameCount[a.name] > 1) && a.town ? `${a.name} – ${a.town}` : a.name;
+  // Groups: shown by the business name of their locations, with how many locations
+  const groupOptions = [];
+  accountOptions.forEach((a) => {
+    if (!a.group) return;
+    const g = groupOptions.find((x) => x.key === a.group);
+    if (g) g.count += 1;
+    else groupOptions.push({ key: a.group, name: a.name, count: 1 });
+  });
+  groupOptions.sort((a, b) => a.name.localeCompare(b.name));
+  const groupName = groupKey === 'all' ? '' : ((groupOptions.find((g) => g.key === groupKey) || {}).name || '') + ' (all locations)';
 
   const q = search.trim().toLowerCase();
   const range = rangeFor(dateChoice, dateFrom, dateTo);
   const shown = all
     .filter((n) => type === 'all' || n.kind === type)
+    .filter((n) => groupKey === 'all' || n.group === groupKey)
     .filter((n) => accountKey === 'all' || `${n.kind}-${n.accountId}` === accountKey)
     .filter((n) =>
       label === 'all' ? true : label === 'open' ? n.cat === 'Follow-up' && !n.done : n.cat === label
@@ -181,10 +199,11 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
     if (n.kind === 'customer' && setContacts) setContacts(update);
   };
 
-  const filtersOn = type !== 'all' || accountKey !== 'all' || label !== 'all' || q || range;
-  const filterCount = [type !== 'all', accountKey !== 'all', label !== 'all', Boolean(range)].filter(Boolean).length;
+  const filtersOn = type !== 'all' || groupKey !== 'all' || accountKey !== 'all' || label !== 'all' || q || range;
+  const filterCount = [type !== 'all', groupKey !== 'all', accountKey !== 'all', label !== 'all', Boolean(range)].filter(Boolean).length;
   const clearFilters = () => {
     setType('all');
+    setGroupKey('all');
     setAccountKey('all');
     setLabel('all');
     setSearch('');
@@ -194,12 +213,13 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   };
 
   // What's being shown, in words: "All notes" or "Prospects · Nelly Rose Diner · Visit · "shrimp""
-  const accountName = accountKey === 'all' ? '' : (accountOptions.find((a) => a.key === accountKey) || {}).name || '';
+  const pickedAccount = accountKey === 'all' ? null : accountOptions.find((a) => a.key === accountKey);
+  const accountName = pickedAccount ? optionLabel(pickedAccount) : '';
   const filterSummary =
     [
       rangeLabel(range),
       type === 'customer' ? 'Customers' : type === 'prospect' ? 'Prospects' : '',
-      accountName,
+      accountName || groupName,
       label === 'all' ? '' : label === 'open' ? 'Open follow-ups' : label === 'General' ? 'No label' : label,
       q ? `"${search.trim()}"` : '',
     ]
@@ -345,6 +365,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                         )}
                         <button className="mn-account" onClick={() => openAccountNotes(n)}>
                           {n.accountName}
+                          {n.group && n.town ? ` – ${n.town}` : ''}
                         </button>
                       </div>
                       <button className="mn-note-body" onClick={() => openAccountNotes(n)}>
@@ -389,6 +410,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                     <div className="mn-print-name">
                       {isCheckable(n.cat) && <span className="mn-print-box">{isNoteDone(n) ? '☑' : '☐'}</span>}
                       {n.accountName}
+                          {n.group && n.town ? ` – ${n.town}` : ''}
                       <span className="mn-print-kind">{n.kind === 'prospect' ? 'Prospect' : 'Customer'}</span>
                       {n.cat !== 'General' && <span className="mn-print-label">{n.cat}</span>}
                     </div>
@@ -462,15 +484,36 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                   <option value="prospect">Prospects</option>
                 </select>
               </label>
+              {groupOptions.length > 0 && (
+                <label className="mn-sheet-row">
+                  <span>Group</span>
+                  <select
+                    className="mn-select"
+                    value={groupKey}
+                    onChange={(e) => {
+                      setGroupKey(e.target.value);
+                      setAccountKey('all');
+                    }}
+                  >
+                    <option value="all">All groups</option>
+                    {groupOptions.map((g) => (
+                      <option key={g.key} value={g.key}>
+                        {g.name} ({g.count} locations)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="mn-sheet-row">
-                <span>Account</span>
+                <span>{groupKey === 'all' ? 'Account' : 'Location'}</span>
                 <select className="mn-select" value={accountKey} onChange={(e) => setAccountKey(e.target.value)}>
-                  <option value="all">All accounts</option>
+                  <option value="all">{groupKey === 'all' ? 'All accounts' : 'All locations'}</option>
                   {accountOptions
                     .filter((a) => type === 'all' || a.kind.toLowerCase() === type)
+                    .filter((a) => groupKey === 'all' || a.group === groupKey)
                     .map((a) => (
                       <option key={a.key} value={a.key}>
-                        {a.name}
+                        {optionLabel(a)}
                       </option>
                     ))}
                 </select>
