@@ -79,3 +79,48 @@ export function contactCards(account) {
   const cards = people.length ? people.map(card) : [card(null)];
   return new Blob([cards.join('\r\n') + '\r\n'], { type: 'text/vcard' });
 }
+
+/* ---------- Calendar invites (.ics) ---------- */
+// event: { title, date: 'YYYY-MM-DD', start: minutes, end: minutes, location, notes }
+// Times are "floating" (no time zone), so they show at the same clock time for whoever adds it.
+export function eventIcs(event) {
+  const esc = (v) => String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+  const stamp = (dateKey, minutes) => {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const day = new Date(y, m - 1, d + Math.floor(minutes / 1440)); // an end of 24:00 rolls to the next day
+    const mins = minutes % 1440;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${day.getFullYear()}${pad(day.getMonth() + 1)}${pad(day.getDate())}T${pad(Math.floor(mins / 60))}${pad(mins % 60)}00`;
+  };
+  const now = new Date();
+  const utc = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  // Long lines are folded at 75 characters, as calendar apps expect.
+  const fold = (line) => {
+    const out = [];
+    let rest = line;
+    while (rest.length > 74) {
+      out.push(rest.slice(0, 74));
+      rest = ' ' + rest.slice(74);
+    }
+    out.push(rest);
+    return out.join('\r\n');
+  };
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Crumb//Crumb//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:crumb-${Date.now()}-${Math.random().toString(36).slice(2)}@crumb`,
+    `DTSTAMP:${utc}`,
+    `DTSTART:${stamp(event.date, event.start)}`,
+    `DTEND:${stamp(event.date, event.end)}`,
+    `SUMMARY:${esc(event.title || 'Appointment')}`,
+    ...(event.location ? [`LOCATION:${esc(event.location)}`] : []),
+    ...(event.notes ? [`DESCRIPTION:${esc(event.notes)}`] : []),
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+  return new Blob([lines.map(fold).join('\r\n') + '\r\n'], { type: 'text/calendar' });
+}

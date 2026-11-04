@@ -2,6 +2,7 @@
 // The add/edit panel that slides up from the bottom (Google Calendar style).
 // Times are 30-minute steps only. Stores minutes-from-midnight (e.g. 9:30 AM = 570).
 import React, { useState } from 'react';
+import { shareFile, eventIcs, safeFileName } from './share';
 import './EventSheet.css';
 
 const STEP = 30;
@@ -49,6 +50,7 @@ export default function EventSheet({
   const [location, setLocation] = useState(draft.location || '');
   const [notes, setNotes] = useState(draft.notes || '');
   const [color, setColor] = useState(draft.color || DEFAULT_EVENT_COLOR);
+  const [inviteMsg, setInviteMsg] = useState('');
 
   // Linked customer/prospect. Picking one fills in the location with their address.
   const [account, setAccount] = useState(
@@ -279,6 +281,24 @@ export default function EventSheet({
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>
+
+        {/* Send this appointment so someone else can add it to their calendar (uses what's on screen) */}
+        <button
+          className="es-invite-btn"
+          disabled={!title.trim()}
+          onClick={async () =>
+            setInviteMsg(
+              await shareFile(
+                eventIcs({ title: title.trim(), date, start, end, location: location.trim(), notes: notes.trim() }),
+                `${safeFileName(title.trim())}.ics`,
+                title.trim()
+              )
+            )
+          }
+        >
+          Send as calendar invite
+        </button>
+        {inviteMsg && <div className="es-invite-msg">{inviteMsg}</div>}
 
         {!isNew && (
           <button className="es-delete-btn" onClick={() => onDelete(draft.id)}>

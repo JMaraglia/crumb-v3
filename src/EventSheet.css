@@ -373,3 +373,29 @@
 .es-switch:checked::after {
   transform: translateX(20px);
 }
+
+/* Send as calendar invite */
+.es-sheet .es-invite-btn,
+.es-sheet .es-invite-btn:hover {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 13px 0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0077cc;
+  font-weight: 600;
+  text-align: center;
+}
+
+.es-sheet .es-invite-btn:disabled {
+  opacity: 0.4;
+}
+
+.es-invite-msg {
+  margin: -4px 0 10px;
+  font-size: 0.85rem;
+  color: #1e8e3e;
+  font-weight: 600;
+  text-align: center;
+}
