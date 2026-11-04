@@ -442,3 +442,17 @@
 .nv-due.is-late {
   color: #d70015;
 }
+
+/* Swipe a note left to delete */
+.nv-list .sw-wrap {
+  border-top: 1px solid #ececf0;
+}
+
+.nv-list > .sw-wrap:first-child {
+  border-top: none;
+}
+
+.nv-list .sw-wrap > .nv-note {
+  border-top: none;
+  background: #fff;
+}

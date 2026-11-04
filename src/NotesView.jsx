@@ -10,6 +10,7 @@ import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
 import { isCheckable, isNoteDone } from './noteStatus';
 import MeetingSheet from './MeetingSheet';
+import SwipeRow from './SwipeRow';
 import './NotesView.css';
 
 export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Background'];
@@ -214,6 +215,13 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     setEditing(null);
   };
 
+  // Swipe a note left → asks, then deletes it for good.
+  const swipeDelete = (index) => {
+    if (!window.confirm("Delete this note permanently?\n\nIt can't be undone.")) return;
+    onDeleteNote(index);
+    if (editing && editing.index === index) setEditing(null);
+  };
+
   const renderNote = (n) => {
     if (editing && editing.index === n.index) {
       return (
@@ -245,7 +253,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     const hasCheck = isCheckable(n.cat);
     const isDone = hasCheck && isNoteDone(n);
     return (
-      <div key={n.index} className={`nv-note ${isDone ? 'is-done' : ''}`}>
+      <SwipeRow key={n.index} className={`nv-note ${isDone ? 'is-done' : ''}`} onDelete={() => swipeDelete(n.index)}>
         {hasCheck && (
           <button
             className={`nv-check ${isDone ? 'is-checked' : ''}`}
@@ -270,7 +278,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           </span>
           <span className="nv-note-text">{n.text}</span>
         </button>
-      </div>
+      </SwipeRow>
     );
   };
 
@@ -362,7 +370,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
         ) : (
           <div className="nv-list">{shown.map(renderNote)}</div>
         )}
-        {notes.length > 0 && <div className="nv-hint">Tap a note to edit, share, or delete it</div>}
+        {notes.length > 0 && <div className="nv-hint">Tap a note to edit or share it · Swipe left to delete</div>}
       </div>
       {meeting && (
         <MeetingSheet

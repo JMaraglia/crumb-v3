@@ -595,3 +595,8 @@
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* Swipe a note left to delete */
+.mn-group .sw-row.mn-row {
+  background: #fff;
+}

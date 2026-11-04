@@ -9,6 +9,7 @@ import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { NOTE_CATEGORIES, normalizeCategory, categoryStyle } from './NotesView';
 import { buildNotesPdf } from './notesPdf';
 import { isCheckable, isNoteDone } from './noteStatus';
+import SwipeRow from './SwipeRow';
 import './MasterNotesPage.css';
 
 const GROUPINGS = ['Day', 'Month', 'Year'];
@@ -171,6 +172,15 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
     if (n.kind === 'customer' && setContacts) setContacts(update);
   };
 
+  // Swipe a note left → asks, then deletes it from that account for good.
+  const deleteNote = (n) => {
+    if (!window.confirm(`Delete this note permanently?\n\n${n.accountName}: "${n.text.length > 80 ? n.text.slice(0, 80) + '…' : n.text}"\n\nIt can't be undone.`)) return;
+    const update = (list) =>
+      list.map((a) => (a.id === n.accountId ? { ...a, notes: (a.notes || []).filter((_, i) => i !== n.index) } : a));
+    if (n.kind === 'prospect' && setProspects) setProspects(update);
+    if (n.kind === 'customer' && setContacts) setContacts(update);
+  };
+
   const filtersOn = type !== 'all' || accountKey !== 'all' || label !== 'all' || q || range;
   const filterCount = [type !== 'all', accountKey !== 'all', label !== 'all', Boolean(range)].filter(Boolean).length;
   const clearFilters = () => {
@@ -311,9 +321,10 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                 const isFollowUp = isCheckable(n.cat); // Follow-ups and Samples have a checkbox
                 const isDone = isFollowUp && isNoteDone(n);
                 return (
-                  <div
+                  <SwipeRow
                     key={`${n.kind}-${n.accountId}-${n.index}`}
                     className={`mn-row ${isDone ? 'is-done' : ''}`}
+                    onDelete={() => deleteNote(n)}
                   >
                     <div className="mn-when">
                       {grouping !== 'Day' && <span className="mn-when-day">{shortDay(n.time)}</span>}
@@ -345,7 +356,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                         )}
                       </button>
                     </div>
-                  </div>
+                  </SwipeRow>
                 );
               })}
             </div>
