@@ -1436,3 +1436,21 @@
   font-size: 0.8rem;
   color: #8e8e93;
 }
+
+/* Sort menu (A–Z, Z–A, by town, by group) */
+.av-sort-select {
+  border: none;
+  background: transparent;
+  color: #0077cc;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: right;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 4px 0;
+}
+
+.av-list-section {
+  margin-top: 6px;
+}

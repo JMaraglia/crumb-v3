@@ -916,7 +916,7 @@ function Header({ onBack, title, right }) {
 export function AccountList({ config, accounts, setAccounts }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [sortAZ, setSortAZ] = useState(true);
+  const [sortBy, setSortBy] = useState('az'); // az | za | town | group
   const [openId, setOpenId] = useState(null); // the one row that's opened up
   const [stageFilter, setStageFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false); // the Inactive drop-down at the bottom
@@ -936,7 +936,7 @@ export function AccountList({ config, accounts, setAccounts }) {
     (config.hasAccountNumber && String(a.accountNumber || '').toLowerCase().includes(q));
   const inactiveShown = realAccounts.filter((a) => a.inactive && matches(a)).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const shown = activeAccounts
-    .filter((a) => stageFilter === 'all' || (a.stage || 'none') === stageFilter)
+    .filter((a) => stageFilter === 'all' || (stageFilter === 'groups' ? Boolean(groupOf(a)) : (a.stage || 'none') === stageFilter))
     .filter((a) => {
       if (!q) return true;
       return (
@@ -951,8 +951,34 @@ export function AccountList({ config, accounts, setAccounts }) {
       const bn = (b.name || '').trim();
       if (!an && bn) return 1; // unnamed ones go last
       if (an && !bn) return -1;
-      return sortAZ ? an.localeCompare(bn) : bn.localeCompare(an);
+      return sortBy === 'za' ? bn.localeCompare(an) : an.localeCompare(bn);
     });
+
+  // Sections: by town, by group (and always by group for the "Groups" choice), or one plain list.
+  const groupTitle = (g) => {
+    const members = activeAccounts.filter((a) => groupOf(a) === g);
+    return members.length ? `${members[0].name} · ${members.length} location${members.length === 1 ? '' : 's'}` : 'Group';
+  };
+  const sectionMode = stageFilter === 'groups' ? 'group' : sortBy === 'town' || sortBy === 'group' ? sortBy : null;
+  const sections = (() => {
+    if (!sectionMode) return [{ key: 'all', title: '', items: shown }];
+    const map = new Map();
+    shown.forEach((a) => {
+      const k = sectionMode === 'town' ? (a.town || '').trim() || '~' : groupOf(a) || '~';
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(a);
+    });
+    const keys = [...map.keys()].sort((x, y) => {
+      if (x === '~') return 1;
+      if (y === '~') return -1;
+      return sectionMode === 'town' ? x.localeCompare(y) : groupTitle(x).localeCompare(groupTitle(y));
+    });
+    return keys.map((k) => ({
+      key: k,
+      title: k === '~' ? (sectionMode === 'town' ? 'No town' : 'Single location') : sectionMode === 'town' ? k : groupTitle(k),
+      items: map.get(k),
+    }));
+  })();
 
   const renderRow = (a) => (
           <ListRow
@@ -1008,6 +1034,8 @@ export function AccountList({ config, accounts, setAccounts }) {
               const heading = [
                 st
                   ? `${st.label} ${config.plural.toLowerCase()}`
+                  : stageFilter === 'groups'
+                  ? `${config.plural} with more than one location`
                   : stageFilter === 'none'
                   ? `${config.plural} with no stage`
                   : `All ${config.plural.toLowerCase()}`,
@@ -1015,7 +1043,7 @@ export function AccountList({ config, accounts, setAccounts }) {
               ]
                 .filter(Boolean)
                 .join(' ');
-              const blob = accountsXlsx(shown, config, heading);
+              const blob = accountsXlsx(sections.flatMap((sec) => sec.items), config, heading);
               const day = todayKey();
               setListMsg(await shareFile(blob, `Crumb ${config.plural.toLowerCase()} ${day}.xlsx`, `Crumb ${config.plural.toLowerCase()}`));
             }}
@@ -1046,15 +1074,19 @@ export function AccountList({ config, accounts, setAccounts }) {
                   {st.label} ({activeAccounts.filter((a) => a.stage === st.key).length})
                 </option>
               ))}
+              <option value="groups">Groups ({activeAccounts.filter((a) => groupOf(a)).length})</option>
             </select>
           ) : (
             <span className="av-count">
               {shown.length} {shown.length === 1 ? config.singular.toLowerCase() : config.plural.toLowerCase()}
             </span>
           )}
-          <button className="av-link-btn" onClick={() => setSortAZ((v) => !v)}>
-            {sortAZ ? 'A–Z' : 'Z–A'}
-          </button>
+          <select className="av-sort-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)} aria-label="Sort">
+            <option value="az">A–Z</option>
+            <option value="za">Z–A</option>
+            <option value="town">By town</option>
+            <option value="group">By group</option>
+          </select>
         </div>
 
         {realAccounts.length === 0 ? (
@@ -1062,9 +1094,12 @@ export function AccountList({ config, accounts, setAccounts }) {
         ) : shown.length === 0 ? (
           <div className="av-empty">No matches.</div>
         ) : (
-          <div className="av-group">
-            {shown.map(renderRow)}
-          </div>
+          sections.map((sec) => (
+            <React.Fragment key={sec.key}>
+              {sec.title && <div className="av-section-title av-list-section">{sec.title}</div>}
+              <div className="av-group">{sec.items.map(renderRow)}</div>
+            </React.Fragment>
+          ))
         )}
         {shown.length > 0 && (
           <div className="av-hint">
