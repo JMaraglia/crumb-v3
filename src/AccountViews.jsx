@@ -1708,6 +1708,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   };
 
   const [repeats, setRepeats] = useState(null); // possible repeat accounts found when saving
+  const [askInactiveEdit, setAskInactiveEdit] = useState(false); // "Make Inactive" reason picker (Edit screen)
   const save = (skipRepeatCheck = false) => {
     if (!name.trim()) {
       window.alert(`Add a ${config.singular.toLowerCase()} name first.`);
@@ -2086,6 +2087,21 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           </label>
         </div>
 
+        {!isNew &&
+          setAccounts &&
+          (existing.inactive ? (
+            <button
+              className="av-reactivate"
+              onClick={() => setAccounts((prev) => prev.map((x) => (x.id === existing.id ? { ...x, inactive: null } : x)))}
+            >
+              Activate
+            </button>
+          ) : (
+            <button className="av-inactive-btn" onClick={() => setAskInactiveEdit(true)}>
+              Make Inactive
+            </button>
+          ))}
+
         {!isNew && onConvert && (
           <button
             className="av-convert"
@@ -2143,6 +2159,19 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           </div>
         </div>
       )}
+      {askInactiveEdit && existing && (
+        <AskSheet
+          title={`Why is ${displayName(existing)} Inactive?`}
+          message="It keeps all its notes, but comes off your lists, Itinerary, Calendar, Call Sheet and reminders. You can activate it again any time."
+          choices={INACTIVE_REASONS.map(([value, label]) => ({ value, label }))}
+          onPick={(reason) => {
+            setAccounts((prev) => prev.map((x) => (x.id === existing.id ? { ...x, inactive: { reason, since: todayKey() } } : x)));
+            setAskInactiveEdit(false);
+          }}
+          onCancel={() => setAskInactiveEdit(false)}
+        />
+      )}
+
       {repeats && (
         <AskSheet
           title="Looks like a repeat account"
