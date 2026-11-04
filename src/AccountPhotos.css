@@ -208,3 +208,11 @@
   font-size: 0.78rem;
   color: #6e6e73;
 }
+
+/* Hold a photo to delete it: no iPhone image menu */
+.ap-thumb,
+.ap-thumb img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

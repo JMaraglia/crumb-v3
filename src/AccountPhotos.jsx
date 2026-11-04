@@ -12,15 +12,57 @@ const niceDate = (iso) => {
   return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-function Thumb({ photo, onOpen }) {
+function Thumb({ photo, onOpen, onHold }) {
   const [url, setUrl] = useState('');
+  const hold = useRef(null);
+  const start = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const h = { x: e.clientX, y: e.clientY, fired: false };
+    h.timer = setTimeout(() => {
+      h.fired = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+      // The finger lifting sends a tap; swallow it so it doesn't open another photo.
+      const swallow = (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+      };
+      window.addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 800);
+      onHold(photo);
+    }, 550);
+    hold.current = h;
+  };
+  const move = (e) => {
+    const h = hold.current;
+    if (h && !h.fired && (Math.abs(e.clientX - h.x) > 10 || Math.abs(e.clientY - h.y) > 10)) {
+      clearTimeout(h.timer);
+      hold.current = null;
+    }
+  };
+  const end = () => {
+    if (hold.current && !hold.current.fired) clearTimeout(hold.current.timer);
+  };
   useEffect(() => {
     const u = URL.createObjectURL(photo.blob);
     setUrl(u);
     return () => URL.revokeObjectURL(u);
   }, [photo]);
   return (
-    <button className="ap-thumb" onClick={() => onOpen(photo)}>
+    <button
+      className="ap-thumb"
+      onClick={() => {
+        if (hold.current && hold.current.fired) {
+          hold.current = null; // the lift after a hold
+          return;
+        }
+        onOpen(photo);
+      }}
+      onPointerDown={start}
+      onPointerMove={move}
+      onPointerUp={end}
+      onPointerCancel={end}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {url && <img src={url} alt="" />}
       <span className="ap-thumb-date">{niceDate(photo.takenAt)}</span>
     </button>
@@ -76,9 +118,9 @@ export default function AccountPhotos({ type, id, name }) {
     setMsg(await shareFile(open.blob, file, name));
   };
 
-  const remove = async () => {
-    if (!window.confirm('Delete this photo? It can\'t be undone.')) return;
-    await deletePhoto(open.id);
+  const remove = async (photo = open) => {
+    if (!window.confirm("Delete this photo from Crumb? It can't be undone. (Your camera roll isn't touched.)")) return;
+    await deletePhoto(photo.id);
     setOpen(null);
     load();
   };
@@ -96,7 +138,7 @@ export default function AccountPhotos({ type, id, name }) {
       {photos.length > 0 ? (
         <div className="ap-grid">
           {photos.map((p) => (
-            <Thumb key={p.id} photo={p} onOpen={setOpen} />
+            <Thumb key={p.id} photo={p} onOpen={setOpen} onHold={(ph) => remove(ph)} />
           ))}
         </div>
       ) : (
@@ -147,7 +189,7 @@ export default function AccountPhotos({ type, id, name }) {
               <button className="ap-icon" onClick={share} aria-label="Share photo">
                 <IoShareOutline />
               </button>
-              <button className="ap-icon ap-danger" onClick={remove} aria-label="Delete photo">
+              <button className="ap-icon ap-danger" onClick={() => remove()} aria-label="Delete photo">
                 <IoTrashOutline />
               </button>
             </span>
