@@ -369,3 +369,205 @@
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* ---------- Title row with Share / Print pills ---------- */
+.mn-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.mn-page .mn-title-row h1.mn-title {
+  margin: 0;
+}
+
+.mn-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mn-page .mn-pill,
+.mn-page .mn-pill:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: #e5f0fa;
+  color: #0077cc;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mn-page .mn-pill:active {
+  background: #cfe3f5;
+}
+
+.mn-page .mn-pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mn-pill-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.mn-share-msg {
+  font-size: 0.85rem;
+  color: #3a3a3c;
+  margin: -4px 0 10px;
+}
+
+/* ---------- Printed / PDF copy ---------- */
+.mn-print {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .mn-page {
+    position: static;
+    overflow: visible;
+    background: #fff;
+  }
+
+  /* Hide the app; show only the printout */
+  .mn-page > *:not(.mn-print) {
+    display: none !important;
+  }
+
+  .mn-print {
+    display: block;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #000;
+  }
+
+  .mn-print-top,
+  .mn-print-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12pt;
+  }
+
+  .mn-print-brand {
+    font-size: 15pt;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0077cc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mn-print-kicker {
+    font-size: 8pt;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .mn-print-bottom {
+    margin-top: 2pt;
+    padding-bottom: 6pt;
+    border-bottom: 2px solid #0077cc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mn-print-heading {
+    font-size: 14pt;
+    font-weight: 800;
+  }
+
+  .mn-print-count {
+    font-size: 9pt;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .mn-print-group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 12pt;
+    padding-bottom: 3pt;
+    border-bottom: 1px solid #000;
+    font-size: 12pt;
+    font-weight: 800;
+    break-after: avoid;
+  }
+
+  .mn-print-group-side {
+    font-size: 9pt;
+    font-weight: 600;
+    color: #444;
+  }
+
+  .mn-print-row {
+    display: grid;
+    grid-template-columns: 62pt 1fr;
+    gap: 8pt;
+    padding: 6pt 0;
+    border-bottom: 0.75px solid #c4c4c4;
+    break-inside: avoid;
+  }
+
+  .mn-print-when {
+    font-size: 9pt;
+    color: #444;
+    padding-top: 1pt;
+  }
+
+  .mn-print-name {
+    font-size: 10.5pt;
+    font-weight: 800;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6pt;
+  }
+
+  .mn-print-box {
+    font-size: 12pt;
+    line-height: 1;
+  }
+
+  .mn-print-kind,
+  .mn-print-label {
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555;
+  }
+
+  .mn-print-label {
+    color: #0077cc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mn-print-text {
+    margin-top: 2pt;
+    font-size: 10.5pt;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    -webkit-text-stroke: 0.15px #000;
+  }
+}

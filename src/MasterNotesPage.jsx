@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
+import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { NOTE_CATEGORIES, normalizeCategory, categoryStyle } from './NotesView';
 import './MasterNotesPage.css';
 
@@ -51,6 +52,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   const [accountKey, setAccountKey] = useState('all'); // all | customer-1 | prospect-3
   const [label, setLabel] = useState('all');        // all | open | a category
   const [showFilters, setShowFilters] = useState(false);
+  const [shareMsg, setShareMsg] = useState('');
 
   // Gather every note with where it came from.
   const all = [];
@@ -118,6 +120,57 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
     setSearch('');
   };
 
+  // What's being shown, in words: "All notes" or "Prospects · Nelly Rose Diner · Visit · "shrimp""
+  const accountName = accountKey === 'all' ? '' : (accountOptions.find((a) => a.key === accountKey) || {}).name || '';
+  const filterSummary =
+    [
+      type === 'customer' ? 'Customers' : type === 'prospect' ? 'Prospects' : '',
+      accountName,
+      label === 'all' ? '' : label === 'open' ? 'Open follow-ups' : label === 'General' ? 'No label' : label,
+      q ? `"${search.trim()}"` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ') || 'All notes';
+
+  const whenText = (n) => (grouping === 'Day' ? timeOnly(n.time) : `${shortDay(n.time)}, ${timeOnly(n.time)}`);
+
+  const shareNotes = async () => {
+    setShareMsg('');
+    const lines = [`Crumb notes · ${filterSummary}`];
+    groups.forEach((g) => {
+      lines.push('', `${g.label.toUpperCase()} (${groupSide(g)})`);
+      g.notes.forEach((n) => {
+        const box = n.cat === 'Follow-up' ? (n.done ? '☑ ' : '☐ ') : '';
+        const tag = n.cat !== 'General' ? ` [${n.cat}]` : '';
+        lines.push(`${box}${whenText(n)} · ${n.accountName}${tag}`, `   ${n.text}`);
+      });
+    });
+    const text = lines.join('\n');
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Crumb notes', text });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // closed the share sheet
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareMsg('Notes copied. Paste them into a text or email.');
+    } catch {
+      setShareMsg("Sharing isn't available here. Use Print instead.");
+    }
+  };
+
+  const printNotes = () => {
+    setShareMsg('');
+    try {
+      window.print();
+    } catch {
+      setShareMsg("Printing isn't available here. Use Share instead.");
+    }
+  };
+
   // Right side of a group heading: the date for Today / Yesterday, otherwise how many notes
   const groupSide = (g) =>
     (g.label === 'Today' || g.label === 'Yesterday') && g.notes[0] && g.notes[0].time
@@ -135,7 +188,20 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
       </header>
 
       <div className="mn-content">
-        <h1 className="mn-title">Notes</h1>
+        <div className="mn-title-row">
+          <h1 className="mn-title">Notes</h1>
+          <div className="mn-actions">
+            <button className="mn-pill" disabled={!shown.length} onClick={shareNotes}>
+              <IoShareOutline className="mn-pill-icon" />
+              Share
+            </button>
+            <button className="mn-pill" disabled={!shown.length} onClick={printNotes}>
+              <IoPrintOutline className="mn-pill-icon" />
+              Print
+            </button>
+          </div>
+        </div>
+        {shareMsg && <div className="mn-share-msg">{shareMsg}</div>}
 
         <input
           className="mn-search"
@@ -224,6 +290,44 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
           ))
         )}
       </div>
+
+      {/* Only shows on the printed / PDF copy */}
+      {shown.length > 0 && (
+        <div className="mn-print">
+          <div className="mn-print-top">
+            <div className="mn-print-brand">Crumb.</div>
+            <div className="mn-print-kicker">Notes</div>
+          </div>
+          <div className="mn-print-bottom">
+            <div className="mn-print-heading">{filterSummary}</div>
+            <div className="mn-print-count">
+              {shown.length} {shown.length === 1 ? 'note' : 'notes'}
+            </div>
+          </div>
+          {groups.map((g) => (
+            <div key={g.label} className="mn-print-group">
+              <div className="mn-print-group-head">
+                <span>{g.label}</span>
+                <span className="mn-print-group-side">{groupSide(g)}</span>
+              </div>
+              {g.notes.map((n) => (
+                <div key={`${n.kind}-${n.accountId}-${n.index}`} className="mn-print-row">
+                  <div className="mn-print-when">{whenText(n)}</div>
+                  <div>
+                    <div className="mn-print-name">
+                      {n.cat === 'Follow-up' && <span className="mn-print-box">{n.done ? '☑' : '☐'}</span>}
+                      {n.accountName}
+                      <span className="mn-print-kind">{n.kind === 'prospect' ? 'Prospect' : 'Customer'}</span>
+                      {n.cat !== 'General' && <span className="mn-print-label">{n.cat}</span>}
+                    </div>
+                    <div className="mn-print-text">{n.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Filters panel */}
       {showFilters && (
