@@ -1024,3 +1024,48 @@
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+/* List title row with a Share pill (Excel export) */
+.av-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.av-page .av-title-row h1.av-big-title {
+  margin: 0;
+}
+
+.av-page .av-pill,
+.av-page .av-pill:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: #e5f0fa;
+  color: #0077cc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.av-page .av-pill:active {
+  background: #cfe3f5;
+}
+
+.av-page .av-pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.av-pill-icon {
+  font-size: 1.05rem;
+}
+
+.av-share-msg-list {
+  margin: -4px 0 10px;
+}

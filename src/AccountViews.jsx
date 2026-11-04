@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { FaArrowLeft, FaChevronRight, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
 import { IoShareOutline } from 'react-icons/io5';
 import { shareText, shareFile, contactCards, safeFileName } from './share';
+import { makeXlsx } from './xlsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import './AccountViews.css';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed } from './schedule';
@@ -263,6 +264,69 @@ export function accountShareText(account, config) {
     });
   }
   return lines.join('\n');
+}
+
+// A list of accounts as a formatted Excel file (what's on screen: current filter + search).
+function accountsXlsx(list, config, heading) {
+  const main = (a) => (a.contacts || []).find((c) => c && (c.name || c.phone || c.email || c.title)) || {};
+  const latest = (a) => {
+    const n = lastNote(a);
+    return n ? `${shortDate(n.timestamp)}: ${n.text}` : '';
+  };
+  const days = (a, field) => DAYS.filter((d) => (a[field] || []).includes(d)).join(', ');
+  const visits = (a) => {
+    const v = visitSummary(a, config);
+    return v ? `${v}${a.visitFrequency && a.visitFrequency !== 'weekly' ? ` (${frequencyLabel(a.visitFrequency).toLowerCase()})` : ''}` : '';
+  };
+  const columns = [
+    ...(config.hasAccountNumber ? [{ label: 'Acct #', width: 12, kind: 'quiet' }] : []),
+    { label: config.singular, width: 26, kind: 'bold' },
+    ...(config.hasStage ? [{ label: 'Stage', width: 14 }] : []),
+    { label: 'Contact', width: 22 },
+    { label: 'Phone', width: 16 },
+    { label: 'Email', width: 26 },
+    { label: 'Address', width: 34 },
+    ...(config.deliveryDaysField ? [{ label: 'Delivers', width: 14 }] : []),
+    { label: 'Visits', width: 18 },
+    ...(config.hasCallNote ? [{ label: 'Call at', width: 10 }, { label: 'Online', width: 9, kind: 'check' }] : []),
+    { label: 'Latest note', width: 44 },
+  ];
+  const rows = list.map((a) => {
+    const c = main(a);
+    const st = stageInfo(a.stage);
+    return {
+      cells: [
+        ...(config.hasAccountNumber ? [a.accountNumber || ''] : []),
+        displayName(a),
+        ...(config.hasStage ? [st ? st.label : ''] : []),
+        [c.name, c.title].filter(Boolean).join(', '),
+        c.phone ? formatPhone(c.phone) : '',
+        c.email || '',
+        a.address || '',
+        ...(config.deliveryDaysField ? [days(a, config.deliveryDaysField)] : []),
+        visits(a),
+        ...(config.hasCallNote
+          ? [typeof a.callTime === 'number' ? timeLabel(a.callTime) : a.callTime === 'na' ? 'N/A' : '', Boolean(a.onlineOrdering)]
+          : []),
+        latest(a),
+      ],
+    };
+  });
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return makeXlsx({
+    sheets: [
+      {
+        name: config.plural,
+        brand: 'Crumb.',
+        kicker: config.plural.toUpperCase(),
+        heading,
+        detail: `${list.length} ${list.length === 1 ? config.singular.toLowerCase() : config.plural.toLowerCase()} · as of ${today}`,
+        columns,
+        rows,
+        emptyText: `No ${config.plural.toLowerCase()} to show.`,
+      },
+    ],
+  });
 }
 
 // Bottom pop-up with choices (Call / Text / Email, Apple Maps / Google Maps).
@@ -594,6 +658,7 @@ export function AccountList({ config, accounts, setAccounts }) {
   const [openId, setOpenId] = useState(null); // the one row that's opened up
   const [stageFilter, setStageFilter] = useState('all');
   const [sheet, setSheet] = useState(null);   // Call/Text or Maps pop-up
+  const [listMsg, setListMsg] = useState('');
 
   const q = search.trim().toLowerCase();
   const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
@@ -620,7 +685,29 @@ export function AccountList({ config, accounts, setAccounts }) {
       <Header onBack={() => navigate('/')} title="" />
 
       <div className="av-content">
-        <h1 className="av-big-title">{config.plural}</h1>
+        <div className="av-title-row">
+          <h1 className="av-big-title">{config.plural}</h1>
+          <button
+            className="av-pill"
+            disabled={!shown.length}
+            onClick={async () => {
+              const st = stageInfo(stageFilter);
+              const heading = [
+                st ? `${st.label} ${config.plural.toLowerCase()}` : stageFilter === 'none' ? `${config.plural} with no stage` : `All ${config.plural.toLowerCase()}`,
+                q ? `matching "${search.trim()}"` : '',
+              ]
+                .filter(Boolean)
+                .join(' ');
+              const blob = accountsXlsx(shown, config, heading);
+              const day = todayKey();
+              setListMsg(await shareFile(blob, `Crumb ${config.plural.toLowerCase()} ${day}.xlsx`, `Crumb ${config.plural.toLowerCase()}`));
+            }}
+          >
+            <IoShareOutline className="av-pill-icon" />
+            Share
+          </button>
+        </div>
+        {listMsg && <div className="av-share-msg av-share-msg-list">{listMsg}</div>}
         <input
           className="av-search"
           placeholder={config.hasAccountNumber ? 'Search name, address, or account #' : 'Search name or address'}
