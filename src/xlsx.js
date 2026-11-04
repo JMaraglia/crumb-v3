@@ -2,7 +2,7 @@
 // Builds a small, formatted Excel (.xlsx) file in the browser with no extra packages.
 // An .xlsx is a zip of a few XML files; this writes them and zips them (uncompressed).
 //
-// makeXlsx({ title, subtitle, columns: [{ label, width, align?, bold? }], rows: [{ cells: [...], muted? }] })
+// makeXlsx({ title, subtitle, sheetName, columns, rows }) — see makeXlsx below for the details.
 // → Blob you can share or download.
 
 const enc = new TextEncoder();
@@ -80,67 +80,105 @@ const esc = (v) =>
 
 const colLetter = (i) => String.fromCharCode(65 + i); // up to 26 columns is plenty
 
-// Cell style numbers (positions in cellXfs below)
-const S = { title: 1, sub: 2, head: 3, body: 4, bold: 5, center: 6, muted: 7, mutedCenter: 8 };
+// Fonts, fills, borders (positions are referenced by the cell styles below)
+const FONTS = [
+  '<font><sz val="11"/><color rgb="FF1C1C1E"/><name val="Arial"/></font>', // 0 body
+  '<font><b/><sz val="18"/><color rgb="FF0077CC"/><name val="Arial"/></font>', // 1 title
+  '<font><sz val="11"/><color rgb="FF6E6E73"/><name val="Arial"/></font>', // 2 subtitle / acct #
+  '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>', // 3 header
+  '<font><b/><sz val="11"/><color rgb="FF1C1C1E"/><name val="Arial"/></font>', // 4 bold
+  '<font><sz val="11"/><color rgb="FFAEAEB2"/><name val="Arial"/></font>', // 5 muted (N/A rows)
+];
+const FILLS = [
+  '<fill><patternFill patternType="none"/></fill>',
+  '<fill><patternFill patternType="gray125"/></fill>',
+  '<fill><patternFill patternType="solid"><fgColor rgb="FF0077CC"/><bgColor indexed="64"/></patternFill></fill>', // 2 header blue
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFF4F8FC"/><bgColor indexed="64"/></patternFill></fill>', // 3 stripe
+];
+const BORDERS = [
+  '<border><left/><right/><top/><bottom/><diagonal/></border>',
+  '<border><left/><right/><top/><bottom style="thin"><color rgb="FFE5E5EA"/></bottom><diagonal/></border>', // 1 row line
+  '<border><left/><right/><top/><bottom style="medium"><color rgb="FF0077CC"/></bottom><diagonal/></border>', // 2 blue rule
+];
 
-const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+// Excel's built-in cell checkbox (Microsoft 365). Older Excel shows TRUE / FALSE instead.
+const CHECKBOX_EXT =
+  '<extLst><ext uri="{C7286773-470A-42A8-94C5-96B5CB345126}" xmlns:xfpb="http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag"><xfpb:xfComplement i="0"/></ext></extLst>';
+
+// Builds the cell-style list as cells ask for styles.
+function styleBook() {
+  const xfs = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];
+  const seen = new Map();
+  const get = ({ font = 0, fill = 0, border = 0, h, v = 'center', wrap = false, indent = 0, checkbox = false }) => {
+    const key = [font, fill, border, h, v, wrap, indent, checkbox].join('|');
+    if (seen.has(key)) return seen.get(key);
+    const align = `<alignment${h ? ` horizontal="${h}"` : ''} vertical="${v}"${wrap ? ' wrapText="1"' : ''}${
+      indent ? ` indent="${indent}"` : ''
+    }/>`;
+    xfs.push(
+      `<xf numFmtId="0" fontId="${font}" fillId="${fill}" borderId="${border}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">${align}${
+        checkbox ? CHECKBOX_EXT : ''
+      }</xf>`
+    );
+    seen.set(key, xfs.length - 1);
+    return xfs.length - 1;
+  };
+  const xml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<fonts count="6">
-<font><sz val="11"/><name val="Arial"/></font>
-<font><b/><sz val="16"/><color rgb="FF0077CC"/><name val="Arial"/></font>
-<font><sz val="11"/><color rgb="FF595959"/><name val="Arial"/></font>
-<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>
-<font><b/><sz val="11"/><name val="Arial"/></font>
-<font><sz val="11"/><color rgb="FF8E8E93"/><name val="Arial"/></font>
-</fonts>
-<fills count="3">
-<fill><patternFill patternType="none"/></fill>
-<fill><patternFill patternType="gray125"/></fill>
-<fill><patternFill patternType="solid"><fgColor rgb="FF0077CC"/><bgColor indexed="64"/></patternFill></fill>
-</fills>
-<borders count="2">
-<border><left/><right/><top/><bottom/><diagonal/></border>
-<border><left style="thin"><color rgb="FFC7C7CC"/></left><right style="thin"><color rgb="FFC7C7CC"/></right><top style="thin"><color rgb="FFC7C7CC"/></top><bottom style="thin"><color rgb="FFC7C7CC"/></bottom><diagonal/></border>
-</borders>
+<fonts count="${FONTS.length}">${FONTS.join('')}</fonts>
+<fills count="${FILLS.length}">${FILLS.join('')}</fills>
+<borders count="${BORDERS.length}">${BORDERS.join('')}</borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="9">
-<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
-<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
-<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>
-<xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>
-</cellXfs>
+<cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
+  return { get, xml };
+}
 
 function cell(ref, value, style) {
+  if (typeof value === 'boolean') return `<c r="${ref}" s="${style}" t="b"><v>${value ? 1 : 0}</v></c>`;
   if (value === '' || value == null) return `<c r="${ref}" s="${style}"/>`;
   return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
 }
 
+// columns: [{ label, width, kind }] where kind is 'text' (default), 'bold', 'quiet' (gray),
+// 'center', or 'check' (value true/false → a tappable checkbox in Excel).
+// rows: [{ cells: [...], muted }]   muted = grayed-out row (e.g. N/A, no call)
 export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows }) {
+  const st = styleBook();
   const last = colLetter(columns.length - 1);
   const headRow = 4;
+  const hasCheckbox = columns.some((c) => c.kind === 'check');
+
+  const titleStyle = st.get({ font: 1, v: 'bottom' });
+  const subStyle = st.get({ font: 2, border: 2, v: 'top' });
+  const headStyle = (c) =>
+    st.get({ font: 3, fill: 2, h: c.kind === 'check' || c.kind === 'center' ? 'center' : undefined, indent: c.kind === 'check' || c.kind === 'center' ? 0 : 1 });
+
+  const bodyStyle = (c, stripe, muted) => {
+    const fill = stripe ? 3 : 0;
+    const base = { fill, border: 1 };
+    if (c.kind === 'check') return st.get({ ...base, font: muted ? 5 : 0, h: 'center', checkbox: true });
+    if (c.kind === 'center') return st.get({ ...base, font: muted ? 5 : 0, h: 'center' });
+    const font = muted ? 5 : c.kind === 'bold' ? 4 : c.kind === 'quiet' ? 2 : 0;
+    return st.get({ ...base, font, wrap: true, indent: 1 });
+  };
+
   const xmlRows = [
-    `<row r="1" ht="24" customHeight="1">${cell('A1', title, S.title)}</row>`,
-    `<row r="2">${cell('A2', subtitle, S.sub)}</row>`,
-    `<row r="${headRow}" ht="22" customHeight="1">${columns
-      .map((c, i) => cell(`${colLetter(i)}${headRow}`, c.label, S.head))
+    `<row r="1" ht="30" customHeight="1">${cell('A1', title, titleStyle)}</row>`,
+    `<row r="2" ht="22" customHeight="1">${columns
+      .map((_, i) => cell(`${colLetter(i)}2`, i === 0 ? subtitle : '', subStyle))
+      .join('')}</row>`,
+    `<row r="3" ht="10" customHeight="1"/>`,
+    `<row r="${headRow}" ht="26" customHeight="1">${columns
+      .map((c, i) => cell(`${colLetter(i)}${headRow}`, c.label.toUpperCase(), headStyle(c)))
       .join('')}</row>`,
     ...rows.map((r, ri) => {
       const n = headRow + 1 + ri;
-      return `<row r="${n}">${r.cells
-        .map((v, i) => {
-          const col = columns[i];
-          const style = r.muted
-            ? col.align === 'center' ? S.mutedCenter : S.muted
-            : col.align === 'center' ? S.center : col.bold ? S.bold : S.body;
-          return cell(`${colLetter(i)}${n}`, v, style);
-        })
+      // Short rows get a comfortable fixed height; rows with long text are left for Excel to size.
+      const long = r.cells.some((v, i) => typeof v === 'string' && v.length > columns[i].width);
+      return `<row r="${n}"${long ? '' : ' ht="24" customHeight="1"'}>${r.cells
+        .map((v, i) => cell(`${colLetter(i)}${n}`, v, bodyStyle(columns[i], ri % 2 === 1, r.muted)))
         .join('')}</row>`;
     }),
   ];
@@ -159,7 +197,7 @@ export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows 
 </worksheet>`;
 
   const safeName = esc(sheetName.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31));
-  return zip([
+  const files = [
     {
       name: '[Content_Types].xml',
       text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -168,7 +206,11 @@ export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows 
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${
+        hasCheckbox
+          ? '\n<Override PartName="/xl/featurePropertyBag/featurePropertyBag.xml" ContentType="application/vnd.ms-excel.featurepropertybag+xml"/>'
+          : ''
+      }
 </Types>`,
     },
     {
@@ -190,10 +232,22 @@ export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows 
       text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${
+        hasCheckbox
+          ? '\n<Relationship Id="rId3" Type="http://schemas.microsoft.com/office/2022/11/relationships/FeaturePropertyBag" Target="featurePropertyBag/featurePropertyBag.xml"/>'
+          : ''
+      }
 </Relationships>`,
     },
     { name: 'xl/worksheets/sheet1.xml', text: sheet },
-    { name: 'xl/styles.xml', text: STYLES },
-  ]);
+    { name: 'xl/styles.xml', text: st.xml() },
+  ];
+  if (hasCheckbox) {
+    files.push({
+      name: 'xl/featurePropertyBag/featurePropertyBag.xml',
+      text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<FeaturePropertyBags xmlns="http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag"><bag type="Checkbox"/><bag type="XFControls"><bagId k="CellControl">0</bagId></bag><bag type="XFComplement"><bagId k="XFControls">1</bagId></bag><bag type="XFComplements" extRef="XFComplementsMapperExtRef"><a k="MappedFeaturePropertyBags"><bagId>2</bagId></a></bag></FeaturePropertyBags>`,
+    });
+  }
+  return zip(files);
 }

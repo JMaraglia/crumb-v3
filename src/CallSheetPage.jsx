@@ -100,14 +100,14 @@ const COLUMNS = [
 
 // Column widths (in Excel's "characters") for the shared spreadsheet
 const XLSX_COLUMNS = [
-  { label: 'Acct #', width: 13 },
-  { label: 'Account', width: 28, bold: true },
+  { label: 'Acct #', width: 13, kind: 'quiet' },
+  { label: 'Account', width: 28, kind: 'bold' },
   { label: 'Contact', width: 22 },
   { label: 'Phone', width: 21 },
-  { label: 'Call at', width: 10 },
-  { label: 'Online', width: 9, align: 'center' },
+  { label: 'Call at', width: 11 },
+  { label: 'Online', width: 10, kind: 'check' },
   { label: 'Call notes', width: 40 },
-  { label: 'Ordered', width: 10, align: 'center' },
+  { label: 'Ordered', width: 11, kind: 'check' },
 ];
 
 function toXlsx(rows, orderDay, dateText) {
@@ -120,7 +120,7 @@ function toXlsx(rows, orderDay, dateText) {
     columns: XLSX_COLUMNS,
     rows: rows.map((r) => ({
       muted: r.noCall,
-      cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online ? '✓' : '', r.callNote, r.ordered ? '✓' : ''],
+      cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online, r.callNote, r.ordered],
     })),
   });
 }
