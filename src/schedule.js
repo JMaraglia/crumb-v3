@@ -224,6 +224,11 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
   (visits || []).forEach((v, i) => {
     const start = hhmmToMinutes(v.time);
     if (!v.date || v.date < startKey || v.date > endKey || start == null) return;
+    // Same account already has its scheduled visit that day → show it once.
+    if (v.accountId) {
+      const kind = v.accountType === 'customer' || v.type === 'contact' ? 'c' : 'p';
+      if (blocks.some((bl) => bl.id === `visit-${kind}-${v.accountId}-${v.date}`)) return;
+    }
     blocks.push({
       id: `visit-m-${v.id || i}-${v.date}`,
       virtual: true,
