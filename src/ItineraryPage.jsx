@@ -138,6 +138,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [doneMap, setDoneMap] = useState(() => readJSON(DONE_KEY, {}));
   const [lockMap, setLockMap] = useState(() => readJSON(LOCKS_KEY, {}));
   const [locking, setLocking] = useState(null); // stop whose time is being locked
+  const [timing, setTiming] = useState(null);   // stop whose time is being changed (tapped the time)
   const events = toVisitList(readJSON(EVENTS_KEY, []));
 
   const saveVisits = (next) => {
@@ -383,6 +384,34 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setLocking(null);
   };
 
+  // Tapped the time on the left. Hand-added stops and calendar events change their own time;
+  // scheduled visits change for this day only (their usual time stays the same).
+  const saveTime = (stop, time) => {
+    const clearDayLock = () => {
+      if (lockMap[date] && typeof lockMap[date][stop.key] === 'number') saveLock(stop, null);
+    };
+    if (stop.kind === 'manual') {
+      saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, time: time == null ? '' : minutesToHhmm(time) } : v)));
+      clearDayLock();
+    } else if (stop.kind === 'event') {
+      if (time != null) {
+        const all = readJSON(EVENTS_KEY, []);
+        if (Array.isArray(all)) {
+          const next = all.map((ev) => {
+            if (`e-${ev.id}` !== stop.key) return ev;
+            const length = typeof ev.end === 'number' && typeof ev.start === 'number' ? ev.end - ev.start : 60;
+            return { ...ev, start: time, end: Math.min(time + length, 1440) };
+          });
+          localStorage.setItem(EVENTS_KEY, JSON.stringify(next));
+        }
+      }
+      clearDayLock();
+    } else {
+      saveLock(stop, time); // null = back to the usual time
+    }
+    setTiming(null);
+  };
+
   // Navigation. Apple Maps and Waze take ONE destination per link, so they go stop by stop
   // ("Next stop"); Google Maps takes up to 4 stops per link on a phone (3 in between + the last).
   // Starts from wherever the phone is. Check stops off and tap again for the next one(s).
@@ -551,7 +580,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                 <div key={stop.key} className={`it-stop ${stop.done ? 'is-done' : ''} ${open ? 'is-open' : ''}`}>
                   <div className="it-stop-row">
                     <button className="it-stop-main" onClick={() => openStop(stop)}>
-                      <span className={`it-time ${stop.locked ? 'is-locked' : ''}`}>
+                      <span
+                        className={`it-time ${stop.locked ? 'is-locked' : ''}`}
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation(); // tapping the time changes it; the rest of the row opens the stop
+                          setTiming(stop);
+                        }}
+                      >
                         {stop.time == null ? 'Anytime' : timeLabel(stop.time)}
                         {stop.locked && <span className="it-lock-icon">🔒</span>}
                       </span>
@@ -737,6 +773,19 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         />
       )}
 
+      {timing && (
+        <TimeSheet
+          stop={timing}
+          usual={(() => {
+            if (timing.kind !== 'scheduled') return null;
+            const acct = findAccount(timing.accountType, timing.accountId);
+            return acct ? visitTimeOn(acct, date) : null;
+          })()}
+          onCancel={() => setTiming(null)}
+          onSave={(time) => saveTime(timing, time)}
+        />
+      )}
+
       {moving && (
         <MoveSheet
           stop={moving.stop}
@@ -824,6 +873,49 @@ function LockSheet({ stop, onSave, onCancel }) {
         {stop.locked === 'day' && (
           <button className="it-move-undo" onClick={() => onSave(null)}>
             Unlock
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Change a stop's time (tap the time on the left) ---------- */
+function TimeSheet({ stop, usual, onSave, onCancel }) {
+  const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : stop.kind === 'manual' ? '' : 9 * 60);
+  const nice = (m) => (typeof m === 'number' ? timeLabel(m) : 'no set time');
+  const help =
+    stop.kind === 'manual'
+      ? 'Changes the time for this stop.'
+      : stop.kind === 'event'
+      ? 'Changes the time of this calendar event. It keeps the same length.'
+      : `For this day only. The usual time (${nice(usual)}) stays the same.`;
+  return (
+    <div className="it-sheet-backdrop" onClick={onCancel}>
+      <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="it-sheet-top">
+          <button className="it-link" onClick={onCancel}>Cancel</button>
+          <div className="it-sheet-title">Change time</div>
+          <button className="it-link it-bold" onClick={() => onSave(time === '' ? null : Number(time))}>Save</button>
+        </div>
+        <div className="it-move-who">
+          <strong>{stop.title}</strong>
+          <span>{help}</span>
+        </div>
+        <div className="it-sheet-group">
+          <label className="it-sheet-row">
+            <span>Time</span>
+            <select className="it-sheet-select" value={time} onChange={(e) => setTime(e.target.value === '' ? '' : Number(e.target.value))}>
+              {stop.kind === 'manual' && <option value="">Anytime</option>}
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{timeLabel(t)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {stop.kind === 'scheduled' && stop.locked === 'day' && (
+          <button className="it-move-undo" onClick={() => onSave(null)}>
+            Back to usual time{typeof usual === 'number' ? ` (${timeLabel(usual)})` : ''}
           </button>
         )}
       </div>
