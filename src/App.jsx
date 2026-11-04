@@ -12,6 +12,7 @@ import ProspectNotesPage from './ProspectNotesPage';
 import CalendarPage from './CalendarPage';
 import ItineraryPage from './ItineraryPage';
 import BackupPage from './BackupPage';
+import TodoPage from './TodoPage';
 
 // Simple hook to sync state with localStorage
 function usePersistedState(key, initialValue) {
@@ -100,6 +101,12 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/backup" element={<BackupPage />} />
+        <Route
+          path="/todo"
+          element={
+            <TodoPage contacts={contacts} setContacts={setContacts} prospects={prospects} setProspects={setProspects} />
+          }
+        />
         <Route path="/call-sheet" element={<CallSheetPage contacts={contacts} setContacts={setContacts} />} />
         <Route
           path="/notes"

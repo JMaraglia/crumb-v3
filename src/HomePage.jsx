@@ -1,7 +1,7 @@
 // file: src/HomePage.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt } from 'react-icons/fa';
+import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt, FaCheckSquare } from 'react-icons/fa';
 import { readLastBackup } from './BackupPage';
 
 export default function HomePage() {
@@ -28,6 +28,7 @@ export default function HomePage() {
     { label: 'Customers', icon: <FaUsers />, path: '/customers' },
     { label: 'Prospects', icon: <FaUserPlus />, path: '/prospects' },
     { label: 'Itinerary', icon: <FaClipboardList />, path: '/itinerary' },
+    { label: 'To-Do', icon: <FaCheckSquare />, path: '/todo' },
     { label: 'Calendar', icon: <FaCalendarAlt />, path: '/calendar' },
     { label: 'Notes', icon: <FaStickyNote />, path: '/notes' },
     { label: 'Call Sheet', icon: <FaPhoneAlt />, path: '/call-sheet' },
