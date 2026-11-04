@@ -440,23 +440,31 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       {/* Only shows on the printed / PDF copy */}
       {stops.length > 0 && (
         <div className="it-print">
-          <div className="it-print-brand">Crumb.</div>
-          <div className="it-print-heading">Itinerary</div>
-          <div className="it-print-sub">
-            {niceDate(date)} · {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
+          <div className="it-print-top">
+            <div className="it-print-brand">Crumb.</div>
+            <div className="it-print-kicker">Itinerary</div>
+          </div>
+          <div className="it-print-bottom">
+            <div className="it-print-heading">
+              {fromKey(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </div>
+            <div className="it-print-count">
+              {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
+            </div>
           </div>
           <table className="it-print-table">
-            <thead>
-              <tr>
-                <th className="it-print-box" />
-                <th>Account</th>
-              </tr>
-            </thead>
             <tbody>
               {stops.map((s) => (
                 <tr key={s.key}>
                   <td className="it-print-box">{s.done ? '☑' : '☐'}</td>
                   <td>{s.title}</td>
+                </tr>
+              ))}
+              {/* Blank lines to fill the page, for stops added by hand */}
+              {Array.from({ length: Math.max(0, 18 - stops.length) }, (_, i) => (
+                <tr key={`blank-${i}`} className="it-print-blank">
+                  <td className="it-print-box">☐</td>
+                  <td />
                 </tr>
               ))}
             </tbody>
