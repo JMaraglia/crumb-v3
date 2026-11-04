@@ -25,6 +25,8 @@ export const DEFAULT_NOTIFY = {
   morning: true,       // morning summary
   morningTime: 420,    // minutes from midnight (7:00 AM)
   lead: 30,            // minutes before visits / appointments (0 = off)
+  afternoon: true,     // afternoon check: to-dos still open
+  afternoonTime: 960,  // 4:00 PM
 };
 
 export function loadNotifySettings() {
@@ -151,19 +153,43 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
       });
     }
 
+    // To-dos (tasks + follow-up/sample notes) not done and due that day or earlier
+    const dueBy = () => {
+      const due = [];
+      todos.forEach((t) => t && !t.done && t.due && t.due <= day && due.push({ text: t.text, who: t.accountName, late: t.due < day }));
+      [...contacts, ...prospects].filter(hasName).forEach((a) =>
+        (a.notes || []).forEach((n) => {
+          const c = noteCat(n.category);
+          if ((c === 'Follow-up' || c === 'Sample') && n.due && n.due <= day && !isNoteDone(n))
+            due.push({ text: n.text, who: a.name, late: n.due < day });
+        })
+      );
+      return due;
+    };
+
+    // Afternoon check: the to-dos still open (nothing is sent if they're all done)
+    if (settings.afternoon && typeof settings.afternoonTime === 'number') {
+      const when = at(day, settings.afternoonTime);
+      const due = dueBy();
+      if (Date.parse(when) > nowMs && due.length) {
+        const late = due.filter((d) => d.late).length;
+        const list = due.slice(0, 4).map((d) => `${d.text}${d.who ? ` (${d.who})` : ''}`);
+        if (due.length > 4) list.push(`+${due.length - 4} more`);
+        out.push({
+          id: `a-${day}-${settings.afternoonTime}`,
+          at: when,
+          title: `Still to do: ${due.length} ${due.length === 1 ? 'item' : 'items'}${late ? ` (${late} overdue)` : ''}`,
+          body: list.join(' · '),
+          url: '/todo',
+        });
+      }
+    }
+
     // Morning summary: stops + to-dos due (or overdue) that day
     if (settings.morning) {
       const when = at(day, settings.morningTime);
       if (Date.parse(when) > nowMs) {
-        const due = [];
-        todos.forEach((t) => t && !t.done && t.due && t.due <= day && due.push({ text: t.text, who: t.accountName, late: t.due < day }));
-        [...contacts, ...prospects].filter(hasName).forEach((a) =>
-          (a.notes || []).forEach((n) => {
-            const c = noteCat(n.category);
-            if ((c === 'Follow-up' || c === 'Sample') && n.due && n.due <= day && !isNoteDone(n))
-              due.push({ text: n.text, who: a.name, late: n.due < day });
-          })
-        );
+        const due = dueBy();
         const open = stops.filter((s) => !s.done);
         if (open.length || due.length) {
           const late = due.filter((d) => d.late).length;

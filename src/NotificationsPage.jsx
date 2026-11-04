@@ -16,6 +16,7 @@ import {
 import './NotificationsPage.css';
 
 const MORNING_TIMES = Array.from({ length: 13 }, (_, i) => 300 + i * 30); // 5:00 – 11:00 AM
+const AFTERNOON_TIMES = Array.from({ length: 13 }, (_, i) => 720 + i * 30); // 12:00 – 6:00 PM
 const LEADS = [
   [0, 'Off'],
   [10, '10 min before'],
@@ -132,6 +133,23 @@ export default function NotificationsPage() {
               <span>Send it at</span>
               <select className="nt-select" value={settings.morningTime} onChange={(e) => change({ morningTime: Number(e.target.value) })}>
                 {MORNING_TIMES.map((m) => (
+                  <option key={m} value={m}>{timeText(m)}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label className="nt-row">
+            <span>
+              Afternoon check
+              <span className="nt-help">To-dos due today or overdue that aren't done yet</span>
+            </span>
+            <input type="checkbox" className="nt-switch" checked={settings.afternoon} onChange={(e) => change({ afternoon: e.target.checked })} />
+          </label>
+          {settings.afternoon && (
+            <label className="nt-row">
+              <span>Send it at</span>
+              <select className="nt-select" value={settings.afternoonTime} onChange={(e) => change({ afternoonTime: Number(e.target.value) })}>
+                {AFTERNOON_TIMES.map((m) => (
                   <option key={m} value={m}>{timeText(m)}</option>
                 ))}
               </select>
