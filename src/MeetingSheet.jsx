@@ -19,13 +19,20 @@ export function niceMeeting(dateKey, start) {
 }
 
 // account: { type: 'customer' | 'prospect', id, name, address }
-export default function MeetingSheet({ account, presetNotes = '', onSaved, onCancel }) {
+// existing: a Meeting note's `meeting` ({ date, start, eventId }) → change that meeting instead of adding one.
+export default function MeetingSheet({ account, presetNotes = '', existing = null, onSaved, onCancel }) {
   const settings = readJSON('crumb_calendar_settings', {}) || {};
-  const [day, setDay] = useState(addDaysToKey(keyOf(new Date()), 1));
-  const [start, setStart] = useState(12 * 60);
-  const [length, setLength] = useState(LENGTHS.some(([m]) => m === settings.eventLength) ? settings.eventLength : 60);
-  const [title, setTitle] = useState(`Meeting · ${account.name || ''}`.trim());
-  const [notes, setNotes] = useState(presetNotes);
+  const allEvents = readJSON(EVENTS_KEY, []);
+  const oldEvent =
+    existing && Array.isArray(allEvents) ? allEvents.find((ev) => String(ev.id) === String(existing.eventId)) || null : null;
+  const oldLength = oldEvent && typeof oldEvent.end === 'number' ? oldEvent.end - oldEvent.start : null;
+  const [day, setDay] = useState((existing && existing.date) || addDaysToKey(keyOf(new Date()), 1));
+  const [start, setStart] = useState(existing && typeof existing.start === 'number' ? existing.start : 12 * 60);
+  const [length, setLength] = useState(
+    LENGTHS.some(([m]) => m === oldLength) ? oldLength : LENGTHS.some(([m]) => m === settings.eventLength) ? settings.eventLength : 60
+  );
+  const [title, setTitle] = useState((oldEvent && oldEvent.title) || `Meeting · ${account.name || ''}`.trim());
+  const [notes, setNotes] = useState(oldEvent ? oldEvent.notes || '' : presetNotes);
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(day);
 
   const save = () => {
@@ -33,20 +40,27 @@ export default function MeetingSheet({ account, presetNotes = '', onSaved, onCan
     const events = readJSON(EVENTS_KEY, []);
     const list = Array.isArray(events) ? events : [];
     const event = {
-      id: Date.now(),
+      ...(oldEvent || {}),
+      id: oldEvent ? oldEvent.id : Date.now(),
       title: title.trim() || 'Meeting',
       date: day,
       start,
       end: Math.min(start + length, 1440),
-      location: account.address || '',
+      location: oldEvent ? oldEvent.location || '' : account.address || '',
       notes: notes.trim(),
-      color: settings.defaultColor || '#0077cc',
+      color: oldEvent ? oldEvent.color : settings.defaultColor || '#0077cc',
       accountType: account.type,
       accountId: account.id,
       accountName: account.name || null,
       showInItinerary: true,
     };
-    localStorage.setItem(EVENTS_KEY, JSON.stringify([...list, event]));
+    // Changing a meeting replaces its calendar event (or re-adds it if it was deleted from the Calendar).
+    const others = oldEvent ? list.filter((ev) => String(ev.id) !== String(oldEvent.id)) : list;
+    localStorage.setItem(EVENTS_KEY, JSON.stringify([...others, event]));
+    if (existing) {
+      onSaved(`Meeting changed: ${niceMeeting(day, start)}`, null, { date: day, start, eventId: event.id });
+      return;
+    }
     // Also hand back a "Meeting" note for the account's notes (same as any other label).
     const note = {
       text: notes.trim() || `Meeting ${niceMeeting(day, start)}`,
@@ -62,7 +76,7 @@ export default function MeetingSheet({ account, presetNotes = '', onSaved, onCan
       <div className="mt-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="mt-top">
           <button className="mt-link" onClick={onCancel}>Cancel</button>
-          <div className="mt-title">Set a meeting</div>
+          <div className="mt-title">{existing ? 'Change meeting' : 'Set a meeting'}</div>
           <button className="mt-link mt-bold" disabled={!valid} onClick={save}>Save</button>
         </div>
         <div className="mt-who">

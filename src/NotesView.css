@@ -462,4 +462,8 @@
   font-size: 0.78rem;
   font-weight: 600;
   color: #d96b00;
+  text-decoration: underline;
+  text-decoration-color: rgba(217, 107, 0, 0.45);
+  text-underline-offset: 2px;
+  cursor: pointer;
 }

@@ -116,6 +116,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const [editing, setEditing] = useState(null); // { index, text, category }
   const [shareMsg, setShareMsg] = useState('');
   const [meeting, setMeeting] = useState(false); // "Set a meeting" panel open
+  const [changingMeeting, setChangingMeeting] = useState(null); // index of a Meeting note whose time is being changed
 
   const notes = (account.notes || []).map((n, index) => ({ ...n, index, cat: normalizeCategory(n.category) }));
   const byNewest = (a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0) || b.index - a.index;
@@ -279,7 +280,16 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
             )}
             <span className="nv-date">{noteDate(n.timestamp)}</span>
             {n.meeting && n.meeting.date && (
-              <span className="nv-meeting-when">{niceMeeting(n.meeting.date, n.meeting.start)}</span>
+              <span
+                className="nv-meeting-when"
+                role="button"
+                onClick={(e) => {
+                  e.stopPropagation(); // tapping the meeting time changes the meeting, not the note
+                  setChangingMeeting(n.index);
+                }}
+              >
+                {niceMeeting(n.meeting.date, n.meeting.start)}
+              </span>
             )}
             {hasCheck && n.due && !isDone && (
               <span className={`nv-due ${n.due < plusDays(0) ? 'is-late' : ''}`}>Due {dueLabel(n.due)}</span>
@@ -381,6 +391,25 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
         )}
         {notes.length > 0 && <div className="nv-hint">Tap a note to edit or share it · Swipe left to delete</div>}
       </div>
+      {changingMeeting != null && account.notes[changingMeeting] && (
+        <MeetingSheet
+          account={{
+            type: (kindLabel || '').toLowerCase() === 'prospect' ? 'prospect' : 'customer',
+            id: account.id,
+            name: account.name,
+            address: account.address,
+          }}
+          existing={account.notes[changingMeeting].meeting}
+          onCancel={() => setChangingMeeting(null)}
+          onSaved={(msg, _note, meetingInfo) => {
+            const original = account.notes[changingMeeting];
+            onAddNote(account.id, { ...original, meeting: meetingInfo }, changingMeeting);
+            setChangingMeeting(null);
+            setShareMsg(msg);
+          }}
+        />
+      )}
+
       {meeting && (
         <MeetingSheet
           account={{
