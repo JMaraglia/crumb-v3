@@ -1087,3 +1087,95 @@
 .av-stage-tap {
   cursor: pointer;
 }
+
+/* Tap the visit chips to change visits */
+.av-visit-tap {
+  cursor: pointer;
+}
+
+/* Quick visit panel */
+.av-vs-sheet {
+  background: #f2f2f7;
+  padding-top: 12px;
+}
+
+.av-vs-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 12px;
+}
+
+.av-vs-title {
+  font-weight: 700;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.av-page .av-vs-link,
+.av-page .av-vs-link:hover {
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  color: #0077cc;
+  font-size: 1rem;
+  font-weight: 400;
+  width: auto;
+}
+
+.av-page .av-vs-bold {
+  font-weight: 700;
+}
+
+.av-vs-group {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.av-vs-label {
+  font-size: 0.85rem;
+  color: #6e6e73;
+  margin-bottom: 8px;
+}
+
+.av-vs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.av-vs-row + .av-vs-row {
+  border-top: 1px solid #ececf0;
+}
+
+.av-vs-select {
+  border: none;
+  background: #e9f2fb;
+  color: #0077cc;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.av-vs-hint {
+  font-size: 0.8rem;
+  color: #8e8e93;
+  text-align: center;
+  padding: 0 10px 6px;
+}
+
+.av-sheet.av-vs-sheet {
+  border-radius: 16px 16px 0 0;
+  padding: 14px 16px calc(20px + env(safe-area-inset-bottom));
+}

@@ -140,6 +140,96 @@ function StageChip({ stage, onPick }) {
   );
 }
 
+// Visit day/time + how often chips. onPick (optional): tapping them opens the quick visit panel.
+function VisitChips({ account, config, onPick }) {
+  const visit = visitSummary(account, config);
+  const pick = onPick
+    ? {
+        role: 'button',
+        onClick: (e) => {
+          e.stopPropagation(); // don't open / close the row
+          onPick();
+        },
+        onDoubleClick: (e) => e.stopPropagation(),
+      }
+    : {};
+  const tap = onPick ? 'av-visit-tap' : '';
+  return visit ? (
+    <>
+      <span className={`av-chip av-chip-blue ${tap}`} {...pick}>{visit}</span>
+      <span className={`av-chip av-chip-gray ${tap}`} {...pick}>{shortFrequency(account.visitFrequency)}</span>
+    </>
+  ) : (
+    <span className={`av-chip av-chip-orange ${tap}`} {...pick}>No visit set</span>
+  );
+}
+
+// Quick visit panel: days, usual time, how often (+ start date). Same fields as the Edit screen,
+// so the Itinerary, Calendar and reminders pick the change up right away.
+function VisitSheet({ account, config, onSave, onCancel }) {
+  const field = config.visitDaysField;
+  const [days, setDays] = useState(account[field] || []);
+  const [time, setTime] = useState(typeof account.visitTime === 'number' ? account.visitTime : '');
+  const [freq, setFreq] = useState(account.visitFrequency || 'weekly');
+  const [startDay, setStartDay] = useState(account.visitStart || todayKey());
+  const toggle = (d) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+  const save = () =>
+    onSave({
+      [field]: DAYS.filter((d) => days.includes(d)),
+      visitTime: time === '' ? null : Number(time),
+      visitFrequency: freq,
+      visitStart: freq === 'weekly' ? null : startDay,
+      fixedTime: time !== '' && Boolean(account.fixedTime),
+    });
+  return (
+    <div className="av-sheet-backdrop" onClick={onCancel}>
+      <div className="av-sheet av-vs-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="av-vs-top">
+          <button className="av-vs-link" onClick={onCancel}>Cancel</button>
+          <div className="av-vs-title">Visits · {displayName(account)}</div>
+          <button className="av-vs-link av-vs-bold" onClick={save}>Save</button>
+        </div>
+        <div className="av-vs-group">
+          <div className="av-vs-label">Visit days</div>
+          <div className="av-days">
+            {DAYS.map((d) => (
+              <button key={d} type="button" className={`av-day-btn ${days.includes(d) ? 'is-on' : ''}`} onClick={() => toggle(d)}>
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="av-vs-group">
+          <label className="av-vs-row">
+            <span>Usual time</span>
+            <select className="av-vs-select" value={time} onChange={(e) => setTime(e.target.value === '' ? '' : Number(e.target.value))}>
+              <option value="">No set time</option>
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{timeLabel(t)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="av-vs-row">
+            <span>How often</span>
+            <select className="av-vs-select" value={freq} onChange={(e) => setFreq(e.target.value)}>
+              {FREQUENCIES.map((f) => (
+                <option key={f.key} value={f.key}>{f.label}</option>
+              ))}
+            </select>
+          </label>
+          {freq !== 'weekly' && (
+            <label className="av-vs-row">
+              <span>Starting</span>
+              <input type="date" className="av-vs-select" value={startDay} onChange={(e) => e.target.value && setStartDay(e.target.value)} />
+            </label>
+          )}
+        </div>
+        <div className="av-vs-hint">Shows up on your Itinerary and Calendar right away. No days = no scheduled visits.</div>
+      </div>
+    </div>
+  );
+}
+
 // Quick stage picker (Cold → Ready to close). The current stage has a check mark.
 function stageSheet(account, onChoose) {
   return {
@@ -528,7 +618,8 @@ function SwipeIf({ onDelete, children }) {
   );
 }
 
-function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete, onStage }) {
+function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete, onStage, onVisit }) {
+  const pickVisit = onVisit ? () => onVisit(a) : undefined;
   const pickStage = onStage ? () => onSheet(stageSheet(a, (key) => onStage(a.id, key))) : undefined;
   const navigate = useNavigate();
   const hold = React.useRef(null);
@@ -615,14 +706,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
           )}
           {!expanded && (
             <span className="av-chips">
-              {visit ? (
-                <>
-                  <span className="av-chip av-chip-blue">{visit}</span>
-                  <span className="av-chip av-chip-gray">{shortFrequency(a.visitFrequency)}</span>
-                </>
-              ) : (
-                <span className="av-chip av-chip-orange">No visit set</span>
-              )}
+              <VisitChips account={a} config={config} onPick={pickVisit} />
               <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
               <SnoozeChip account={a} daysField={config.visitDaysField} />
@@ -643,14 +727,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
             </button>
           )}
           <div className="av-chips av-summary-chips">
-            {visit ? (
-              <>
-                <span className="av-chip av-chip-blue">{visit}</span>
-                <span className="av-chip av-chip-gray">{shortFrequency(a.visitFrequency)}</span>
-              </>
-            ) : (
-              <span className="av-chip av-chip-orange">No visit set</span>
-            )}
+            <VisitChips account={a} config={config} onPick={pickVisit} />
             <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
             <SnoozeChip account={a} daysField={config.visitDaysField} />
@@ -704,6 +781,7 @@ export function AccountList({ config, accounts, setAccounts }) {
   const [stageFilter, setStageFilter] = useState('all');
   const [sheet, setSheet] = useState(null);   // Call/Text or Maps pop-up
   const [listMsg, setListMsg] = useState('');
+  const [visitFor, setVisitFor] = useState(null); // account whose visits are being changed (quick panel)
 
   const q = search.trim().toLowerCase();
   const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
@@ -807,6 +885,7 @@ export function AccountList({ config, accounts, setAccounts }) {
                     : null
                 }
                 onSheet={(info) => info && setSheet(info)}
+                onVisit={setAccounts ? (acct) => setVisitFor(acct) : null}
                 onStage={
                   config.hasStage && setAccounts
                     ? (id, key) => setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, stage: key } : x)))
@@ -842,6 +921,17 @@ export function AccountList({ config, accounts, setAccounts }) {
       </button>
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
+      {visitFor && (
+        <VisitSheet
+          account={visitFor}
+          config={config}
+          onCancel={() => setVisitFor(null)}
+          onSave={(fields) => {
+            setAccounts((prev) => prev.map((x) => (x.id === visitFor.id ? { ...x, ...fields } : x)));
+            setVisitFor(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -856,6 +946,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const [sheet, setSheet] = useState(null); // { title, actions }
   const [converting, setConverting] = useState(false);
   const [newAccountNumber, setNewAccountNumber] = useState('');
+  const [visitOpen, setVisitOpen] = useState(false); // quick visit panel
   const [shareMsg, setShareMsg] = useState('');
   const account = accounts.find((a) => String(a.id) === id);
 
@@ -946,14 +1037,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           )}
 
           <div className="av-chips av-summary-chips">
-            {visit ? (
-              <>
-                <span className="av-chip av-chip-blue">{visit}</span>
-                <span className="av-chip av-chip-gray">{shortFrequency(account.visitFrequency)}</span>
-              </>
-            ) : (
-              <span className="av-chip av-chip-orange">No visit set</span>
-            )}
+            <VisitChips account={account} config={config} onPick={setAccounts ? () => setVisitOpen(true) : undefined} />
             <DeliveryChip account={account} config={config} />
             {config.hasStage && (
               <StageChip
@@ -1156,6 +1240,17 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
         </button>
       </div>
 
+      {visitOpen && account && (
+        <VisitSheet
+          account={account}
+          config={config}
+          onCancel={() => setVisitOpen(false)}
+          onSave={(fields) => {
+            setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, ...fields } : x)));
+            setVisitOpen(false);
+          }}
+        />
+      )}
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
 
       {converting && (
