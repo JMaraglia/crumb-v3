@@ -94,6 +94,7 @@ export default function WeekView({
   pendingEvent = null,   // the blue block shown while the add panel is open
   onHoldSlot,            // (dateKey, startMinutes) when a thumb is held on an empty spot
   onEventTap,            // (event) when an event block is tapped
+  onEventHold,           // (event) when a thumb is held on an event block (delete)
   startHour = SCROLL_TO_HOUR, // hour the grid opens scrolled to (Calendar settings)
 }) {
   const [phase, setPhase] = useState('idle'); // idle | drag | next | prev | back
@@ -155,7 +156,21 @@ export default function WeekView({
     cancelHold();
     const col = e.target.closest && e.target.closest('.wv-col');
     const onEvent = e.target.closest && e.target.closest('.wv-event');
-    if (col && !onEvent && onHoldSlot) {
+    if (onEvent && onEventHold) {
+      // Holding a thumb on an event asks to delete it.
+      const id = onEvent.getAttribute('data-evid');
+      const ev = events.find((x) => String(x.id) === id);
+      if (ev) {
+        holdTimer.current = setTimeout(() => {
+          holdTimer.current = null;
+          const d = drag.current;
+          if (!d || d.moving) return;
+          d.held = true;
+          suppressTap.current = true;
+          onEventHold(ev);
+        }, HOLD_MS);
+      }
+    } else if (col && !onEvent && onHoldSlot) {
       const pointY = e.clientY;
       const day = col.getAttribute('data-date');
       holdTimer.current = setTimeout(() => {
@@ -302,6 +317,7 @@ export default function WeekView({
                         <div
                           key={ev.id}
                           className={`wv-event ${ev.virtual ? 'is-visit' : ''}`}
+                          data-evid={String(ev.id)}
                           style={{
                             top: (ev.start / 60) * HOUR_HEIGHT,
                             height,

@@ -176,9 +176,9 @@ export const CUSTOMER_COLOR = '#1e8e3e'; // customers' scheduled visits (green) 
 // for every day from startKey to endKey. These are built on the fly, never saved.
 export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, customers = []) {
   const blocks = [];
-  const removed = readJSON('crumb_itinerary_removed', {}) || {}; // visits swiped off a day on the Itinerary
+  const hidden = readJSON('crumb_calendar_hidden', {}) || {}; // taken off the Calendar for one day
   for (let k = startKey; k <= endKey; k = addDaysToKey(k, 1)) {
-    const gone = removed[k] || [];
+    const gone = hidden[k] || [];
     customers.forEach((c) => {
       if (!c.name || !c.name.trim()) return;
       if (c.showOnCalendar === false) return;
@@ -199,6 +199,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
         accountType: 'customer',
         accountId: c.id,
         accountName: c.name,
+        stopKey: `c-${c.id}`,
       });
     });
     prospects.forEach((p) => {
@@ -222,12 +223,14 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
         accountType: 'prospect',
         accountId: p.id,
         accountName: p.name,
+        stopKey: `p-${p.id}`,
       });
     });
   }
   (visits || []).forEach((v, i) => {
     const start = hhmmToMinutes(v.time);
     if (!v.date || v.date < startKey || v.date > endKey || start == null) return;
+    if ((hidden[v.date] || []).includes(`m-${v.id || i}`)) return;
     // Same account already has its scheduled visit that day → show it once.
     if (v.accountId) {
       const kind = v.accountType === 'customer' || v.type === 'contact' ? 'c' : 'p';
@@ -246,6 +249,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
       accountType: v.accountType || null,
       accountId: v.accountId || null,
       accountName: v.name || null,
+      stopKey: `m-${v.id || i}`,
     });
   });
   return blocks;

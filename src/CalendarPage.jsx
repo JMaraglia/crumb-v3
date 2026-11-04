@@ -8,6 +8,8 @@ import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
 import EventSheet, { DEFAULT_EVENT_COLOR, EVENT_COLORS } from './EventSheet';
 import MonthView from './MonthView';
 import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey } from './schedule';
+import { removeStop, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
+import AskSheet from './AskSheet';
 import './CalendarPage.css';
 
 // Calendar events are saved on the phone under this name (new; nothing else uses it).
@@ -121,7 +123,37 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   const shownBlocks = visitBlocks.filter((b) =>
     b.source === 'schedule' ? settings.showVisits : b.source === 'itinerary' ? settings.showStops : true
   );
-  const allEvents = [...events, ...shownBlocks];
+  // Events taken off the Calendar for a day (they can stay on the Itinerary)
+  const hiddenMap = readJSON(HIDDEN_KEY, {}) || {};
+  const shownEvents = events.filter((ev) => !(hiddenMap[ev.date] || []).includes(`e-${ev.id}`));
+  const allEvents = [...shownEvents, ...shownBlocks];
+
+  // Hold a thumb on an event → delete it. If it's also on the Itinerary, ask about that too.
+  const [asking, setAsking] = useState(null); // { ev, key, alsoOnItinerary }
+  const [, setRemovalTick] = useState(0);    // re-draw after a removal
+  const isOnItinerary = (ev, key) => {
+    const removed = readJSON(REMOVED_KEY, {}) || {};
+    if ((removed[ev.date] || []).includes(key)) return false;
+    if (!ev.virtual) return typeof ev.showInItinerary === 'boolean' ? ev.showInItinerary : Boolean(ev.accountId);
+    if (ev.source === 'schedule') {
+      const list = ev.accountType === 'prospect' ? prospects : contacts;
+      const acct = list.find((a) => String(a.id) === String(ev.accountId));
+      return !acct || acct.showInItinerary !== false;
+    }
+    return true;
+  };
+  const handleEventHold = (ev) => {
+    const key = ev.virtual ? ev.stopKey : `e-${ev.id}`;
+    if (!key) return;
+    setAsking({ ev, key, alsoOnItinerary: isOnItinerary(ev, key) });
+  };
+  const applyRemoval = (where) => {
+    const { ev, key } = asking;
+    if (!ev.virtual && where === 'both') updateEvents((prev) => prev.filter((e) => e.id !== ev.id));
+    else removeStop(where, key, ev.date);
+    setAsking(null);
+    setRemovalTick((t) => t + 1);
+  };
 
   // Tapping a scheduled visit opens that prospect (change the schedule there);
   // tapping a hand-added stop opens the itinerary. Real events open the edit panel.
@@ -246,6 +278,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
             pendingEvent={sheet && sheet.isNew ? sheet.draft : null}
             onHoldSlot={openNewEvent}
             onEventTap={handleEventTap}
+            onEventHold={handleEventHold}
             startHour={settings.startHour}
           />
         ) : (
@@ -280,6 +313,26 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
           onCancel={() => setSheet(null)}
         />
       )}
+
+      {asking && (() => {
+        const { ev, alsoOnItinerary } = asking;
+        const isVisit = ev.virtual && ev.source === 'schedule';
+        const dayText = new Date(`${ev.date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const title = isVisit ? `Remove the ${ev.title} visit on ${dayText}?` : `Delete "${ev.title}"?`;
+        const message = [
+          isVisit ? 'Just this day. The regular visit schedule stays the same.' : '',
+          alsoOnItinerary ? 'Also delete it from the Itinerary?' : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+        const choices = alsoOnItinerary
+          ? [
+              { label: 'Yes, delete from both', value: 'both', tone: 'danger' },
+              { label: 'No, just the Calendar', value: 'calendar' },
+            ]
+          : [{ label: isVisit ? 'Remove from Calendar' : 'Delete', value: isVisit ? 'calendar' : 'both', tone: 'danger' }];
+        return <AskSheet title={title} message={message} choices={choices} onPick={applyRemoval} onCancel={() => setAsking(null)} />;
+      })()}
 
       {showSettings && (
         <CalendarSettings settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />
