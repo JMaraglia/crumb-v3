@@ -1069,3 +1069,16 @@
 .av-share-msg-list {
   margin: -4px 0 10px;
 }
+
+/* Prospects list: swipe left to delete */
+.av-item .av-swipe-row {
+  background: #fff;
+}
+
+.av-item.is-open .av-swipe-row {
+  box-shadow: inset 3px 0 0 #0077cc;
+}
+
+.av-item .av-swipe-row > .av-row {
+  border-top: none !important;
+}

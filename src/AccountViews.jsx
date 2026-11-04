@@ -12,6 +12,7 @@ import { IoShareOutline } from 'react-icons/io5';
 import { shareText, shareFile, contactCards, safeFileName } from './share';
 import { makeXlsx } from './xlsx';
 import { useNavigate, useParams } from 'react-router-dom';
+import SwipeRow from './SwipeRow';
 import './AccountViews.css';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed } from './schedule';
 
@@ -487,7 +488,17 @@ const HOLD_WIGGLE = 10;   // px a finger can move and still count as holding
 // Hold: open the full screen.
 const DOUBLE_TAP_MS = 320; // two taps this close together = double-tap
 
-function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze }) {
+function SwipeIf({ onDelete, children }) {
+  return onDelete ? (
+    <SwipeRow className="av-swipe-row" onDelete={onDelete}>
+      {children}
+    </SwipeRow>
+  ) : (
+    children
+  );
+}
+
+function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete }) {
   const navigate = useNavigate();
   const hold = React.useRef(null);
   const lastTap = React.useRef(0);
@@ -540,6 +551,8 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
 
   return (
     <div className={`av-item ${expanded ? 'is-open' : ''}`}>
+      {/* Prospects: swipe left to delete (asks first). Customers: no swipe. */}
+      <SwipeIf onDelete={onDelete}>
       <button
         className="av-row av-list-row"
         onPointerDown={startHold}
@@ -587,6 +600,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
         </span>
         <FaChevronRight className={`av-row-chevron ${expanded ? 'is-open' : ''}`} />
       </button>
+      </SwipeIf>
 
       {expanded && (
         <div className="av-expand">
@@ -762,12 +776,28 @@ export function AccountList({ config, accounts, setAccounts }) {
                     : null
                 }
                 onSheet={(info) => info && setSheet(info)}
+                onDelete={
+                  config.swipeToDelete && setAccounts
+                    ? () => {
+                        if (
+                          !window.confirm(
+                            `Permanently delete ${displayName(a)}?\n\nThis deletes the ${config.singular.toLowerCase()} and all of its notes. It can't be undone.`
+                          )
+                        )
+                          return;
+                        if (openId === a.id) setOpenId(null);
+                        setAccounts((prev) => prev.filter((x) => x.id !== a.id));
+                      }
+                    : null
+                }
               />
             ))}
           </div>
         )}
         {shown.length > 0 && (
-          <div className="av-hint">Tap to open · Double-tap to edit · Hold for full details</div>
+          <div className="av-hint">
+            Tap to open · Double-tap to edit · Hold for full details{config.swipeToDelete ? ' · Swipe left to delete' : ''}
+          </div>
         )}
       </div>
 

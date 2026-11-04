@@ -9,6 +9,7 @@ const PROSPECT_CONFIG = {
   singular: 'Prospect',
   plural: 'Prospects',
   basePath: '/prospects',
+  swipeToDelete: true, // swipe a row left to delete (asks first)
   notesPath: (id) => `/prospect-notes/${id}`,
   hasAccountNumber: false,
   daysLabel: 'Days',
