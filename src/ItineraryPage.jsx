@@ -97,86 +97,90 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       ? contacts.find((c) => String(c.id) === String(id))
       : null;
 
-  /* ---- build today's stops ---- */
-  const doneToday = doneMap[date] || [];
-  const stops = [];
+  /* ---- build the stops for a day (today's list, plus the next day for the printout) ---- */
+  const buildStops = (day) => {
+    const doneToday = doneMap[day] || [];
+    const list = [];
 
-  prospects
-    .filter((p) => p.name && p.name.trim() && onItinerary(p, date))
-    .forEach((p) => {
-      const key = `p-${p.id}`;
-      const st = stageInfo(p.stage);
-      stops.push({
-        key,
-        kind: 'scheduled',
-        time: typeof p.visitTime === 'number' ? p.visitTime : null,
-        title: p.name,
-        address: p.address,
-        tag: { label: st ? st.label : 'Prospect', color: st ? st.color : '#0077cc' },
-        color: st ? st.color : '#0077cc',
-        accountType: 'prospect',
-        accountId: p.id,
-        done: doneToday.includes(key),
+    prospects
+      .filter((p) => p.name && p.name.trim() && onItinerary(p, day))
+      .forEach((p) => {
+        const key = `p-${p.id}`;
+        const st = stageInfo(p.stage);
+        list.push({
+          key,
+          kind: 'scheduled',
+          time: typeof p.visitTime === 'number' ? p.visitTime : null,
+          title: p.name,
+          address: p.address,
+          tag: { label: st ? st.label : 'Prospect', color: st ? st.color : '#0077cc' },
+          color: st ? st.color : '#0077cc',
+          accountType: 'prospect',
+          accountId: p.id,
+          done: doneToday.includes(key),
+        });
+      });
+
+    contacts
+      .filter((c) => c.name && c.name.trim() && onItinerary(c, day, CUSTOMER_DAYS_FIELD))
+      .forEach((c) => {
+        const key = `c-${c.id}`;
+        list.push({
+          key,
+          kind: 'scheduled',
+          time: typeof c.visitTime === 'number' ? c.visitTime : null,
+          title: c.name,
+          address: c.address,
+          tag: { label: 'Customer', color: CUSTOMER_COLOR },
+          color: CUSTOMER_COLOR,
+          accountType: 'customer',
+          accountId: c.id,
+          done: doneToday.includes(key),
+        });
+      });
+
+    events
+      .filter((ev) => ev.day === day)
+      .filter((ev) => (typeof ev.showInItinerary === 'boolean' ? ev.showInItinerary : Boolean(ev.accountId)))
+      .forEach((ev) => {
+        const key = `e-${ev.id}`;
+        list.push({
+          key,
+          kind: 'event',
+          time: ev.start,
+          endTime: ev.end,
+          title: ev.title,
+          address: ev.location,
+          tag: { label: 'Calendar', color: ev.color || '#0077cc' },
+          color: ev.color || '#0077cc',
+          accountType: ev.accountType,
+          accountId: ev.accountId,
+          done: doneToday.includes(key),
+        });
+      });
+
+    visits.forEach((v, index) => {
+      if (v.day !== day) return;
+      const acct = v.accountId ? findAccount(v.accountType, v.accountId) : null;
+      list.push({
+        key: `m-${v.id || index}`,
+        kind: 'manual',
+        index,
+        time: hhmmToMinutes(v.time),
+        title: (acct && acct.name) || v.name || '(No name)',
+        address: (acct && acct.address) || '',
+        tag: { label: v.accountType === 'customer' || v.type === 'contact' ? 'Customer' : 'Prospect', color: '#8e8e93' },
+        color: '#8e8e93',
+        accountType: v.accountType || null,
+        accountId: v.accountId || null,
+        done: Boolean(v.done),
       });
     });
 
-  contacts
-    .filter((c) => c.name && c.name.trim() && onItinerary(c, date, CUSTOMER_DAYS_FIELD))
-    .forEach((c) => {
-      const key = `c-${c.id}`;
-      stops.push({
-        key,
-        kind: 'scheduled',
-        time: typeof c.visitTime === 'number' ? c.visitTime : null,
-        title: c.name,
-        address: c.address,
-        tag: { label: 'Customer', color: CUSTOMER_COLOR },
-        color: CUSTOMER_COLOR,
-        accountType: 'customer',
-        accountId: c.id,
-        done: doneToday.includes(key),
-      });
-    });
-
-  events
-    .filter((ev) => ev.date === date)
-    .filter((ev) => (typeof ev.showInItinerary === 'boolean' ? ev.showInItinerary : Boolean(ev.accountId)))
-    .forEach((ev) => {
-      const key = `e-${ev.id}`;
-      stops.push({
-        key,
-        kind: 'event',
-        time: ev.start,
-        endTime: ev.end,
-        title: ev.title,
-        address: ev.location,
-        tag: { label: 'Calendar', color: ev.color || '#0077cc' },
-        color: ev.color || '#0077cc',
-        accountType: ev.accountType,
-        accountId: ev.accountId,
-        done: doneToday.includes(key),
-      });
-    });
-
-  visits.forEach((v, index) => {
-    if (v.date !== date) return;
-    const acct = v.accountId ? findAccount(v.accountType, v.accountId) : null;
-    stops.push({
-      key: `m-${v.id || index}`,
-      kind: 'manual',
-      index,
-      time: hhmmToMinutes(v.time),
-      title: (acct && acct.name) || v.name || '(No name)',
-      address: (acct && acct.address) || '',
-      tag: { label: v.accountType === 'customer' || v.type === 'contact' ? 'Customer' : 'Prospect', color: '#8e8e93' },
-      color: '#8e8e93',
-      accountType: v.accountType || null,
-      accountId: v.accountId || null,
-      done: Boolean(v.done),
-    });
-  });
-
-  stops.sort((a, b) => (a.time == null ? 9999 : a.time) - (b.time == null ? 9999 : b.time));
+    list.sort((a, b) => (a.time == null ? 9999 : a.time) - (b.time == null ? 9999 : b.time));
+    return list;
+  };
+  const stops = buildStops(date);
   const doneCount = stops.filter((s) => s.done).length;
 
   /* ---- actions ---- */
@@ -463,40 +467,47 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
 
-      {/* Only shows on the printed / PDF copy */}
+      {/* Only shows on the printed / PDF copy: this day on the left, the next day on the right */}
       {stops.length > 0 && (
         <div className="it-print">
-          <div className="it-print-top">
-            <div className="it-print-brand">Crumb.</div>
-            <div className="it-print-kicker">Itinerary</div>
-          </div>
-          <div className="it-print-bottom">
-            <div className="it-print-heading">
-              {fromKey(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          {[
+            [date, stops],
+            [addDaysToKey(date, 1), buildStops(addDaysToKey(date, 1))],
+          ].map(([dayKey, list]) => (
+            <div key={dayKey} className="it-print-day">
+              <div className="it-print-top">
+                <div className="it-print-brand">Crumb.</div>
+                <div className="it-print-kicker">Itinerary</div>
+              </div>
+              <div className="it-print-bottom">
+                <div className="it-print-heading">
+                  {fromKey(dayKey).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </div>
+                <div className="it-print-count">
+                  {list.length} {list.length === 1 ? 'stop' : 'stops'}
+                </div>
+              </div>
+              <table className="it-print-table">
+                <tbody>
+                  {list.map((s) => (
+                    <tr key={s.key}>
+                      <td className="it-print-box">{s.done ? '☑' : '☐'}</td>
+                      <td>{s.title}</td>
+                      <td className="it-print-town">{townOf(s.address)}</td>
+                    </tr>
+                  ))}
+                  {/* Blank lines to fill the page, for stops added by hand */}
+                  {Array.from({ length: Math.max(0, 16 - list.length) }, (_, i) => (
+                    <tr key={`blank-${i}`} className="it-print-blank">
+                      <td className="it-print-box">☐</td>
+                      <td />
+                      <td />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="it-print-count">
-              {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
-            </div>
-          </div>
-          <table className="it-print-table">
-            <tbody>
-              {stops.map((s) => (
-                <tr key={s.key}>
-                  <td className="it-print-box">{s.done ? '☑' : '☐'}</td>
-                  <td>{s.title}</td>
-                  <td className="it-print-town">{townOf(s.address)}</td>
-                </tr>
-              ))}
-              {/* Blank lines to fill the page, for stops added by hand */}
-              {Array.from({ length: Math.max(0, 16 - stops.length) }, (_, i) => (
-                <tr key={`blank-${i}`} className="it-print-blank">
-                  <td className="it-print-box">☐</td>
-                  <td />
-                  <td />
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          ))}
         </div>
       )}
     </div>

@@ -602,9 +602,26 @@
   }
 
   .it-print {
-    display: block;
+    display: flex;
+    gap: 0;
     font-family: Arial, Helvetica, sans-serif;
     color: #000;
+  }
+
+  /* Two half-width days; dashed fold/cut line between them */
+  .it-print-day {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 12pt;
+  }
+
+  .it-print-day:first-child {
+    padding-left: 0;
+    border-right: 1px dashed #999;
+  }
+
+  .it-print-day:last-child {
+    padding-right: 0;
   }
 
   .it-print-top {
@@ -656,7 +673,7 @@
   .it-print-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11pt;
+    font-size: 10pt;
   }
 
   .it-print-table td {
