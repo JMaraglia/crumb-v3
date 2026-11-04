@@ -113,14 +113,42 @@ function visitSummary(account, config) {
 /* ---------- Prospect stages (saved as account.stage) ---------- */
 
 
-function StageChip({ stage }) {
+// onPick (optional): tapping the stage opens a quick stage picker.
+function StageChip({ stage, onPick }) {
   const st = stageInfo(stage);
-  if (!st) return null;
+  if (!st && !onPick) return null;
+  const pick = onPick
+    ? {
+        role: 'button',
+        onClick: (e) => {
+          e.stopPropagation(); // don't open / close the row
+          onPick();
+        },
+        onDoubleClick: (e) => e.stopPropagation(),
+      }
+    : {};
+  if (!st)
+    return (
+      <span className={`av-chip av-chip-gray ${onPick ? 'av-stage-tap' : ''}`} {...pick}>
+        Set stage
+      </span>
+    );
   return (
-    <span className="av-chip av-stage-chip" style={{ background: st.color, color: '#fff' }}>
+    <span className={`av-chip av-stage-chip ${onPick ? 'av-stage-tap' : ''}`} style={{ background: st.color, color: '#fff' }} {...pick}>
       {st.label}
     </span>
   );
+}
+
+// Quick stage picker (Cold → Ready to close). The current stage has a check mark.
+function stageSheet(account, onChoose) {
+  return {
+    title: `${displayName(account)}: stage`,
+    actions: STAGES.map((st) => ({
+      label: `${st.label}${account.stage === st.key ? '  ✓' : ''}`,
+      onClick: () => onChoose(st.key),
+    })),
+  };
 }
 
 // Same 12 colors as the calendar; each account keeps the same color by name.
@@ -500,7 +528,8 @@ function SwipeIf({ onDelete, children }) {
   );
 }
 
-function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete }) {
+function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete, onStage }) {
+  const pickStage = onStage ? () => onSheet(stageSheet(a, (key) => onStage(a.id, key))) : undefined;
   const navigate = useNavigate();
   const hold = React.useRef(null);
   const lastTap = React.useRef(0);
@@ -595,7 +624,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
                 <span className="av-chip av-chip-orange">No visit set</span>
               )}
               <DeliveryChip account={a} config={config} />
-              {config.hasStage && <StageChip stage={a.stage} />}
+              {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
               <SnoozeChip account={a} daysField={config.visitDaysField} />
             </span>
           )}
@@ -623,7 +652,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
             <DeliveryChip account={a} config={config} />
-              {config.hasStage && <StageChip stage={a.stage} />}
+              {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
             <SnoozeChip account={a} daysField={config.visitDaysField} />
           </div>
           <div className="av-quick">
@@ -778,6 +807,11 @@ export function AccountList({ config, accounts, setAccounts }) {
                     : null
                 }
                 onSheet={(info) => info && setSheet(info)}
+                onStage={
+                  config.hasStage && setAccounts
+                    ? (id, key) => setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, stage: key } : x)))
+                    : null
+                }
                 onDelete={
                   config.swipeToDelete && setAccounts
                     ? () => {
@@ -921,7 +955,21 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
               <span className="av-chip av-chip-orange">No visit set</span>
             )}
             <DeliveryChip account={account} config={config} />
-            {config.hasStage && <StageChip stage={account.stage} />}
+            {config.hasStage && (
+              <StageChip
+                stage={account.stage}
+                onPick={
+                  setAccounts
+                    ? () =>
+                        setSheet(
+                          stageSheet(account, (key) =>
+                            setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, stage: key } : x)))
+                          )
+                        )
+                    : undefined
+                }
+              />
+            )}
             <SnoozeChip account={account} daysField={config.visitDaysField} />
           </div>
 

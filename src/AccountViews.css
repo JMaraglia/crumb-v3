@@ -1082,3 +1082,8 @@
 .av-item .av-swipe-row > .av-row {
   border-top: none !important;
 }
+
+/* Tap the stage to change it */
+.av-stage-tap {
+  cursor: pointer;
+}
