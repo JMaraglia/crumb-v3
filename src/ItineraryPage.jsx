@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
+import { IoShareOutline, IoPrintOutline, IoCalendarOutline } from 'react-icons/io5';
 import {
   TIME_OPTIONS,
   timeLabel,
@@ -348,27 +348,30 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           <FaArrowLeft />
         </button>
         <div className="it-header-title">Itinerary</div>
-        <span />
+        {/* Jump to a date: the calendar button opens the phone's date picker */}
+        <label className="it-cal-btn" aria-label="Pick a date">
+          <IoCalendarOutline />
+          <input
+            type="date"
+            className="it-date-input"
+            value={date}
+            onChange={(e) => e.target.value && (setDate(e.target.value), setOpenKey(null))}
+          />
+        </label>
       </header>
 
       <div className="it-content">
-        {/* Day picker: arrows + tap the date to jump */}
+        {/* Day picker: arrows (jump to a date with the calendar button up top) */}
         <div className="it-day">
           <button className="it-arrow" onClick={() => changeDay(-1)} aria-label="Previous day">
             <FaChevronLeft />
           </button>
-          <label className="it-date">
+          <div className="it-date">
             <span className="it-date-main">{date === today ? 'Today' : niceDate(date).split(',')[0]}</span>
             <span className="it-date-sub">
               {date === today ? niceDate(date) : niceDate(date).split(', ').slice(1).join(', ')}
             </span>
-            <input
-              type="date"
-              className="it-date-input"
-              value={date}
-              onChange={(e) => e.target.value && (setDate(e.target.value), setOpenKey(null))}
-            />
-          </label>
+          </div>
           <button className="it-arrow" onClick={() => changeDay(1)} aria-label="Next day">
             <FaChevronRight />
           </button>
