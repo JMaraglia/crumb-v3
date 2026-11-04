@@ -914,8 +914,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           account={meetingFor}
           presetNotes={noteText.trim()}
           onCancel={() => setMeetingFor(null)}
-          onSaved={(msg) => {
+          onSaved={(msg, note) => {
+            // Also saved on the account as a "Meeting" note
+            const acctId = meetingFor.id;
+            const add = (list) =>
+              list.map((a) => (String(a.id) === String(acctId) ? { ...a, notes: [...(a.notes || []), note] } : a));
+            if (meetingFor.type === 'prospect' && setProspects) setProspects(add);
+            if (meetingFor.type === 'customer' && setContacts) setContacts(add);
             setMeetingFor(null);
+            setNoteText('');
             setSavedFlash('Meeting set');
             setShareMsg(msg);
           }}

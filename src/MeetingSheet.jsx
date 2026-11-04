@@ -47,7 +47,14 @@ export default function MeetingSheet({ account, presetNotes = '', onSaved, onCan
       showInItinerary: true,
     };
     localStorage.setItem(EVENTS_KEY, JSON.stringify([...list, event]));
-    onSaved(`Meeting added to Calendar and Itinerary: ${niceMeeting(day, start)}`);
+    // Also hand back a "Meeting" note for the account's notes (same as any other label).
+    const note = {
+      text: notes.trim() || `Meeting ${niceMeeting(day, start)}`,
+      category: 'Meeting',
+      timestamp: new Date().toLocaleString(),
+      meeting: { date: day, start, eventId: event.id },
+    };
+    onSaved(`Meeting added to Calendar and Itinerary: ${niceMeeting(day, start)}`, note);
   };
 
   return (

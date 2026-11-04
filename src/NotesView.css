@@ -456,3 +456,10 @@
   border-top: none;
   background: #fff;
 }
+
+/* When a Meeting note's meeting is */
+.nv-meeting-when {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #d96b00;
+}

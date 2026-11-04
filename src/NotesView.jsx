@@ -9,12 +9,13 @@ import { shareText, shareFile, safeFileName } from './share';
 import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
 import { isCheckable, isNoteDone } from './noteStatus';
-import MeetingSheet from './MeetingSheet';
+import MeetingSheet, { niceMeeting } from './MeetingSheet';
 import SwipeRow from './SwipeRow';
 import './NotesView.css';
 
-export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Background'];
+export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Background', 'Meeting'];
 // Labels you can pick. A note with no label is saved as 'General' and shows no tag.
+// (Meeting is picked with the Meeting button, which also books it on the Calendar.)
 const LABELS = ['Visit', 'Sample', 'Follow-up', 'Background'];
 
 const CATEGORY_COLORS = {
@@ -23,6 +24,7 @@ const CATEGORY_COLORS = {
   Sample: { bg: '#e3f6e8', fg: '#1e8e3e' },
   'Follow-up': { bg: '#fff1de', fg: '#b25e00' },
   Background: { bg: '#f3e8fb', fg: '#8a3fb5' },
+  Meeting: { bg: '#fff1e0', fg: '#d96b00' },
 };
 
 // Older notes used "Follow-Up"; treat it the same as "Follow-up".
@@ -46,10 +48,10 @@ export function noteDate(timestamp) {
   return `${day} · ${time}`;
 }
 
-function CategoryChips({ value, onChange, extra = null }) {
+function CategoryChips({ value, onChange, extra = null, labels = LABELS }) {
   return (
     <div className="nv-cats">
-      {LABELS.map((c) => {
+      {labels.map((c) => {
         const on = normalizeCategory(value) === c;
         const st = categoryStyle(c);
         return (
@@ -233,7 +235,11 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
             onChange={(e) => setEditing({ ...editing, text: e.target.value })}
             autoFocus
           />
-          <CategoryChips value={editing.category} onChange={(c) => setEditing({ ...editing, category: c })} />
+          <CategoryChips
+            value={editing.category}
+            onChange={(c) => setEditing({ ...editing, category: c })}
+            labels={[...LABELS, 'Meeting']}
+          />
           {isCheckable(editing.category) && (
             <DueChips value={editing.due} onChange={(d) => setEditing({ ...editing, due: d })} />
           )}
@@ -272,6 +278,9 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
               <span className="nv-tag" style={{ background: st.bg, color: st.fg }}>{n.cat}</span>
             )}
             <span className="nv-date">{noteDate(n.timestamp)}</span>
+            {n.meeting && n.meeting.date && (
+              <span className="nv-meeting-when">{niceMeeting(n.meeting.date, n.meeting.start)}</span>
+            )}
             {hasCheck && n.due && !isDone && (
               <span className={`nv-due ${n.due < plusDays(0) ? 'is-late' : ''}`}>Due {dueLabel(n.due)}</span>
             )}
@@ -382,9 +391,13 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           }}
           presetNotes={text.trim()}
           onCancel={() => setMeeting(false)}
-          onSaved={(msg) => {
+          onSaved={(msg, note) => {
             setMeeting(false);
             setShareMsg(msg);
+            onAddNote(account.id, note); // saved as a "Meeting" note, like any other label
+            setText('');
+            setCategory('General');
+            setDue(null);
           }}
         />
       )}
