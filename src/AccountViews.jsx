@@ -138,7 +138,7 @@ function RevisitSheet({ account, onSave, onCancel }) {
             No revisit
           </button>
         )}
-        <div className="av-vs-hint">On that day it shows on your Itinerary and Calendar (with a reminder). It stays inactive until you tap Activate.</div>
+        <div className="av-vs-hint">On that day it shows on your Itinerary and Calendar (with a reminder). It stays Inactive until you tap Activate.</div>
       </div>
     </div>
   );
@@ -1460,7 +1460,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             </button>
           ) : (
             <button className="av-inactive-btn" onClick={() => setAskInactive(true)}>
-              Make inactive
+              Make Inactive
             </button>
           ))}
 
@@ -1495,7 +1495,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
 
       {askInactive && (
         <AskSheet
-          title={`Why is ${displayName(account)} inactive?`}
+          title={`Why is ${displayName(account)} Inactive?`}
           message="It keeps all its notes, but comes off your lists, Itinerary, Calendar, Call Sheet and reminders. You can activate it again any time."
           choices={INACTIVE_REASONS.map(([value, label]) => ({ value, label }))}
           onPick={(reason) => {
@@ -2148,7 +2148,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           title="Looks like a repeat account"
           message={`Already in Crumb: ${repeats
             .slice(0, 3)
-            .map((x) => `${displayName(x.account)}${x.account.address ? ` (${x.account.address})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}${x.account.inactive ? ' (inactive)' : ''}`)
+            .map((x) => `${displayName(x.account)}${x.account.address ? ` (${x.account.address})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}${x.account.inactive ? ' (Inactive)' : ''}`)
             .join('; ')}`}
           choices={[
             { label: `Open ${displayName(repeats[0].account)}`, value: 'open' },

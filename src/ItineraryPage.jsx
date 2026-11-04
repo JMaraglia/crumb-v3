@@ -976,7 +976,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           title="Looks like a repeat account"
           message={`"${repeatAsk.name}" is already in Crumb: ${repeatAsk.found
             .slice(0, 3)
-            .map((x) => `${x.account.name}${x.account.town ? ` (${x.account.town})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}${x.account.inactive ? ' (inactive)' : ''}`)
+            .map((x) => `${x.account.name}${x.account.town ? ` (${x.account.town})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}${x.account.inactive ? ' (Inactive)' : ''}`)
             .join('; ')}`}
           choices={[
             { label: `Use ${repeatAsk.found[0].account.name}`, value: 'use' },
