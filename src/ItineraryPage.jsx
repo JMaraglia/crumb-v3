@@ -488,7 +488,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                 </tr>
               ))}
               {/* Blank lines to fill the page, for stops added by hand */}
-              {Array.from({ length: Math.max(0, 18 - stops.length) }, (_, i) => (
+              {Array.from({ length: Math.max(0, 16 - stops.length) }, (_, i) => (
                 <tr key={`blank-${i}`} className="it-print-blank">
                   <td className="it-print-box">☐</td>
                   <td />
