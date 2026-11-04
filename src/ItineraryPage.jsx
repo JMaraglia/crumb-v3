@@ -38,6 +38,8 @@ import {
 } from './schedule';
 import { PdfDoc } from './pdf';
 import SwipeRow from './SwipeRow';
+import AskSheet from './AskSheet';
+import { removeStop, snapshotStops, restoreStops, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import MeetingSheet from './MeetingSheet';
 import './ItineraryPage.css';
 
@@ -45,7 +47,6 @@ const VISITS_KEY = 'visitData';                     // stops added by hand (exis
 const DONE_KEY = 'crumb_itinerary_done';            // checkmarks for scheduled/event stops
 const LOCKS_KEY = 'crumb_itinerary_locks';          // { date: { stopKey: minutes } } times locked for one day
 const EVENTS_KEY = 'crumb_calendar_events';         // calendar events (read only here)
-const REMOVED_KEY = 'crumb_itinerary_removed';      // { date: [stopKey] } visits/events swiped off one day's list
 
 function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -321,40 +322,49 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setOpenKey(null);
   };
 
-  // Swipe left on a stop. Hand-added stops are deleted. Scheduled visits and calendar events
-  // only come off this day's list (the regular schedule and the calendar stay the same).
-  const saveRemoved = (next) => {
-    setRemovedMap(next);
-    localStorage.setItem(REMOVED_KEY, JSON.stringify(next));
+  // Swipe left on a stop. If it's on the Calendar too, ask whether to delete it there as well
+  // (see stopRemoval.js). Scheduled visits only ever skip that one day.
+  // Is this stop also showing on the Calendar that day? (Then we ask about removing it there too.)
+  const onCalendarToo = (stop) => {
+    if ((readJSON(HIDDEN_KEY, {}) || {})[date]?.includes(stop.key)) return false;
+    if (stop.kind === 'event') return true;
+    if (typeof stop.time !== 'number') return false; // no time = not on the calendar grid
+    const cal = readJSON('crumb_calendar_settings', {}) || {};
+    if (stop.kind === 'manual') return cal.showStops !== false;
+    const acct = findAccount(stop.accountType, stop.accountId);
+    return cal.showVisits !== false && (!acct || acct.showOnCalendar !== false);
   };
-  const swipeRemove = (stop) => {
-    let restore;
-    if (stop.kind === 'manual') {
-      const v = visits[stop.index];
-      saveVisits(visits.filter((_, i) => i !== stop.index));
-      restore = () => {
-        const cur = toVisitList(readJSON(VISITS_KEY, []));
-        cur.splice(Math.min(stop.index, cur.length), 0, v);
-        saveVisits(cur);
-      };
-    } else {
-      const day = date;
-      const next = { ...removedMap, [day]: [...(removedMap[day] || []), stop.key] };
-      const cutoff = addDaysToKey(today, -60); // forget old ones
-      Object.keys(next).forEach((k) => k < cutoff && delete next[k]);
-      saveRemoved(next);
-      restore = () => {
-        const cur = readJSON(REMOVED_KEY, {}) || {};
-        const left = (cur[day] || []).filter((k) => k !== stop.key);
-        const back = { ...cur, [day]: left };
-        if (!left.length) delete back[day];
-        saveRemoved(back);
-      };
-    }
+  const [askingStop, setAskingStop] = useState(null); // stop waiting for "also the Calendar?" answer
+  const reloadStops = () => {
+    setVisits(toVisitList(readJSON(VISITS_KEY, [])));
+    setRemovedMap(readJSON(REMOVED_KEY, {}) || {});
+  };
+  // where: 'itinerary' | 'both'
+  const doRemove = (stop, where) => {
+    const snap = snapshotStops();
+    removeStop(where, stop.key, date);
+    reloadStops();
     if (openKey === stop.key) setOpenKey(null);
     if (undoIt && undoIt.timer) clearTimeout(undoIt.timer);
     const timer = setTimeout(() => setUndoIt(null), 6000);
-    setUndoIt({ text: stop.kind === 'manual' ? 'Stop deleted' : 'Removed from this day', restore, timer });
+    const text =
+      where === 'both'
+        ? stop.kind === 'scheduled'
+          ? 'Removed from Itinerary and Calendar'
+          : 'Deleted from Itinerary and Calendar'
+        : 'Removed from Itinerary';
+    setUndoIt({
+      text,
+      restore: () => {
+        restoreStops(snap);
+        reloadStops();
+      },
+      timer,
+    });
+  };
+  const swipeRemove = (stop) => {
+    if (onCalendarToo(stop)) setAskingStop(stop);
+    else doRemove(stop, stop.kind === 'scheduled' ? 'itinerary' : 'both'); // only on the Itinerary
   };
   const undoRemove = () => {
     if (!undoIt) return;
@@ -841,6 +851,23 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             setSavedFlash('Meeting set');
             setShareMsg(msg);
           }}
+        />
+      )}
+
+      {askingStop && (
+        <AskSheet
+          title={`Remove "${askingStop.title}" from the Itinerary?`}
+          message={`${askingStop.kind === 'scheduled' ? 'Just this day. The regular visit schedule stays the same. ' : ''}Also delete it from the Calendar?`}
+          choices={[
+            { label: 'Yes, delete from both', value: 'both', tone: 'danger' },
+            { label: 'No, just the Itinerary', value: 'itinerary' },
+          ]}
+          onPick={(where) => {
+            const stop = askingStop;
+            setAskingStop(null);
+            doRemove(stop, where);
+          }}
+          onCancel={() => setAskingStop(null)}
         />
       )}
 

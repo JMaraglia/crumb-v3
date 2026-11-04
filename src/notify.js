@@ -129,6 +129,9 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
         countsAsStop: onItin(ev),
       }));
     appts.filter((a) => a.countsAsStop).forEach((a) => stops.push({ ...a, url: '/itinerary' }));
+    // Events taken off the Calendar that day only remind you if they're still on the Itinerary
+    const offCal = (readJSON('crumb_calendar_hidden', {}) || {})[day] || [];
+    for (let j = appts.length - 1; j >= 0; j--) if (offCal.includes(appts[j].key)) appts.splice(j, 1);
     visits.forEach((v, idx) => {
       if (!v || v.date !== day) return;
       // Same as the Itinerary: a hand-added stop for an account already scheduled that day counts once.
