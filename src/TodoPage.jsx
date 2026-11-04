@@ -3,7 +3,7 @@
 // Checking one here checks it in the account's notes too (same note, nothing copied).
 // Tasks are saved under crumb_todos: [{ id, text, due: 'YYYY-MM-DD' | null, done, doneAt,
 //   createdAt, accountType: 'customer' | 'prospect' | null, accountId, accountName }]
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
@@ -155,6 +155,31 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
     setEditing(null);
   };
 
+  // Swipe-to-delete. Tasks go right away (with Undo); follow-up/sample notes ask first.
+  const [undo, setUndo] = useState(null); // { task, timer }
+  const swipeDelete = (item) => {
+    if (item.kind === 'task') {
+      const task = todos.find((t) => t.id === item.id);
+      saveTodos(todos.filter((t) => t.id !== item.id));
+      if (undo && undo.timer) clearTimeout(undo.timer);
+      const timer = setTimeout(() => setUndo(null), 6000);
+      setUndo({ task, timer });
+      return true;
+    }
+    if (!window.confirm(`Delete "${item.text}"?\nThis deletes the note from ${item.accountName}'s notes.`)) return false;
+    const drop = (list) =>
+      list.map((a) => (a.id === item.accountId ? { ...a, notes: (a.notes || []).filter((_, i) => i !== item.index) } : a));
+    if (item.accountType === 'prospect' && setProspects) setProspects(drop);
+    if (item.accountType === 'customer' && setContacts) setContacts(drop);
+    return true;
+  };
+  const undoDelete = () => {
+    if (!undo) return;
+    clearTimeout(undo.timer);
+    saveTodos([...readTodos(), undo.task]);
+    setUndo(null);
+  };
+
   const share = async () => {
     const lines = ['To-Do'];
     sections.forEach((s) => {
@@ -171,8 +196,8 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
   const openAccount = (item) =>
     navigate(item.accountType === 'prospect' ? `/prospects/${item.accountId}` : `/customers/${item.accountId}`);
 
-  const Row = ({ item, tone }) => (
-    <div className={`td-row ${item.done ? 'is-done' : ''}`}>
+  const renderRow = (item, tone) => (
+    <SwipeRow key={item.key} className={`td-row ${item.done ? 'is-done' : ''}`} onDelete={() => swipeDelete(item)}>
       <button className={`td-check ${item.done ? 'is-checked' : ''}`} onClick={() => toggle(item)} aria-label={item.done ? 'Mark not done' : 'Mark done'}>
         {item.done ? '✓' : ''}
       </button>
@@ -188,7 +213,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
           )}
         </span>
       </button>
-    </div>
+    </SwipeRow>
   );
 
   return (
@@ -256,7 +281,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
               </div>
               <div className="td-list">
                 {s.list.map((item) => (
-                  <Row key={item.key} item={item} tone={s.tone} />
+                  renderRow(item, s.tone)
                 ))}
               </div>
             </div>
@@ -271,14 +296,23 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
             {showDone && (
               <div className="td-list">
                 {doneList.map((item) => (
-                  <Row key={item.key} item={item} />
+                  renderRow(item)
                 ))}
               </div>
             )}
           </div>
         )}
-        <div className="td-hint">Tap the circle when it's done · Tap a task to change it</div>
+        <div className="td-hint">Tap the circle when it's done · Tap to change · Swipe left to delete</div>
       </div>
+
+      {undo && (
+        <div className="td-undo">
+          <span>Task deleted</span>
+          <button className="td-undo-btn" onClick={undoDelete}>
+            Undo
+          </button>
+        </div>
+      )}
 
       {editing && (
         <EditSheet
@@ -297,6 +331,90 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
           onCancel={() => setEditing(null)}
         />
       )}
+    </div>
+  );
+}
+
+/* ---------- A row you can swipe left to delete (like iPhone lists) ---------- */
+const DELETE_W = 88;
+function SwipeRow({ className, onDelete, children }) {
+  const [x, setX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const start = useRef(null);
+  const base = useRef(0);
+  const moved = useRef(false);
+  const xNow = useRef(0);
+  const setPos = (v) => {
+    xNow.current = v;
+    setX(v);
+  };
+
+  const down = (e) => {
+    start.current = { x: e.clientX, y: e.clientY };
+    base.current = xNow.current;
+    moved.current = false;
+  };
+  const move = (e) => {
+    if (!start.current) return;
+    const dx = e.clientX - start.current.x;
+    const dy = e.clientY - start.current.y;
+    if (!moved.current) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        start.current = null; // scrolling up/down, not a swipe
+        return;
+      }
+      moved.current = true;
+      setDragging(true);
+    }
+    setPos(Math.min(0, Math.max(-360, base.current + dx)));
+  };
+  const up = async () => {
+    if (!start.current) return;
+    start.current = null;
+    setDragging(false);
+    if (!moved.current) return;
+    if (xNow.current < -200) {
+      setPos(0);
+      await onDelete(); // swiped all the way: delete
+    } else {
+      setPos(xNow.current < -DELETE_W / 2 ? -DELETE_W : 0);
+    }
+  };
+  // After a swipe, or while open, a tap just closes the row instead of opening/ticking it.
+  const clickCapture = (e) => {
+    if (moved.current || xNow.current !== 0) {
+      e.stopPropagation();
+      e.preventDefault();
+      moved.current = false;
+      if (xNow.current !== 0) setPos(0);
+    }
+  };
+
+  return (
+    <div className="td-swipe">
+      <button
+        className="td-swipe-del"
+        style={{ visibility: x < 0 || dragging ? 'visible' : 'hidden' }}
+        onClick={async () => {
+          setPos(0);
+          await onDelete();
+        }}
+        aria-label="Delete"
+      >
+        Delete
+      </button>
+      <div
+        className={className}
+        style={{ transform: `translateX(${x}px)`, transition: dragging ? 'none' : 'transform 0.2s ease' }}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+        onClickCapture={clickCapture}
+      >
+        {children}
+      </div>
     </div>
   );
 }
