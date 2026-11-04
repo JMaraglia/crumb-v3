@@ -40,6 +40,7 @@ export default function SettingsPage() {
       label: 'Backup & Restore',
       sub: !last ? 'Never backed up' : days === 0 ? 'Last backup: today' : days === 1 ? 'Last backup: yesterday' : `Last backup: ${days} days ago`,
       go: () => navigate('/backup'),
+      due: !last || days >= 7,
     },
   ];
   return (
@@ -57,7 +58,7 @@ export default function SettingsPage() {
               <span className="st-row-icon">{r.icon}</span>
               <span className="st-row-text">
                 <span className="st-row-label">{r.label}</span>
-                <span className="st-row-sub">{r.sub}</span>
+                <span className={`st-row-sub ${r.due ? 'is-due' : ''}`}>{r.due ? `${r.sub} · time to back up` : r.sub}</span>
               </span>
               <FaChevronRight className="st-row-chev" />
             </button>

@@ -103,3 +103,8 @@
   color: #c7c7cc;
   flex-shrink: 0;
 }
+
+.st-row-sub.is-due {
+  color: #ff9500;
+  font-weight: 600;
+}

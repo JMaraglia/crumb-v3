@@ -199,3 +199,8 @@ button:hover {
   cursor: pointer;
   line-height: 0;
 }
+
+/* Gear goes orange when a backup is due */
+.home-gear.is-due {
+  color: #ff9500;
+}

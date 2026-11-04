@@ -3,9 +3,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt, FaCheckSquare } from 'react-icons/fa';
 import { IoSettingsOutline } from 'react-icons/io5';
+import { readLastBackup } from './BackupPage';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  // Gear turns orange when it's time to back up (never, or a week or more ago)
+  const lastBackup = Date.parse(readLastBackup());
+  const backupDue = !lastBackup || Date.now() - lastBackup >= 7 * 86400000;
+
   const iconStyle = { fontSize: '3rem', marginBottom: '10px', transition: 'transform 0.3s' };
 
   const handleHover = e => e.currentTarget.style.transform = 'scale(1.2)';
@@ -24,10 +29,10 @@ export default function HomePage() {
   return (
     <div className="home-container">
       <div
-        className="home-gear"
+        className={`home-gear ${backupDue ? 'is-due' : ''}`}
         role="button"
         tabIndex={0}
-        aria-label="Settings"
+        aria-label={backupDue ? 'Settings (time to back up)' : 'Settings'}
         onClick={() => navigate('/settings')}
         onKeyPress={e => { if (e.key === 'Enter') navigate('/settings'); }}
       >
