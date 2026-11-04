@@ -2,11 +2,12 @@
 // Call Sheet: which customers ORDER on each day, in a spreadsheet-style grid,
 // so whoever covers for you knows who to call, how, and what to know.
 // Order day = the day before a delivery day (Monday delivery → Sunday order).
-// Share as a CSV file (opens in Excel / Google Sheets) or print / save as PDF.
+// Share as a formatted Excel file (opens in Excel / Google Sheets / Numbers) or print / save as PDF.
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel, formatPhone } from './AccountViews';
+import { makeXlsx } from './xlsx';
 import './CallSheetPage.css';
 
 const FULL_DAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -97,14 +98,31 @@ const COLUMNS = [
   { key: 'orderedText', label: 'Ordered' },
 ];
 
-function toCSV(rows, orderDay, dateText) {
-  const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
-  const lines = [
-    [`Call sheet: ${FULL_DAY[orderDay]} ${dateText} orders (deliver ${FULL_DAY[nextDay(orderDay)]})`].map(esc).join(','),
-    COLUMNS.map((c) => esc(c.label)).join(','),
-    ...rows.map((r) => COLUMNS.map((c) => esc(r[c.key])).join(',')),
-  ];
-  return '﻿' + lines.join('\r\n'); // ﻿ so Excel reads it as UTF-8
+// Column widths (in Excel's "characters") for the shared spreadsheet
+const XLSX_COLUMNS = [
+  { label: 'Acct #', width: 13 },
+  { label: 'Account', width: 28, bold: true },
+  { label: 'Contact', width: 22 },
+  { label: 'Phone', width: 21 },
+  { label: 'Call at', width: 10 },
+  { label: 'Online', width: 9, align: 'center' },
+  { label: 'Call notes', width: 40 },
+  { label: 'Ordered', width: 10, align: 'center' },
+];
+
+function toXlsx(rows, orderDay, dateText) {
+  return makeXlsx({
+    title: 'Crumb. Call Sheet',
+    subtitle: `${FULL_DAY[orderDay]}, ${dateText} · Orders for ${FULL_DAY[nextDay(orderDay)]} delivery · ${rows.length} ${
+      rows.length === 1 ? 'account' : 'accounts'
+    }`,
+    sheetName: `${FULL_DAY[orderDay]} calls`,
+    columns: XLSX_COLUMNS,
+    rows: rows.map((r) => ({
+      muted: r.noCall,
+      cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online ? '✓' : '', r.callNote, r.ordered ? '✓' : ''],
+    })),
+  });
 }
 
 export default function CallSheetPage({ contacts = [], setContacts }) {
@@ -145,10 +163,10 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
 
   const shareCSV = async () => {
     setMessage('');
-    const fileName = `Crumb call sheet - ${FULL_DAY[day]}.csv`;
-    const csv = toCSV(rows, day, dateText);
+    const fileName = `Crumb call sheet - ${FULL_DAY[day]}.xlsx`;
+    const blob = toXlsx(rows, day, dateText);
     try {
-      const file = new File([csv], fileName, { type: 'text/csv' });
+      const file = new File([blob], fileName, { type: blob.type });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: fileName });
         return;
@@ -157,7 +175,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
       if (err && err.name === 'AbortError') return; // closed the share sheet
     }
     // Fallback: download the file
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
