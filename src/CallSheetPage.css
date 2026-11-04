@@ -571,3 +571,83 @@
     display: none !important;
   }
 }
+
+/* ---------- Printout look v2: same header as the other Crumb printouts ----------
+   (comes last so it wins over the earlier print rules above) */
+@media print {
+  .cs-print-title {
+    display: block;
+    text-align: left;
+    margin: 0 0 12pt;
+    padding: 0;
+    border: none;
+  }
+
+  .cs-print-top,
+  .cs-print-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12pt;
+  }
+
+  .cs-print-brand {
+    font-size: 15pt;
+    font-weight: 800;
+    color: #0077cc !important;
+    -webkit-text-stroke: 0;
+  }
+
+  .cs-print-kicker {
+    font-size: 8pt;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #000;
+  }
+
+  .cs-print-bottom {
+    margin-top: 2pt;
+    padding-bottom: 6pt;
+    border-bottom: 2px solid #0077cc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cs-print-heading {
+    font-size: 16pt;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .cs-print-sub {
+    font-size: 10pt;
+    font-weight: 700;
+  }
+
+  /* Table: bold header band, even rows lightly shaded, crisp black lines */
+  .cs-table th {
+    background: #1c1c1e !important;
+    color: #fff !important;
+    -webkit-text-stroke: 0 !important;
+    font-size: 8.5pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid #1c1c1e !important;
+    padding: 6px 8px;
+  }
+
+  .cs-table td {
+    border: 1px solid #000 !important;
+    padding: 7px 8px;
+    font-size: 10.5pt;
+  }
+
+  .cs-table tbody tr:nth-child(even) td {
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

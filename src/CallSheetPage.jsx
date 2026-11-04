@@ -270,11 +270,17 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
           <div className="cs-scroll">
             {/* Title only shows on the printed / PDF copy */}
             <div className="cs-print-title">
-              <div className="cs-print-brand">Crumb.</div>
-              <div className="cs-print-heading">Call Sheet</div>
-              <div className="cs-print-sub">
-                {FULL_DAY[day]}, {dateText} · Orders for {FULL_DAY[nextDay(day)]} delivery · {rows.length}{' '}
-                {rows.length === 1 ? 'account' : 'accounts'}
+              <div className="cs-print-top">
+                <div className="cs-print-brand">Crumb.</div>
+                <div className="cs-print-kicker">Call Sheet</div>
+              </div>
+              <div className="cs-print-bottom">
+                <div className="cs-print-heading">
+                  {dateThisWeek(day).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </div>
+                <div className="cs-print-sub">
+                  Orders for {FULL_DAY[nextDay(day)]} delivery · {rows.length} {rows.length === 1 ? 'account' : 'accounts'}
+                </div>
               </div>
             </div>
             <table className="cs-table">
