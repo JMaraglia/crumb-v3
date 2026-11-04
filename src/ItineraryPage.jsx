@@ -114,6 +114,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           time: typeof p.visitTime === 'number' ? p.visitTime : null,
           title: p.name,
           address: p.address,
+          townLine: p.town ? [p.town, p.state].filter(Boolean).join(', ') : '',
           tag: { label: st ? st.label : 'Prospect', color: st ? st.color : '#0077cc' },
           color: st ? st.color : '#0077cc',
           accountType: 'prospect',
@@ -132,6 +133,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           time: typeof c.visitTime === 'number' ? c.visitTime : null,
           title: c.name,
           address: c.address,
+          townLine: c.town ? [c.town, c.state].filter(Boolean).join(', ') : '',
           tag: { label: 'Customer', color: CUSTOMER_COLOR },
           color: CUSTOMER_COLOR,
           accountType: 'customer',
@@ -500,7 +502,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                     <tr key={s.key}>
                       <td className="it-print-box">{s.done ? '☑' : '☐'}</td>
                       <td>{s.title}</td>
-                      <td className="it-print-town">{townOf(s.address)}</td>
+                      <td className="it-print-town">{s.townLine || townOf(s.address)}</td>
                     </tr>
                   ))}
                   {/* Blank lines to fill the page, for stops added by hand */}

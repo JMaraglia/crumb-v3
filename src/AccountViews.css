@@ -960,3 +960,31 @@
   background: #e3f6e8;
   color: #1e8e3e;
 }
+
+/* Town / State / ZIP on one line under the street */
+.av-addr-row {
+  display: flex;
+  border-top: 1px solid #ececf0;
+}
+
+.av-addr-row > .av-input {
+  border-top: none;
+  min-width: 0;
+}
+
+.av-addr-row > .av-input + .av-input {
+  border-left: 1px solid #ececf0;
+}
+
+.av-addr-town {
+  flex: 1 1 auto;
+}
+
+.av-addr-state {
+  flex: 0 0 68px;
+  text-align: center;
+}
+
+.av-addr-zip {
+  flex: 0 0 92px;
+}

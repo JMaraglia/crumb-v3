@@ -259,6 +259,41 @@ function hasVisitDays(account, config) {
   return (account[config.visitDaysField] || []).length > 0;
 }
 
+// Address pieces. Accounts store street / town / state / zip, plus `address`
+// (all of them joined) so maps, search, and everything else keep working.
+export function joinAddress({ street = '', town = '', state = '', zip = '' }) {
+  const stateZip = [state.trim(), zip.trim()].filter(Boolean).join(' ');
+  return [street.trim(), town.trim(), stateZip].filter(Boolean).join(', ');
+}
+
+// Best guess at the pieces of an older one-line address,
+// e.g. "12 Main St, Worcester, MA 01601" → street / town / state / zip.
+export function splitAddress(address) {
+  const out = { street: '', town: '', state: '', zip: '' };
+  const parts = (address || '').split(',').map((x) => x.trim()).filter(Boolean);
+  while (parts.length > 1 && /^(usa|us|united states)$/i.test(parts[parts.length - 1])) parts.pop();
+  if (!parts.length) return out;
+  const end = parts.length > 1 ? parts[parts.length - 1].match(/^([A-Za-z]{2})?\s*(\d{5}(?:-\d{4})?)?$/) : null;
+  if (end && (end[1] || end[2])) {
+    out.state = (end[1] || '').toUpperCase();
+    out.zip = end[2] || '';
+    parts.pop();
+  }
+  if (parts.length > 1) {
+    let town = parts.pop();
+    // "Worcester MA 01601" written without a comma before the state
+    const inline = town.match(/^(.*?)\s+([A-Za-z]{2})(?:\s+(\d{5}(?:-\d{4})?))?$/);
+    if (inline && !out.state) {
+      town = inline[1];
+      out.state = inline[2].toUpperCase();
+      out.zip = out.zip || inline[3] || '';
+    }
+    out.town = town;
+  }
+  out.street = parts.join(', ');
+  return out;
+}
+
 export function mapActions(address) {
   const q = encodeURIComponent(address);
   return [
@@ -882,7 +917,15 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
   const existing = isNew ? null : accounts.find((a) => String(a.id) === id);
 
   const [name, setName] = useState(existing ? existing.name || '' : '');
-  const [address, setAddress] = useState(existing ? existing.address || '' : '');
+  // Address pieces: use the saved ones, or split an older one-line address
+  const startAddr =
+    existing && (existing.street || existing.town || existing.state || existing.zip)
+      ? { street: existing.street || '', town: existing.town || '', state: existing.state || '', zip: existing.zip || '' }
+      : splitAddress(existing ? existing.address : '');
+  const [street, setStreet] = useState(startAddr.street);
+  const [town, setTown] = useState(startAddr.town);
+  const [addrState, setAddrState] = useState(startAddr.state);
+  const [zip, setZip] = useState(startAddr.zip);
   const [accountNumber, setAccountNumber] = useState(existing ? existing.accountNumber || '' : '');
   const [contacts, setContacts] = useState(
     existing && existing.contacts ? existing.contacts.map((c) => ({ ...BLANK_CONTACT, ...c })) : []
@@ -933,7 +976,11 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
     }
     const fields = {
       name: name.trim(),
-      address: address.trim(),
+      street: street.trim(),
+      town: town.trim(),
+      state: addrState.trim().toUpperCase(),
+      zip: zip.trim(),
+      address: joinAddress({ street, town, state: addrState.toUpperCase(), zip }),
       // drop contact rows that were left completely empty
       contacts: contacts
         .map((c) => ({
@@ -1006,10 +1053,38 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false }) {
           )}
           <input
             className="av-input"
-            placeholder="Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Street address"
+            autoComplete="street-address"
+            value={street}
+            onChange={(e) => setStreet(e.target.value)}
           />
+          <div className="av-addr-row">
+            <input
+              className="av-input av-addr-town"
+              placeholder="Town"
+              autoComplete="address-level2"
+              value={town}
+              onChange={(e) => setTown(e.target.value)}
+            />
+            <input
+              className="av-input av-addr-state"
+              placeholder="State"
+              autoComplete="address-level1"
+              autoCapitalize="characters"
+              maxLength={2}
+              value={addrState}
+              onChange={(e) => setAddrState(e.target.value.toUpperCase())}
+            />
+            <input
+              className="av-input av-addr-zip"
+              placeholder="ZIP"
+              autoComplete="postal-code"
+              inputMode="numeric"
+              maxLength={10}
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+            />
+          </div>
         </div>
 
         {config.hasStage && (
