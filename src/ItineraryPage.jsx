@@ -40,19 +40,30 @@ function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-// Town from an address like "12 Main St, Worcester, MA 01601" → "Worcester".
-// Blank if the address doesn't have a recognizable town in it.
-const STATE_ZIP = /^(?:[A-Za-z]{2}|\d{5}(?:-\d{4})?|[A-Za-z]{2}\s+\d{5}(?:-\d{4})?)$/;
-const TRAILING_STATE_ZIP = /\s+[A-Za-z]{2}(?:\s+\d{5}(?:-\d{4})?)?$/;
+// Town + state from an address like "12 Main St, Worcester, MA 01601" → "Worcester, MA".
+// Just the town if no state is written; blank if there's no recognizable town.
+const STATE_ZIP = /^(?:([A-Za-z]{2})|\d{5}(?:-\d{4})?|([A-Za-z]{2})\s+\d{5}(?:-\d{4})?)$/;
+const TRAILING_STATE_ZIP = /\s+([A-Za-z]{2})(?:\s+\d{5}(?:-\d{4})?)?$/;
 function townOf(address) {
   if (!address) return '';
   const parts = address.split(',').map((s) => s.trim()).filter(Boolean);
   while (parts.length && /^(usa|us|united states)$/i.test(parts[parts.length - 1])) parts.pop();
-  if (parts.length && STATE_ZIP.test(parts[parts.length - 1])) parts.pop();
+  let state = '';
+  const end = parts.length ? parts[parts.length - 1].match(STATE_ZIP) : null;
+  if (end) {
+    state = end[1] || end[2] || '';
+    parts.pop();
+  }
   if (!parts.length) return '';
   // A single piece is a town only if it isn't a street address ("123 Main St")
   if (parts.length === 1 && /^\d/.test(parts[0])) return '';
-  return parts[parts.length - 1].replace(TRAILING_STATE_ZIP, '');
+  let town = parts[parts.length - 1];
+  const inline = town.match(TRAILING_STATE_ZIP); // "Worcester MA 01601"
+  if (inline) {
+    if (!state) state = inline[1];
+    town = town.replace(TRAILING_STATE_ZIP, '');
+  }
+  return state ? `${town}, ${state.toUpperCase()}` : town;
 }
 
 /* ---------- page ---------- */
