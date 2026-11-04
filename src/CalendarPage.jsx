@@ -18,6 +18,7 @@ const SETTINGS_KEY = 'crumb_calendar_settings';
 const DEFAULT_SETTINGS = {
   eventLength: 60,      // minutes for a new event
   startHour: 7,         // grid opens scrolled to this hour
+  weekDays: DAYS_PER_PAGE, // Week view shows 3 or 5 days (swipe moves that many)
   showVisits: true,     // customers' / prospects' scheduled visits
   showStops: true,      // stops added by hand on the Itinerary
   defaultColor: DEFAULT_EVENT_COLOR,
@@ -190,9 +191,10 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
     setSheet(null);
   };
 
+  const weekDays = settings.weekDays === 5 ? 5 : 3;
   const monthLabel =
     viewMode === 'Week'
-      ? visibleRangeLabel(viewStart, DAYS_PER_PAGE)
+      ? visibleRangeLabel(viewStart, weekDays)
       : visibleRangeLabel(viewStart, 1);
 
   return (
@@ -230,7 +232,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
       <div className="cal-body">
         {viewMode === 'Week' || viewMode === 'Day' ? (
           <WeekView
-            daysPerPage={viewMode === 'Day' ? 1 : DAYS_PER_PAGE}
+            daysPerPage={viewMode === 'Day' ? 1 : weekDays}
             startDate={viewStart}
             onShift={shiftDays}
             events={allEvents}
@@ -306,6 +308,17 @@ function CalendarSettings({ settings, onChange, onClose }) {
         </div>
 
         <div className="cal-set-group">
+          <label className="cal-set-row">
+            <span>Week view shows</span>
+            <select
+              className="cal-set-select"
+              value={settings.weekDays === 5 ? 5 : 3}
+              onChange={(e) => onChange({ weekDays: Number(e.target.value) })}
+            >
+              <option value={3}>3 days</option>
+              <option value={5}>5 days</option>
+            </select>
+          </label>
           <label className="cal-set-row">
             <span>New events last</span>
             <select
