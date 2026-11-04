@@ -837,3 +837,46 @@
   font-size: 0.82rem;
   font-weight: 600;
 }
+
+/* ---------- Start route ---------- */
+.it-page .it-route-btn,
+.it-page .it-route-btn:hover {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: #0077cc;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.it-page .it-route-btn:active {
+  background: #0066b0;
+}
+
+.it-route-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.it-route-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.it-route-main {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.it-route-sub {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
