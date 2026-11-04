@@ -50,6 +50,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   const [type, setType] = useState('all');          // all | customer | prospect
   const [accountKey, setAccountKey] = useState('all'); // all | customer-1 | prospect-3
   const [label, setLabel] = useState('all');        // all | open | a category
+  const [showFilters, setShowFilters] = useState(false);
 
   // Gather every note with where it came from.
   const all = [];
@@ -109,6 +110,19 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   };
 
   const filtersOn = type !== 'all' || accountKey !== 'all' || label !== 'all' || q;
+  const filterCount = [type !== 'all', accountKey !== 'all', label !== 'all'].filter(Boolean).length;
+  const clearFilters = () => {
+    setType('all');
+    setAccountKey('all');
+    setLabel('all');
+    setSearch('');
+  };
+
+  // Right side of a group heading: the date for Today / Yesterday, otherwise how many notes
+  const groupSide = (g) =>
+    (g.label === 'Today' || g.label === 'Yesterday') && g.notes[0] && g.notes[0].time
+      ? new Date(g.notes[0].time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      : `${g.notes.length} ${g.notes.length === 1 ? 'note' : 'notes'}`;
 
   return (
     <div className="mn-page">
@@ -130,55 +144,25 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* Day / Month / Year */}
-        <div className="mn-seg">
-          {GROUPINGS.map((g) => (
-            <button key={g} className={`mn-seg-btn ${grouping === g ? 'is-on' : ''}`} onClick={() => setGrouping(g)}>
-              {g}
-            </button>
-          ))}
-        </div>
-
-        {/* Filters */}
-        <div className="mn-filters">
-          <select className="mn-select" value={type} onChange={(e) => { setType(e.target.value); setAccountKey('all'); }}>
-            <option value="all">Both</option>
-            <option value="customer">Customers</option>
-            <option value="prospect">Prospects</option>
-          </select>
-          <select className="mn-select" value={accountKey} onChange={(e) => setAccountKey(e.target.value)}>
-            <option value="all">All accounts</option>
-            {accountOptions
-              .filter((a) => type === 'all' || a.kind.toLowerCase() === type)
-              .map((a) => (
-                <option key={a.key} value={a.key}>
-                  {a.name}
-                </option>
-              ))}
-          </select>
-          <select className="mn-select" value={label} onChange={(e) => setLabel(e.target.value)}>
-            <option value="all">All labels</option>
-            <option value="open">Open follow-ups</option>
-            {NOTE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c === 'General' ? 'No label' : c}
-              </option>
+        {/* Day / Month / Year + Filters */}
+        <div className="mn-toolbar">
+          <div className="mn-seg">
+            {GROUPINGS.map((g) => (
+              <button key={g} className={`mn-seg-btn ${grouping === g ? 'is-on' : ''}`} onClick={() => setGrouping(g)}>
+                {g}
+              </button>
             ))}
-          </select>
+          </div>
+          <button className={`mn-filter-btn ${filterCount ? 'is-on' : ''}`} onClick={() => setShowFilters(true)}>
+            Filters{filterCount ? ` · ${filterCount}` : ''}
+            <span className="mn-chev">▾</span>
+          </button>
         </div>
 
         <div className="mn-count">
           {shown.length} {shown.length === 1 ? 'note' : 'notes'}
           {filtersOn && (
-            <button
-              className="mn-clear"
-              onClick={() => {
-                setType('all');
-                setAccountKey('all');
-                setLabel('all');
-                setSearch('');
-              }}
-            >
+            <button className="mn-clear" onClick={clearFilters}>
               Clear filters
             </button>
           )}
@@ -191,47 +175,110 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
         ) : (
           groups.map((g) => (
             <div key={g.label} className="mn-group">
-              <div className="mn-group-title">
-                {g.label} <span className="mn-group-count">{g.notes.length}</span>
+              <div className="mn-group-head">
+                <span className="mn-group-title">{g.label}</span>
+                <span className="mn-group-side">{groupSide(g)}</span>
               </div>
-              <div className="mn-list">
-                {g.notes.map((n) => {
-                  const st = categoryStyle(n.cat);
-                  const isFollowUp = n.cat === 'Follow-up';
-                  return (
-                    <div key={`${n.kind}-${n.accountId}-${n.index}`} className={`mn-note ${isFollowUp && n.done ? 'is-done' : ''}`}>
-                      {isFollowUp && (
-                        <button
-                          className={`mn-check ${n.done ? 'is-checked' : ''}`}
-                          onClick={() => toggleDone(n)}
-                          aria-label={n.done ? 'Mark not done' : 'Mark done'}
-                        >
-                          {n.done ? '✓' : ''}
+              {g.notes.map((n) => {
+                const st = categoryStyle(n.cat);
+                const isFollowUp = n.cat === 'Follow-up';
+                return (
+                  <div
+                    key={`${n.kind}-${n.accountId}-${n.index}`}
+                    className={`mn-row ${isFollowUp && n.done ? 'is-done' : ''}`}
+                  >
+                    <div className="mn-when">
+                      {grouping !== 'Day' && <span className="mn-when-day">{shortDay(n.time)}</span>}
+                      <span>{timeOnly(n.time)}</span>
+                    </div>
+                    <div className="mn-main">
+                      <div className={`mn-name ${n.kind}`}>
+                        {isFollowUp ? (
+                          <button
+                            className={`mn-check ${n.done ? 'is-checked' : ''}`}
+                            onClick={() => toggleDone(n)}
+                            aria-label={n.done ? 'Mark not done' : 'Mark done'}
+                          >
+                            {n.done ? '✓' : ''}
+                          </button>
+                        ) : (
+                          <span className="mn-dot" />
+                        )}
+                        <button className="mn-account" onClick={() => openAccountNotes(n)}>
+                          {n.accountName}
                         </button>
-                      )}
+                      </div>
                       <button className="mn-note-body" onClick={() => openAccountNotes(n)}>
-                        <span className="mn-note-meta">
-                          <span className="mn-account">{n.accountName}</span>
-                          <span className={`mn-kind ${n.kind}`}>{n.kind === 'prospect' ? 'Prospect' : 'Customer'}</span>
-                          {n.cat !== 'General' && (
-                            <span className="mn-tag" style={{ background: st.bg, color: st.fg }}>
-                              {n.cat}
-                            </span>
-                          )}
-                        </span>
                         <span className="mn-text">{n.text}</span>
-                        <span className="mn-time">
-                          {grouping === 'Day' ? timeOnly(n.time) : `${shortDay(n.time)} · ${timeOnly(n.time)}`}
-                        </span>
+                        {n.cat !== 'General' && (
+                          <span className="mn-label" style={{ color: st.fg }}>
+                            {n.cat}
+                          </span>
+                        )}
                       </button>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           ))
         )}
       </div>
+
+      {/* Filters panel */}
+      {showFilters && (
+        <div className="mn-sheet-backdrop" onClick={() => setShowFilters(false)}>
+          <div className="mn-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="mn-sheet-top">
+              <button className="mn-sheet-link" onClick={clearFilters}>Clear</button>
+              <div className="mn-sheet-title">Filters</div>
+              <button className="mn-sheet-link mn-bold" onClick={() => setShowFilters(false)}>Done</button>
+            </div>
+            <div className="mn-sheet-group">
+              <label className="mn-sheet-row">
+                <span>Show</span>
+                <select
+                  className="mn-select"
+                  value={type}
+                  onChange={(e) => {
+                    setType(e.target.value);
+                    setAccountKey('all');
+                  }}
+                >
+                  <option value="all">Customers & prospects</option>
+                  <option value="customer">Customers</option>
+                  <option value="prospect">Prospects</option>
+                </select>
+              </label>
+              <label className="mn-sheet-row">
+                <span>Account</span>
+                <select className="mn-select" value={accountKey} onChange={(e) => setAccountKey(e.target.value)}>
+                  <option value="all">All accounts</option>
+                  {accountOptions
+                    .filter((a) => type === 'all' || a.kind.toLowerCase() === type)
+                    .map((a) => (
+                      <option key={a.key} value={a.key}>
+                        {a.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="mn-sheet-row">
+                <span>Label</span>
+                <select className="mn-select" value={label} onChange={(e) => setLabel(e.target.value)}>
+                  <option value="all">All labels</option>
+                  <option value="open">Open follow-ups</option>
+                  {NOTE_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c === 'General' ? 'No label' : c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
