@@ -121,6 +121,11 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     appts.filter((a) => a.countsAsStop).forEach((a) => stops.push({ ...a, url: '/itinerary' }));
     visits.forEach((v, idx) => {
       if (!v || v.date !== day) return;
+      // Same as the Itinerary: a hand-added stop for an account already scheduled that day counts once.
+      if (v.accountId) {
+        const kind = v.accountType === 'customer' || v.type === 'contact' ? 'c' : 'p';
+        if (stops.some((s) => s.key === `${kind}-${v.accountId}`)) return;
+      }
       stops.push({ key: `m-${v.id || idx}`, title: v.name || 'Stop', time: hhmmToMinutes(v.time), place: '', done: Boolean(v.done), url: '/itinerary' });
     });
 
