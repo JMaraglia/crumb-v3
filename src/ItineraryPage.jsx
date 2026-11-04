@@ -386,6 +386,25 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     window.open(`https://www.google.com/maps/dir/?${params.toString()}`, '_blank');
   };
 
+  // A new prospect from a name (from a hand-added stop). Returns its id.
+  const newProspect = (name) => {
+    const id = Date.now();
+    setProspects((prev) => [
+      ...prev,
+      { id, name: name.trim(), address: '', contacts: [], deliveryDays: [], visitFrequency: 'weekly', notes: [] },
+    ]);
+    return id;
+  };
+
+  // "Make it a prospect": create the prospect, link this stop to it, then open its Edit screen.
+  const makeProspect = (stop) => {
+    const id = newProspect(stop.title);
+    saveVisits(
+      visits.map((v, i) => (i === stop.index ? { ...v, accountType: 'prospect', accountId: id, type: 'prospect' } : v))
+    );
+    navigate(`/prospects/${id}/edit`);
+  };
+
   const changeDay = (n) => {
     setDate((d) => addDaysToKey(d, n));
     setOpenKey(null);
@@ -609,7 +628,18 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                           </div>
                         </div>
                       ) : (
-                        <div className="it-hint-inline">Not linked to a customer or prospect, so notes can't be saved here.</div>
+                        stop.kind === 'manual' && setProspects ? (
+                          <div className="it-make">
+                            <div className="it-make-text">
+                              <strong>{stop.title}</strong> isn't in Crumb yet. Make it a prospect to save notes, contacts, and an address.
+                            </div>
+                            <button className="it-make-btn" onClick={() => makeProspect(stop)}>
+                              + Make it a prospect
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="it-hint-inline">Not linked to a customer or prospect, so notes can't be saved here.</div>
+                        )
                       )}
                       {stop.kind === 'manual' && (
                         <button className="it-remove" onClick={() => removeManual(stop)}>
@@ -638,7 +668,12 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             ...prospects.map((p) => ({ type: 'prospect', id: p.id, name: p.name, address: p.address })),
           ].filter((a) => a.name && a.name.trim())}
           onCancel={() => setAdding(false)}
-          onAdd={(stop) => {
+          canCreate={Boolean(setProspects)}
+          onAdd={(stop, asProspect) => {
+            if (asProspect && !stop.accountId) {
+              const id = newProspect(stop.name);
+              stop = { ...stop, accountType: 'prospect', accountId: id, type: 'prospect' };
+            }
             saveVisits([...visits, stop]);
             setAdding(false);
           }}
@@ -820,10 +855,11 @@ function MoveSheet({ stop, acct, viewDate, onSave, onCancel }) {
 }
 
 /* ---------- Add a stop by hand ---------- */
-function AddStopSheet({ date, accounts, onAdd, onCancel }) {
+function AddStopSheet({ date, accounts, onAdd, onCancel, canCreate = false }) {
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState(null);
   const [time, setTime] = useState(9 * 60);
+  const [asProspect, setAsProspect] = useState(false); // also create a new prospect from the typed name
 
   const matches = search.trim()
     ? accounts.filter((a) => a.name.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 6)
@@ -842,8 +878,9 @@ function AddStopSheet({ date, accounts, onAdd, onCancel }) {
       type: picked && picked.type === 'customer' ? 'contact' : 'prospect',
       accountType: picked ? picked.type : null,
       accountId: picked ? picked.id : null,
-    });
+    }, !picked && asProspect);
   };
+  const exactMatch = accounts.some((a) => a.name.trim().toLowerCase() === search.trim().toLowerCase());
 
   return (
     <div className="it-sheet-backdrop" onClick={onCancel}>
@@ -880,6 +917,15 @@ function AddStopSheet({ date, accounts, onAdd, onCancel }) {
                 </button>
               ))}
             </>
+          )}
+          {canCreate && !picked && search.trim() && !exactMatch && (
+            <label className="it-sheet-row">
+              <span>
+                Also add as a new prospect
+                <span className="it-sheet-help">Creates “{search.trim()}” in Prospects</span>
+              </span>
+              <input type="checkbox" className="it-switch" checked={asProspect} onChange={(e) => setAsProspect(e.target.checked)} />
+            </label>
           )}
           <label className="it-sheet-row">
             <span>Time</span>
