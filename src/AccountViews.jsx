@@ -13,6 +13,7 @@ import { shareText, shareFile, contactCards, safeFileName } from './share';
 import { makeXlsx } from './xlsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
+import AskSheet from './AskSheet';
 import './AccountViews.css';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, readJSON } from './schedule';
 
@@ -26,6 +27,7 @@ export function groupOf(account) {
 function bothLists(currentType, current) {
   const customers = currentType === 'customer' ? current : readJSON('crumb_contacts', []) || [];
   const prospects = currentType === 'prospect' ? current : readJSON('crumb_prospects', []) || [];
+  // (currentType null = read both from the phone)
   return [
     ...customers.map((a) => ({ type: 'customer', account: a })),
     ...prospects.map((a) => ({ type: 'prospect', account: a })),
@@ -36,6 +38,42 @@ export function groupMembers(group, currentType, current) {
   if (!g) return [];
   return bothLists(currentType, current).filter((x) => groupOf(x.account).toLowerCase() === g);
 }
+/* ---------- Repeat check: is this business already in Crumb? ---------- */
+const simpleName = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[’'`.,]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/^the /, '')
+    .replace(/ (inc|llc|co|corp|company)$/, '')
+    .trim();
+const simpleStreet = (s) =>
+  simpleName(s)
+    .replace(/\bstreet\b/g, 'st')
+    .replace(/\bavenue\b/g, 'ave')
+    .replace(/\broad\b/g, 'rd')
+    .replace(/\bdrive\b/g, 'dr')
+    .replace(/\bnorth\b/g, 'n')
+    .replace(/\bsouth\b/g, 's');
+// Customers + prospects that look like the same business: same name, or same street + town.
+// Locations in the same group (same business on purpose) don't count.
+export function findRepeats({ name, street, town, group }, skip = null) {
+  const n = simpleName(name);
+  const st = simpleStreet(street);
+  const tw = simpleName(town);
+  const g = String(group || '').trim().toLowerCase();
+  return bothLists(null, [])
+    .filter((x) => !(skip && x.type === skip.type && String(x.account.id) === String(skip.id)))
+    .filter((x) => !(g && groupOf(x.account).toLowerCase() === g))
+    .filter((x) => {
+      const a = x.account;
+      const sameName = n && simpleName(a.name) === n;
+      const sameAddress = st && tw && simpleStreet(a.street) === st && simpleName(a.town) === tw;
+      return sameName || sameAddress;
+    });
+}
+
 const typeOf = (config) => (config.basePath === '/prospects' ? 'prospect' : 'customer');
 
 // Re-exported so other files can keep importing these from here.
@@ -209,7 +247,7 @@ export function VisitSheet({ account, config, onSave, onCancel }) {
         <div className="av-vs-top">
           <button className="av-vs-link" onClick={onCancel}>Cancel</button>
           <div className="av-vs-title">Visits · {displayName(account)}</div>
-          <button className="av-vs-link av-vs-bold" onClick={save}>Save</button>
+          <button className="av-vs-link av-vs-bold" onClick={() => save()}>Save</button>
         </div>
         <div className="av-vs-group">
           <div className="av-vs-label">Visit days</div>
@@ -1499,10 +1537,24 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
     return fields;
   };
 
-  const save = () => {
+  const [repeats, setRepeats] = useState(null); // possible repeat accounts found when saving
+  const save = (skipRepeatCheck = false) => {
     if (!name.trim()) {
       window.alert(`Add a ${config.singular.toLowerCase()} name first.`);
       return;
+    }
+    // New account, or the name / address changed: check it isn't already in Crumb.
+    const changed =
+      isNew ||
+      simpleName(name) !== simpleName(existing.name) ||
+      simpleStreet(street) !== simpleStreet(existing.street) ||
+      simpleName(town) !== simpleName(existing.town);
+    if (!skipRepeatCheck && changed) {
+      const found = findRepeats({ name, street, town, group }, isNew ? null : { type: typeOf(config), id: existing.id });
+      if (found.length) {
+        setRepeats(found);
+        return;
+      }
     }
     const fields = buildFields();
     if (isNew) {
@@ -1527,7 +1579,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       <header className="av-header">
         <button className="av-link-btn" onClick={cancel}>Cancel</button>
         <div className="av-header-title">{isNew ? `New ${config.singular}` : `Edit ${config.singular}`}</div>
-        <button className="av-link-btn av-bold" onClick={save}>Save</button>
+        <button className="av-link-btn av-bold" onClick={() => save()}>Save</button>
       </header>
 
       <div className="av-content">
@@ -1920,6 +1972,26 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
             </div>
           </div>
         </div>
+      )}
+      {repeats && (
+        <AskSheet
+          title="Looks like a repeat account"
+          message={`Already in Crumb: ${repeats
+            .slice(0, 3)
+            .map((x) => `${displayName(x.account)}${x.account.address ? ` (${x.account.address})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}`)
+            .join('; ')}`}
+          choices={[
+            { label: `Open ${displayName(repeats[0].account)}`, value: 'open' },
+            { label: 'Save anyway (it\'s different)', value: 'save' },
+          ]}
+          onPick={(v) => {
+            const first = repeats[0];
+            setRepeats(null);
+            if (v === 'open') navigate(`${first.type === 'prospect' ? '/prospects' : '/customers'}/${first.account.id}`);
+            else save(true);
+          }}
+          onCancel={() => setRepeats(null)}
+        />
       )}
     </div>
   );

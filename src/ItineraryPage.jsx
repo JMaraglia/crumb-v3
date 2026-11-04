@@ -22,6 +22,7 @@ import {
   VisitChips,
   VisitSheet,
   stageSheet,
+  findRepeats,
 } from './AccountViews';
 import {
   keyOf,
@@ -589,13 +590,27 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     return id;
   };
 
+  // Before making a new prospect from a name: is it already a customer / prospect? Then ask.
+  const [repeatAsk, setRepeatAsk] = useState(null); // { name, found, useExisting(x), makeNew() }
+  const checkRepeat = (name, useExisting, makeNew) => {
+    const found = findRepeats({ name });
+    if (found.length) setRepeatAsk({ name, found, useExisting, makeNew });
+    else makeNew();
+  };
+
   // "Make it a prospect": create the prospect, link this stop to it, then open its Edit screen.
   const makeProspect = (stop) => {
-    const id = newProspect(stop.title);
-    saveVisits(
-      visits.map((v, i) => (i === stop.index ? { ...v, accountType: 'prospect', accountId: id, type: 'prospect' } : v))
+    const link = (type, id) =>
+      saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, accountType: type, accountId: id, type } : v)));
+    checkRepeat(
+      stop.title,
+      (x) => link(x.type, x.account.id), // link the stop to the one that's already there
+      () => {
+        const id = newProspect(stop.title);
+        link('prospect', id);
+        navigate(`/prospects/${id}/edit`);
+      }
     );
-    navigate(`/prospects/${id}/edit`);
   };
 
   const changeDay = (n) => {
@@ -924,12 +939,19 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           onCancel={() => setAdding(false)}
           canCreate={Boolean(setProspects)}
           onAdd={(stop, asProspect) => {
+            setAdding(false);
             if (asProspect && !stop.accountId) {
-              const id = newProspect(stop.name);
-              stop = { ...stop, accountType: 'prospect', accountId: id, type: 'prospect' };
+              checkRepeat(
+                stop.name,
+                (x) => saveVisits([...visits, { ...stop, name: x.account.name, accountType: x.type, accountId: x.account.id, type: x.type }]),
+                () => {
+                  const id = newProspect(stop.name);
+                  saveVisits([...visits, { ...stop, accountType: 'prospect', accountId: id, type: 'prospect' }]);
+                }
+              );
+              return;
             }
             saveVisits([...visits, stop]);
-            setAdding(false);
           }}
         />
       )}
@@ -939,6 +961,27 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           stop={locking}
           onCancel={() => setLocking(null)}
           onSave={(time) => saveLock(locking, time)}
+        />
+      )}
+
+      {repeatAsk && (
+        <AskSheet
+          title="Looks like a repeat account"
+          message={`"${repeatAsk.name}" is already in Crumb: ${repeatAsk.found
+            .slice(0, 3)
+            .map((x) => `${x.account.name}${x.account.town ? ` (${x.account.town})` : ''} – ${x.type === 'prospect' ? 'Prospect' : 'Customer'}`)
+            .join('; ')}`}
+          choices={[
+            { label: `Use ${repeatAsk.found[0].account.name}`, value: 'use' },
+            { label: 'Make a new prospect anyway', value: 'new' },
+          ]}
+          onPick={(v) => {
+            const r = repeatAsk;
+            setRepeatAsk(null);
+            if (v === 'use') r.useExisting(r.found[0]);
+            else r.makeNew();
+          }}
+          onCancel={() => setRepeatAsk(null)}
         />
       )}
 
