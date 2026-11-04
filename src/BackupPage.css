@@ -1,0 +1,239 @@
+/* file: src/BackupPage.css */
+/* Every class starts with "bk-" so nothing collides with other pages.
+   App.css pads the body and styles every <button>/<h1>; .bk-page undoes that here. */
+
+.bk-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bk-page button,
+.bk-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+  text-align: left;
+}
+
+.bk-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(242, 242, 247, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.bk-page .bk-icon-btn,
+.bk-page .bk-icon-btn:hover {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #0077cc;
+}
+
+.bk-content {
+  padding: 0 16px 60px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.bk-page h1.bk-title {
+  margin: 0 0 6px;
+  text-align: left;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1c1c1e;
+}
+
+.bk-intro {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #6e6e73;
+}
+
+.bk-section {
+  margin: 22px 4px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8e8e93;
+}
+
+.bk-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.bk-status {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e8e3e;
+  margin-bottom: 4px;
+}
+
+.bk-status.is-stale {
+  color: #c26a00;
+}
+
+.bk-what {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #3a3a3c;
+  margin-bottom: 14px;
+}
+
+.bk-page .bk-btn,
+.bk-page .bk-btn:hover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.bk-page .bk-btn:active {
+  background: #0066b0;
+}
+
+.bk-page .bk-btn-plain,
+.bk-page .bk-btn-plain:hover {
+  background: #e5f0fa;
+  color: #0077cc;
+}
+
+.bk-page .bk-btn-plain:active {
+  background: #cfe3f5;
+}
+
+.bk-btn-icon {
+  font-size: 1.25rem;
+}
+
+.bk-hint {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #8e8e93;
+}
+
+.bk-file {
+  display: none;
+}
+
+.bk-message {
+  margin: 10px 4px 0;
+  font-size: 0.88rem;
+  color: #1e8e3e;
+  font-weight: 600;
+}
+
+.bk-error {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffeceb;
+  color: #b3261e;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+/* Confirm restore */
+.bk-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+}
+
+.bk-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 14px 14px 0 0;
+  padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.bk-sheet-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.bk-sheet-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #ececf0;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.bk-sheet-label {
+  color: #8e8e93;
+}
+
+.bk-sheet-note {
+  margin: 10px 0 14px;
+  font-size: 0.85rem;
+  color: #6e6e73;
+}
+
+.bk-sheet-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.bk-page .bk-sheet-cancel,
+.bk-page .bk-sheet-cancel:hover,
+.bk-page .bk-sheet-go,
+.bk-page .bk-sheet-go:hover {
+  flex: 1;
+  padding: 13px 0;
+  border-radius: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bk-page .bk-sheet-cancel,
+.bk-page .bk-sheet-cancel:hover {
+  background: #f2f2f7;
+  color: #0077cc;
+}
+
+.bk-page .bk-sheet-go,
+.bk-page .bk-sheet-go:hover {
+  background: #ff3b30;
+  color: #fff;
+}

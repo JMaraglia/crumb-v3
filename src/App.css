@@ -142,3 +142,20 @@ button:hover {
   background-color: #e0e0e0;
   transform: scale(1.05);
 }
+/* Home: Backup & Restore link under the tiles */
+.home-backup {
+  margin-top: 28px;
+  padding: 10px 16px;
+  border-radius: 20px;
+  background: #e8f5ec;
+  color: #1e8e3e;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.home-backup.is-stale {
+  background: #fff4e5;
+  color: #c26a00;
+}
