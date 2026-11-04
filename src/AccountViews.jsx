@@ -866,6 +866,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
             </button>
           )}
           <div className="av-chips av-summary-chips">
+            {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
             <VisitChips account={a} config={config} onPick={pickVisit} />
             <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
@@ -1229,6 +1230,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           )}
 
           <div className="av-chips av-summary-chips">
+            {groupOf(account) && <span className="av-chip av-chip-group">Group</span>}
             <VisitChips account={account} config={config} onPick={setAccounts ? () => setVisitOpen(true) : undefined} />
             <DeliveryChip account={account} config={config} />
             {config.hasStage && (
