@@ -46,6 +46,13 @@ export async function allPhotos() {
   return (await tx('readonly', (st) => st.getAll())) || [];
 }
 
+// Every photo of one account (when the account itself is deleted).
+export async function deleteAccountPhotos(key) {
+  const rows = await listPhotos(key);
+  await tx('readwrite', (st) => rows.forEach((p) => st.delete(p.id)));
+  return rows.length;
+}
+
 export function deletePhoto(id) {
   return tx('readwrite', (st) => st.delete(id));
 }

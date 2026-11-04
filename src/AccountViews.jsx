@@ -15,6 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
+import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, readJSON } from './schedule';
 
@@ -149,6 +150,28 @@ export function inactiveLabel(account) {
   const r = account && account.inactive;
   if (!r) return '';
   return (INACTIVE_REASONS.find(([k]) => k === r.reason) || [null, 'Inactive'])[1];
+}
+
+/* ---------- Deleting an account deletes everything that belongs to it ----------
+   Its notes (they live on the account), its photos, calendar events linked to it, Itinerary stops
+   added for it, and To-Do tasks linked to it. (Other locations in its group are not touched.) */
+export function deleteWarning(account, config) {
+  return `Permanently delete ${displayName(account)}?\n\nThis deletes the ${config.singular.toLowerCase()} and everything with it: notes, photos, its meetings on the Calendar, its Itinerary stops and To-Do tasks.\n\nIt can't be undone.`;
+}
+export function deleteAccountExtras(type, id) {
+  const same = (x) => x && x.accountType === type && String(x.accountId) === String(id);
+  const clean = (k, keep) => {
+    try {
+      const list = JSON.parse(localStorage.getItem(k) || '[]');
+      if (Array.isArray(list)) localStorage.setItem(k, JSON.stringify(list.filter(keep)));
+    } catch {
+      /* leave it */
+    }
+  };
+  clean('crumb_calendar_events', (ev) => !same(ev));
+  clean('visitData', (v) => !same(v));
+  clean('crumb_todos', (t) => !same(t));
+  deleteAccountPhotos(photoKey(type, id)).catch(() => {});
 }
 
 const typeOf = (config) => (config.basePath === '/prospects' ? 'prospect' : 'customer');
@@ -1015,13 +1038,9 @@ export function AccountList({ config, accounts, setAccounts }) {
             onDelete={
               config.swipeToDelete && setAccounts
                 ? () => {
-                    if (
-                      !window.confirm(
-                        `Permanently delete ${displayName(a)}?\n\nThis deletes the ${config.singular.toLowerCase()} and all of its notes. It can't be undone.`
-                      )
-                    )
-                      return;
+                    if (!window.confirm(deleteWarning(a, config))) return;
                     if (openId === a.id) setOpenId(null);
+                    deleteAccountExtras(typeOf(config), a.id);
                     setAccounts((prev) => prev.filter((x) => x.id !== a.id));
                   }
                 : null
@@ -1533,7 +1552,8 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
         <button
           className="av-delete"
           onClick={() => {
-            if (!window.confirm(`Delete ${displayName(account)}? This also deletes its notes.`)) return;
+            if (!window.confirm(deleteWarning(account, config))) return;
+            deleteAccountExtras(typeOf(config), account.id);
             setAccounts((prev) => prev.filter((a) => a.id !== account.id));
             navigate(config.basePath, { replace: true });
           }}
@@ -1825,7 +1845,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   };
 
   const remove = () => {
-    if (!window.confirm(`Delete ${displayName(existing)}? This also deletes its notes.`)) return;
+    if (!window.confirm(deleteWarning(existing, config))) return;
+    deleteAccountExtras(typeOf(config), existing.id);
     setAccounts((prev) => prev.filter((a) => a.id !== existing.id));
     goBack(config.basePath, 2); // skip the detail screen of the deleted account
   };
