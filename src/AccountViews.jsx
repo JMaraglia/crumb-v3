@@ -163,9 +163,11 @@ function BackgroundBox({ notes, onClick }) {
   );
 }
 
-// Newest regular note (Background notes are shown separately).
+// Newest "last note" shown on lists, the account screen and the Itinerary:
+// only Visit, Follow-up, Sample and Meeting notes (not Background, not unlabeled).
+const LAST_NOTE_LABELS = ['visit', 'follow-up', 'sample', 'meeting'];
 export function lastNote(account) {
-  const notes = (account.notes || []).filter((n) => !isBackground(n));
+  const notes = (account.notes || []).filter((n) => n && LAST_NOTE_LABELS.includes(String(n.category || '').toLowerCase()));
   if (notes.length === 0) return null;
   let best = notes[notes.length - 1];
   let bestTime = Date.parse(best.timestamp) || 0;
