@@ -303,6 +303,11 @@
   font-weight: 700;
 }
 
+.td-tag.is-sample {
+  background: #e4f6e9;
+  color: #1e8e3e;
+}
+
 .td-acct {
   font-weight: 600;
 }

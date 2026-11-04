@@ -1,13 +1,14 @@
 // file: src/NotesView.jsx
 // One notes screen used by both customer notes and prospect notes.
 // Each account still keeps its own notes; only the layout is shared.
-// A note looks like: { text, category, timestamp, done? }  (done is for Follow-ups)
+// A note looks like: { text, category, timestamp, done? }  (done is for Follow-ups and Samples)
 import React, { useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline } from 'react-icons/io5';
 import { shareText, shareFile, safeFileName } from './share';
 import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
+import { isCheckable, isNoteDone } from './noteStatus';
 import './NotesView.css';
 
 export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Background'];
@@ -105,7 +106,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const add = () => {
     if (!text.trim()) return;
     const note = { text: text.trim(), category, timestamp: new Date().toLocaleString() };
-    if (category === 'Follow-up') note.done = false;
+    if (isCheckable(category)) note.done = false; // Follow-ups and Samples get a checkbox
     onAddNote(account.id, note);
     setText('');
     setCategory('General');
@@ -113,14 +114,15 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
 
   const toggleDone = (n) => {
     const { index, cat, ...saved } = n;
-    onAddNote(account.id, { ...saved, done: !n.done }, index);
+    onAddNote(account.id, { ...saved, done: !isNoteDone(n) }, index);
   };
 
   const saveEdit = () => {
     if (!editing.text.trim()) return;
     const original = account.notes[editing.index];
     const updated = { ...original, text: editing.text.trim(), category: editing.category };
-    if (editing.category === 'Follow-up' && typeof updated.done !== 'boolean') updated.done = false;
+    // Switched to Follow-up / Sample: starts unchecked (an existing old Sample keeps its state)
+    if (isCheckable(editing.category) && normalizeCategory(original.category) !== editing.category) updated.done = false;
     onAddNote(account.id, updated, editing.index);
     setEditing(null);
   };
@@ -190,16 +192,17 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
       );
     }
     const st = categoryStyle(n.cat);
-    const isFollowUp = n.cat === 'Follow-up';
+    const hasCheck = isCheckable(n.cat);
+    const isDone = hasCheck && isNoteDone(n);
     return (
-      <div key={n.index} className={`nv-note ${isFollowUp && n.done ? 'is-done' : ''}`}>
-        {isFollowUp && (
+      <div key={n.index} className={`nv-note ${isDone ? 'is-done' : ''}`}>
+        {hasCheck && (
           <button
-            className={`nv-check ${n.done ? 'is-checked' : ''}`}
+            className={`nv-check ${isDone ? 'is-checked' : ''}`}
             onClick={() => toggleDone(n)}
-            aria-label={n.done ? 'Mark not done' : 'Mark done'}
+            aria-label={isDone ? 'Mark not done' : 'Mark done'}
           >
-            {n.done ? '✓' : ''}
+            {isDone ? '✓' : ''}
           </button>
         )}
         <button

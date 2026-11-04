@@ -1,13 +1,13 @@
 // file: src/TodoPage.jsx
-// To-Do: your own tasks + every open Follow-up note from customers and prospects (filled in automatically).
-// Checking a follow-up here checks it in the account's notes too (same note, nothing copied).
+// To-Do: your own tasks + every open Follow-up and Sample note from customers and prospects (filled in automatically).
+// Checking one here checks it in the account's notes too (same note, nothing copied).
 // Tasks are saved under crumb_todos: [{ id, text, due: 'YYYY-MM-DD' | null, done, doneAt,
 //   createdAt, accountType: 'customer' | 'prospect' | null, accountId, accountName }]
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
-import { normalizeCategory } from './NotesView';
+import { noteCat, isNoteDone } from './noteStatus';
 import { shareText } from './share';
 import './TodoPage.css';
 
@@ -74,14 +74,17 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
   const collectFollowUps = (list, type) =>
     list.filter(hasName).forEach((acct) =>
       (acct.notes || []).forEach((n, index) => {
-        if (normalizeCategory(n.category) !== 'Follow-up') return;
+        const cat = noteCat(n.category);
+        if (cat !== 'Follow-up' && cat !== 'Sample') return;
+        if (cat === 'Sample' && typeof n.done !== 'boolean') return; // old sample records, not to-dos
         items.push({
           key: `f-${type}-${acct.id}-${index}`,
           kind: 'followup',
+          label: cat,
           index,
           text: n.text,
           due: n.due || null,
-          done: Boolean(n.done),
+          done: isNoteDone(n),
           doneAt: n.doneAt || null,
           created: n.timestamp,
           accountType: type,
@@ -176,7 +179,9 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
       <button className="td-main" onClick={() => setEditing(item)}>
         <span className="td-text">{item.text}</span>
         <span className="td-meta">
-          {item.kind === 'followup' && <span className="td-tag">Follow-up</span>}
+          {item.kind === 'followup' && (
+            <span className={`td-tag ${item.label === 'Sample' ? 'is-sample' : ''}`}>{item.label}</span>
+          )}
           {item.accountName && <span className={`td-acct ${item.accountType}`}>{item.accountName}</span>}
           {item.due && !item.done && tone !== 'blue' && (
             <span className={`td-due ${tone === 'red' ? 'is-late' : ''}`}>{niceDue(item.due, today)}</span>
@@ -239,7 +244,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
           <div className="td-empty">
             Nothing to do. 🎉
             <br />
-            Add a task above, or label a note <strong>Follow-up</strong> and it shows up here.
+            Add a task above, or label a note <strong>Follow-up</strong> or <strong>Sample</strong> and it shows up here.
           </div>
         )}
 
@@ -327,7 +332,7 @@ function EditSheet({ item, today, accounts, onSave, onDelete, onOpenAccount, onO
       <div className="td-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="td-sheet-top">
           <button className="td-link" onClick={onCancel}>Cancel</button>
-          <div className="td-sheet-title">{isTask ? 'Task' : 'Follow-up'}</div>
+          <div className="td-sheet-title">{isTask ? 'Task' : item.label}</div>
           <button className="td-link td-bold" onClick={save}>Save</button>
         </div>
 

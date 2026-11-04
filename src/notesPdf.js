@@ -1,6 +1,7 @@
 // file: src/notesPdf.js
 // Notes as a PDF (used by the Notes page and an account's notes screen).
 import { PdfDoc } from './pdf';
+import { isCheckable, isNoteDone } from './noteStatus';
 
 // The shared PDF: same look as the printout (Crumb header, day headings, time column).
 // showAccount = false for one account's notes (the heading already names it): rows show just the label.
@@ -44,8 +45,8 @@ export function buildNotesPdf({ heading, groups, groupSide, whenText, showAccoun
       // Name line: [box] Account  PROSPECT  VISIT   (one account's notes: [box] VISIT)
       let x = textX;
       if (hasNameLine) {
-        if (n.cat === 'Follow-up') {
-          doc.checkbox(x, top, 9, n.done);
+        if (isCheckable(n.cat)) {
+          doc.checkbox(x, top, 9, isNoteDone(n));
           x += 14;
         }
         if (showAccount) {

@@ -8,6 +8,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { NOTE_CATEGORIES, normalizeCategory, categoryStyle } from './NotesView';
 import { buildNotesPdf } from './notesPdf';
+import { isCheckable, isNoteDone } from './noteStatus';
 import './MasterNotesPage.css';
 
 const GROUPINGS = ['Day', 'Month', 'Year'];
@@ -163,7 +164,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
       list.map((a) => {
         if (a.id !== n.accountId) return a;
         const notes = [...(a.notes || [])];
-        notes[n.index] = { ...notes[n.index], done: !notes[n.index].done };
+        notes[n.index] = { ...notes[n.index], done: !isNoteDone(notes[n.index]) };
         return { ...a, notes };
       });
     if (n.kind === 'prospect' && setProspects) setProspects(update);
@@ -307,11 +308,12 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
               </div>
               {g.notes.map((n) => {
                 const st = categoryStyle(n.cat);
-                const isFollowUp = n.cat === 'Follow-up';
+                const isFollowUp = isCheckable(n.cat); // Follow-ups and Samples have a checkbox
+                const isDone = isFollowUp && isNoteDone(n);
                 return (
                   <div
                     key={`${n.kind}-${n.accountId}-${n.index}`}
-                    className={`mn-row ${isFollowUp && n.done ? 'is-done' : ''}`}
+                    className={`mn-row ${isDone ? 'is-done' : ''}`}
                   >
                     <div className="mn-when">
                       {grouping !== 'Day' && <span className="mn-when-day">{shortDay(n.time)}</span>}
@@ -321,11 +323,11 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                       <div className={`mn-name ${n.kind}`}>
                         {isFollowUp ? (
                           <button
-                            className={`mn-check ${n.done ? 'is-checked' : ''}`}
+                            className={`mn-check ${isDone ? 'is-checked' : ''}`}
                             onClick={() => toggleDone(n)}
-                            aria-label={n.done ? 'Mark not done' : 'Mark done'}
+                            aria-label={isDone ? 'Mark not done' : 'Mark done'}
                           >
-                            {n.done ? '✓' : ''}
+                            {isDone ? '✓' : ''}
                           </button>
                         ) : (
                           <span className="mn-dot" />
@@ -374,7 +376,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                   <div className="mn-print-when">{whenText(n)}</div>
                   <div>
                     <div className="mn-print-name">
-                      {n.cat === 'Follow-up' && <span className="mn-print-box">{n.done ? '☑' : '☐'}</span>}
+                      {isCheckable(n.cat) && <span className="mn-print-box">{isNoteDone(n) ? '☑' : '☐'}</span>}
                       {n.accountName}
                       <span className="mn-print-kind">{n.kind === 'prospect' ? 'Prospect' : 'Customer'}</span>
                       {n.cat !== 'General' && <span className="mn-print-label">{n.cat}</span>}
