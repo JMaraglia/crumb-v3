@@ -996,3 +996,20 @@
   font-size: 16px;
   cursor: pointer;
 }
+
+/* Change time: the iPhone time wheel */
+.it-page .it-time-input,
+.it-time-input {
+  border: none;
+  background: #e9f2fb;
+  color: #0077cc;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  min-width: 110px;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
+}

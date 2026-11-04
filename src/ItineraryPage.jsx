@@ -883,6 +883,8 @@ function LockSheet({ stop, onSave, onCancel }) {
 /* ---------- Change a stop's time (tap the time on the left) ---------- */
 function TimeSheet({ stop, usual, onSave, onCancel }) {
   const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : stop.kind === 'manual' ? '' : 9 * 60);
+  // Visits and stops: the iPhone time wheel, any minute. Calendar events keep 30-minute steps.
+  const wheel = stop.kind !== 'event';
   const nice = (m) => (typeof m === 'number' ? timeLabel(m) : 'no set time');
   const help =
     stop.kind === 'manual'
@@ -905,14 +907,30 @@ function TimeSheet({ stop, usual, onSave, onCancel }) {
         <div className="it-sheet-group">
           <label className="it-sheet-row">
             <span>Time</span>
-            <select className="it-sheet-select" value={time} onChange={(e) => setTime(e.target.value === '' ? '' : Number(e.target.value))}>
-              {stop.kind === 'manual' && <option value="">Anytime</option>}
-              {TIME_OPTIONS.map((t) => (
-                <option key={t} value={t}>{timeLabel(t)}</option>
-              ))}
-            </select>
+            {wheel ? (
+              <input
+                type="time"
+                className="it-time-input"
+                value={time === '' ? '' : minutesToHhmm(time)}
+                onChange={(e) => {
+                  const m = hhmmToMinutes(e.target.value);
+                  setTime(m == null ? (stop.kind === 'manual' ? '' : time) : m);
+                }}
+              />
+            ) : (
+              <select className="it-sheet-select" value={time} onChange={(e) => setTime(Number(e.target.value))}>
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>{timeLabel(t)}</option>
+                ))}
+              </select>
+            )}
           </label>
         </div>
+        {stop.kind === 'manual' && time !== '' && (
+          <button className="it-move-undo" onClick={() => setTime('')}>
+            No set time (Anytime)
+          </button>
+        )}
         {stop.kind === 'scheduled' && stop.locked === 'day' && (
           <button className="it-move-undo" onClick={() => onSave(null)}>
             Back to usual time{typeof usual === 'number' ? ` (${timeLabel(usual)})` : ''}
