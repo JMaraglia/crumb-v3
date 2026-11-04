@@ -660,9 +660,4 @@
     font-size: 17pt;
     line-height: 1;
   }
-
-  .it-print-table .it-print-town {
-    text-align: right;
-    white-space: nowrap;
-  }
 }

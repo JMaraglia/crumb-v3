@@ -40,22 +40,6 @@ function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-// Town from an address like "12 Main St, Worcester, MA 01601" → "Worcester".
-// Blank if the address doesn't have a recognizable town in it.
-const STATE_ZIP = /^(?:[A-Za-z]{2}|\d{5}(?:-\d{4})?|[A-Za-z]{2}\s+\d{5}(?:-\d{4})?)$/;
-function townOf(address) {
-  if (!address) return '';
-  const parts = address.split(',').map((s) => s.trim()).filter(Boolean);
-  while (parts.length && /^(usa|us|united states)$/i.test(parts[parts.length - 1])) parts.pop();
-  if (parts.length && STATE_ZIP.test(parts[parts.length - 1])) parts.pop();
-  if (!parts.length) return '';
-  if (parts.length === 1) {
-    // A single piece is a town only if it isn't a street address ("123 Main St")
-    return /^\d/.test(parts[0]) ? '' : parts[0].replace(/\s+[A-Za-z]{2}(?:\s+\d{5}(?:-\d{4})?)?$/, '');
-  }
-  return parts[parts.length - 1].replace(/\s+[A-Za-z]{2}(?:\s+\d{5}(?:-\d{4})?)?$/, '');
-}
-
 /* ---------- page ---------- */
 function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspects }) {
   const navigate = useNavigate();
@@ -212,10 +196,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     [
       `Itinerary · ${niceDate(date)}`,
       '',
-      ...stops.map((s) => {
-        const town = townOf(s.address);
-        return `${s.done ? '☑' : '☐'} ${s.title}${town ? ` — ${town}` : ''}`;
-      }),
+      ...stops.map((s) => `${s.done ? '☑' : '☐'} ${s.title}`),
     ].join('\n');
 
   const shareList = async () => {
@@ -469,7 +450,6 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
               <tr>
                 <th className="it-print-box" />
                 <th>Account</th>
-                <th className="it-print-town">Town</th>
               </tr>
             </thead>
             <tbody>
@@ -477,7 +457,6 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                 <tr key={s.key}>
                   <td className="it-print-box">{s.done ? '☑' : '☐'}</td>
                   <td>{s.title}</td>
-                  <td className="it-print-town">{townOf(s.address)}</td>
                 </tr>
               ))}
             </tbody>
