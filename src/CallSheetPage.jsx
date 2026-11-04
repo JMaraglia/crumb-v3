@@ -110,19 +110,30 @@ const XLSX_COLUMNS = [
   { label: 'Ordered', width: 11, kind: 'check' },
 ];
 
-function toXlsx(rows, orderDay, dateText) {
-  return makeXlsx({
-    title: 'Crumb. Call Sheet',
-    subtitle: `${FULL_DAY[orderDay]}, ${dateText} · Orders for ${FULL_DAY[nextDay(orderDay)]} delivery · ${rows.length} ${
-      rows.length === 1 ? 'account' : 'accounts'
-    }`,
-    sheetName: `${FULL_DAY[orderDay]} calls`,
-    columns: XLSX_COLUMNS,
-    rows: rows.map((r) => ({
-      muted: r.noCall,
-      cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online, r.callNote, r.ordered],
-    })),
+// Order days that get a tab in the shared file, in tab order
+const SHARE_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+// One Excel file, one tab per order day (Sunday–Friday). Opens on `currentDay`'s tab.
+function toWeekXlsx(customers, orderedMap, currentDay) {
+  const sheets = SHARE_DAYS.map((orderDay) => {
+    const date = dateThisWeek(orderDay);
+    const dateText = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const rows = rowsFor(customers, orderDay, orderedMap[keyOf(date)] || []);
+    return {
+      name: FULL_DAY[orderDay],
+      title: 'Crumb. Call Sheet',
+      subtitle: `${FULL_DAY[orderDay]}, ${dateText} · Orders for ${FULL_DAY[nextDay(orderDay)]} delivery · ${rows.length} ${
+        rows.length === 1 ? 'account' : 'accounts'
+      }`,
+      columns: XLSX_COLUMNS,
+      rows: rows.map((r) => ({
+        muted: r.noCall,
+        cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online, r.callNote, r.ordered],
+      })),
+      emptyText: `No customers order on ${FULL_DAY[orderDay]}.`,
+    };
   });
+  return makeXlsx({ sheets, activeSheet: Math.max(0, SHARE_DAYS.indexOf(currentDay)) });
 }
 
 export default function CallSheetPage({ contacts = [], setContacts }) {
@@ -159,12 +170,14 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
     setEditing(null);
   };
   const rows = rowsFor(contacts, day, orderedIds);
+  const anyCustomers = SHARE_DAYS.some((d) => rowsFor(contacts, d).length > 0);
   const orderedCount = rows.filter((r) => r.ordered).length;
 
   const shareCSV = async () => {
     setMessage('');
-    const fileName = `Crumb call sheet - ${FULL_DAY[day]}.xlsx`;
-    const blob = toXlsx(rows, day, dateText);
+    const weekOf = dateThisWeek('Mon').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const fileName = `Crumb call sheet - week of ${weekOf}.xlsx`;
+    const blob = toWeekXlsx(contacts, orderedMap, day);
     try {
       const file = new File([blob], fileName, { type: blob.type });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -231,7 +244,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
         </div>
 
         <div className="cs-actions">
-          <button className="cs-btn" disabled={!rows.length} onClick={shareCSV}>
+          <button className="cs-btn" disabled={!anyCustomers} onClick={shareCSV}>
             Share spreadsheet
           </button>
           <button className="cs-btn cs-btn-plain" disabled={!rows.length} onClick={printSheet}>

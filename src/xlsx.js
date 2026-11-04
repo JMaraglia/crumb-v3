@@ -97,7 +97,7 @@ const FILLS = [
 ];
 const BORDERS = [
   '<border><left/><right/><top/><bottom/><diagonal/></border>',
-  '<border><left/><right/><top/><bottom style="thin"><color rgb="FFE5E5EA"/></bottom><diagonal/></border>', // 1 row line
+  '<border><left style="thin"><color rgb="FF9A9AA0"/></left><right style="thin"><color rgb="FF9A9AA0"/></right><top style="thin"><color rgb="FF9A9AA0"/></top><bottom style="thin"><color rgb="FF9A9AA0"/></bottom><diagonal/></border>', // 1 grid lines
   '<border><left/><right/><top/><bottom style="medium"><color rgb="FF0077CC"/></bottom><diagonal/></border>', // 2 blue rule
 ];
 
@@ -141,14 +141,13 @@ function cell(ref, value, style) {
   return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
 }
 
-// columns: [{ label, width, kind }] where kind is 'text' (default), 'bold', 'quiet' (gray),
-// 'center', or 'check' (value true/false → a tappable checkbox in Excel).
-// rows: [{ cells: [...], muted }]   muted = grayed-out row (e.g. N/A, no call)
-export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows }) {
-  const st = styleBook();
+// One tab: { name, title, subtitle, columns, rows, emptyText }
+//   columns: [{ label, width, kind }] where kind is 'text' (default), 'bold', 'quiet' (gray),
+//            'center', or 'check' (value true/false → a tappable checkbox in Excel).
+//   rows:    [{ cells: [...], muted }]   muted = grayed-out row (e.g. N/A, no call)
+function sheetXml(st, { title, subtitle, columns, rows, emptyText }, selected) {
   const last = colLetter(columns.length - 1);
   const headRow = 4;
-  const hasCheckbox = columns.some((c) => c.kind === 'check');
 
   const titleStyle = st.get({ font: 1, v: 'bottom' });
   const subStyle = st.get({ font: 2, border: 2, v: 'top' });
@@ -182,21 +181,39 @@ export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows 
         .join('')}</row>`;
     }),
   ];
+  const merges = [`A1:${last}1`, `A2:${last}2`];
+  if (!rows.length && emptyText) {
+    const n = headRow + 1;
+    xmlRows.push(`<row r="${n}" ht="30" customHeight="1">${cell(`A${n}`, emptyText, st.get({ font: 2, indent: 1 }))}</row>`);
+    merges.push(`A${n}:${last}${n}`);
+  }
+  const lastRow = headRow + Math.max(rows.length, 1);
 
-  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
-<dimension ref="A1:${last}${headRow + rows.length}"/>
-<sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane ySplit="${headRow}" topLeftCell="A${headRow + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<dimension ref="A1:${last}${lastRow}"/>
+<sheetViews><sheetView workbookViewId="0" showGridLines="0"${selected ? ' tabSelected="1"' : ''}><pane ySplit="${headRow}" topLeftCell="A${headRow + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
 <sheetFormatPr defaultRowHeight="18"/>
 <cols>${columns.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width}" customWidth="1"/>`).join('')}</cols>
 <sheetData>${xmlRows.join('')}</sheetData>
-<mergeCells count="2"><mergeCell ref="A1:${last}1"/><mergeCell ref="A2:${last}2"/></mergeCells>
+<mergeCells count="${merges.length}">${merges.map((m) => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>
 <pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
 <pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/>
 </worksheet>`;
+}
 
-  const safeName = esc(sheetName.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31));
+// makeXlsx({ sheets: [tab, tab, ...], activeSheet }) → one file with a tab per sheet.
+// makeXlsx(tab) (a single tab) still works too.
+export function makeXlsx(input) {
+  const sheets = input.sheets || [{ ...input, name: input.sheetName || 'Sheet1' }];
+  const active = Math.min(Math.max(input.activeSheet || 0, 0), sheets.length - 1);
+  const st = styleBook();
+  const hasCheckbox = sheets.some((sh) => sh.columns.some((c) => c.kind === 'check'));
+  const sheetFiles = sheets.map((sh, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, text: sheetXml(st, sh, i === active) }));
+  const tabName = (n) => esc(String(n).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31));
+  const featureRelId = `rId${sheets.length + 2}`;
+
   const files = [
     {
       name: '[Content_Types].xml',
@@ -205,7 +222,9 @@ export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows 
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+${sheetFiles
+  .map((f) => `<Override PartName="/${f.name}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`)
+  .join('\n')}
 <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${
         hasCheckbox
           ? '\n<Override PartName="/xl/featurePropertyBag/featurePropertyBag.xml" ContentType="application/vnd.ms-excel.featurepropertybag+xml"/>'
@@ -224,22 +243,28 @@ export function makeXlsx({ title, subtitle, sheetName = 'Sheet1', columns, rows 
       name: 'xl/workbook.xml',
       text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<sheets><sheet name="${safeName}" sheetId="1" r:id="rId1"/></sheets>
+<bookViews><workbookView activeTab="${active}"/></bookViews>
+<sheets>${sheets.map((sh, i) => `<sheet name="${tabName(sh.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets>
 </workbook>`,
     },
     {
       name: 'xl/_rels/workbook.xml.rels',
       text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${
+${sheetFiles
+  .map(
+    (f, i) =>
+      `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`
+  )
+  .join('\n')}
+<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${
         hasCheckbox
-          ? '\n<Relationship Id="rId3" Type="http://schemas.microsoft.com/office/2022/11/relationships/FeaturePropertyBag" Target="featurePropertyBag/featurePropertyBag.xml"/>'
+          ? `\n<Relationship Id="${featureRelId}" Type="http://schemas.microsoft.com/office/2022/11/relationships/FeaturePropertyBag" Target="featurePropertyBag/featurePropertyBag.xml"/>`
           : ''
       }
 </Relationships>`,
     },
-    { name: 'xl/worksheets/sheet1.xml', text: sheet },
+    ...sheetFiles,
     { name: 'xl/styles.xml', text: st.xml() },
   ];
   if (hasCheckbox) {
