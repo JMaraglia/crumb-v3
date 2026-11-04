@@ -5,13 +5,33 @@ import React, { useState } from 'react';
 import { FaArrowLeft, FaCog } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
-import EventSheet, { DEFAULT_EVENT_COLOR } from './EventSheet';
+import EventSheet, { DEFAULT_EVENT_COLOR, EVENT_COLORS } from './EventSheet';
 import MonthView from './MonthView';
 import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey } from './schedule';
 import './CalendarPage.css';
 
 // Calendar events are saved on the phone under this name (new; nothing else uses it).
 const EVENTS_KEY = 'crumb_calendar_events';
+const SETTINGS_KEY = 'crumb_calendar_settings';
+
+// Calendar settings (the gear). Saved on the phone; included in backups.
+const DEFAULT_SETTINGS = {
+  eventLength: 60,      // minutes for a new event
+  startHour: 7,         // grid opens scrolled to this hour
+  showVisits: true,     // customers' / prospects' scheduled visits
+  showStops: true,      // stops added by hand on the Itinerary
+  defaultColor: DEFAULT_EVENT_COLOR,
+  colorNames: {},       // { '#34c759': 'Prospect meeting' }
+};
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    return saved && typeof saved === 'object' ? { ...DEFAULT_SETTINGS, ...saved } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
 
 function loadEvents() {
   try {
@@ -52,6 +72,19 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   // First day shown in Week view. Opens on today.
   const [viewStart, setViewStart] = useState(startOfToday);
 
+  const [settings, setSettings] = useState(loadSettings);
+  const [showSettings, setShowSettings] = useState(false);
+  const updateSettings = (patch) =>
+    setSettings((prev) => {
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+      } catch {
+        /* not critical */
+      }
+      return next;
+    });
+
   const shiftDays = (n) => setViewStart((d) => addDays(d, n));
 
   // Month view: move to the same day number in the next/previous month
@@ -84,7 +117,10 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
     addDaysToKey(dateKey(viewStart), 60),
     contacts
   );
-  const allEvents = [...events, ...visitBlocks];
+  const shownBlocks = visitBlocks.filter((b) =>
+    b.source === 'schedule' ? settings.showVisits : b.source === 'itinerary' ? settings.showStops : true
+  );
+  const allEvents = [...events, ...shownBlocks];
 
   // Tapping a scheduled visit opens that prospect (change the schedule there);
   // tapping a hand-added stop opens the itinerary. Real events open the edit panel.
@@ -116,10 +152,10 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
         title: '',
         date: day,
         start,
-        end: Math.min(start + 60, 1440), // one hour by default
+        end: Math.min(start + settings.eventLength, 1440), // length from Calendar settings
         location: '',
         notes: '',
-        color: DEFAULT_EVENT_COLOR,
+        color: settings.defaultColor || DEFAULT_EVENT_COLOR,
       },
     });
   };
@@ -167,7 +203,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
           <FaArrowLeft />
         </button>
         <h1 className="cal-title">Calendar</h1>
-        <button className="cal-icon-btn" aria-label="Settings">
+        <button className="cal-icon-btn" aria-label="Calendar settings" onClick={() => setShowSettings(true)}>
           <FaCog />
         </button>
       </header>
@@ -201,6 +237,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
             pendingEvent={sheet && sheet.isNew ? sheet.draft : null}
             onHoldSlot={openNewEvent}
             onEventTap={handleEventTap}
+            startHour={settings.startHour}
           />
         ) : (
           <MonthView
@@ -228,11 +265,129 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
           isNew={sheet.isNew}
           existingEvents={allEvents}
           accounts={accounts}
+          colorNames={settings.colorNames}
           onSave={saveEvent}
           onDelete={deleteEvent}
           onCancel={() => setSheet(null)}
         />
       )}
+
+      {showSettings && (
+        <CalendarSettings settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />
+      )}
+    </div>
+  );
+}
+
+const LENGTH_CHOICES = [
+  [30, '30 min'],
+  [60, '1 hr'],
+  [90, '1½ hr'],
+  [120, '2 hr'],
+];
+const START_HOURS = [4, 5, 6, 7, 8, 9, 10, 11, 12];
+const hourLabel = (h) => (h === 12 ? '12 PM' : `${h} AM`);
+
+/* ---------- The gear: Calendar settings ---------- */
+function CalendarSettings({ settings, onChange, onClose }) {
+  const setName = (value, name) => {
+    const names = { ...(settings.colorNames || {}) };
+    if (name.trim()) names[value] = name;
+    else delete names[value];
+    onChange({ colorNames: names });
+  };
+  return (
+    <div className="cal-set-backdrop" onClick={onClose}>
+      <div className="cal-set-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="cal-set-top">
+          <span />
+          <div className="cal-set-title">Calendar settings</div>
+          <button className="cal-set-done" onClick={onClose}>Done</button>
+        </div>
+
+        <div className="cal-set-group">
+          <label className="cal-set-row">
+            <span>New events last</span>
+            <select
+              className="cal-set-select"
+              value={settings.eventLength}
+              onChange={(e) => onChange({ eventLength: Number(e.target.value) })}
+            >
+              {LENGTH_CHOICES.map(([m, l]) => (
+                <option key={m} value={m}>{l}</option>
+              ))}
+            </select>
+          </label>
+          <label className="cal-set-row">
+            <span>Day starts at</span>
+            <select
+              className="cal-set-select"
+              value={settings.startHour}
+              onChange={(e) => onChange({ startHour: Number(e.target.value) })}
+            >
+              {START_HOURS.map((h) => (
+                <option key={h} value={h}>{hourLabel(h)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="cal-set-section">Show on calendar</div>
+        <div className="cal-set-group">
+          <label className="cal-set-row">
+            <span>
+              Scheduled visits
+              <span className="cal-set-help">From customers' and prospects' visit schedules</span>
+            </span>
+            <input
+              type="checkbox"
+              className="cal-set-switch"
+              checked={settings.showVisits}
+              onChange={(e) => onChange({ showVisits: e.target.checked })}
+            />
+          </label>
+          <label className="cal-set-row">
+            <span>
+              Hand-added itinerary stops
+              <span className="cal-set-help">Stops added with + on the Itinerary</span>
+            </span>
+            <input
+              type="checkbox"
+              className="cal-set-switch"
+              checked={settings.showStops}
+              onChange={(e) => onChange({ showStops: e.target.checked })}
+            />
+          </label>
+        </div>
+
+        <div className="cal-set-section">Colors</div>
+        <div className="cal-set-hint">Tap a color to make it the default for new events. Name colors so you know what they mean.</div>
+        <div className="cal-set-group">
+          {EVENT_COLORS.map((c) => {
+            const isDefault = (settings.defaultColor || DEFAULT_EVENT_COLOR) === c.value;
+            return (
+              <div key={c.value} className="cal-set-color-row">
+                <button
+                  className={`cal-set-swatch ${isDefault ? 'is-default' : ''}`}
+                  style={{ backgroundColor: c.value }}
+                  onClick={() => onChange({ defaultColor: c.value })}
+                  aria-label={`Make ${c.name} the default`}
+                >
+                  {isDefault ? '✓' : ''}
+                </button>
+                <input
+                  className="cal-set-name"
+                  placeholder={c.name}
+                  maxLength={40}
+                  value={(settings.colorNames || {})[c.value] || ''}
+                  onChange={(e) => setName(c.value, e.target.value)}
+                />
+                {isDefault && <span className="cal-set-default">Default</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

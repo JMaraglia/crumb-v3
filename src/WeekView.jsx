@@ -14,7 +14,7 @@ export const DAYS_PER_PAGE = 3;
 const HOUR_HEIGHT = 60;      // px per hour; the half-hour line sits at 30px
 const SWIPE_DISTANCE = 50;   // px of drag needed to change pages
 const SWIPE_MS = 250;        // slide animation length
-const SCROLL_TO_HOUR = 7;    // opens scrolled to 7 AM
+const SCROLL_TO_HOUR = 7;    // opens scrolled to 7 AM (unless Calendar settings say otherwise)
 const HOLD_MS = 500;         // how long to hold a thumb down to add an event
 const MOVE_TOLERANCE = 8;    // px a thumb can wiggle and still count as holding
 
@@ -93,6 +93,7 @@ export default function WeekView({
   pendingEvent = null,   // the blue block shown while the add panel is open
   onHoldSlot,            // (dateKey, startMinutes) when a thumb is held on an empty spot
   onEventTap,            // (event) when an event block is tapped
+  startHour = SCROLL_TO_HOUR, // hour the grid opens scrolled to (Calendar settings)
 }) {
   const [phase, setPhase] = useState('idle'); // idle | drag | next | prev | back
   const [dragX, setDragX] = useState(0);
@@ -116,9 +117,9 @@ export default function WeekView({
   // Open scrolled to the morning instead of midnight.
   useLayoutEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = SCROLL_TO_HOUR * HOUR_HEIGHT - 10;
+      scrollRef.current.scrollTop = startHour * HOUR_HEIGHT - 10;
     }
-  }, []);
+  }, [startHour]);
 
   // Keep the red "now" line current.
   useEffect(() => {

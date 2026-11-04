@@ -42,6 +42,7 @@ export default function EventSheet({
   onCancel,
   existingEvents = [],
   accounts = [], // customers + prospects: { type, id, name, address }
+  colorNames = {}, // { '#34c759': 'Prospect meeting' } from Calendar settings
 }) {
   const [title, setTitle] = useState(draft.title || '');
   const [date, setDate] = useState(draft.date);
@@ -189,9 +190,20 @@ export default function EventSheet({
               className={`es-swatch ${c.value === color ? 'is-picked' : ''}`}
               style={{ backgroundColor: c.value }}
               onClick={() => setColor(c.value)}
-              aria-label={c.name}
+              aria-label={colorNames[c.value] || c.name}
             />
           ))}
+          {(() => {
+            const picked = EVENT_COLORS.find((c) => c.value === color);
+            const named = colorNames[color];
+            return picked ? (
+              <div className="es-color-name">
+                <span className="es-color-dot" style={{ backgroundColor: color }} />
+                {named ? `${named}` : picked.name}
+                {named && <span className="es-color-sub"> · {picked.name}</span>}
+              </div>
+            ) : null;
+          })()}
         </div>
 
         <div className="es-group">
