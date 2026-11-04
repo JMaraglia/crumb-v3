@@ -1210,3 +1210,62 @@
   font-weight: 600;
   width: auto;
 }
+
+/* Edit screen: add another location */
+.av-page .av-add-loc,
+.av-page .av-add-loc:hover {
+  color: #0077cc;
+  font-weight: 600;
+}
+
+.av-loc-form {
+  padding: 10px 14px 12px;
+  border-top: 1px solid #ececf0;
+}
+
+.av-loc-form .av-input {
+  border: 1px solid #e3e3e8;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.av-loc-form .av-addr-row {
+  gap: 6px;
+}
+
+.av-loc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.av-page .av-loc-cancel,
+.av-page .av-loc-cancel:hover {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #eeeef0;
+  color: #3a3a3c;
+  font-weight: 600;
+  width: auto;
+}
+
+.av-page .av-loc-add,
+.av-page .av-loc-add:hover {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 700;
+  width: auto;
+}
+
+.av-page .av-loc-add:disabled {
+  opacity: 0.4;
+}
+
+.av-loc-msg {
+  margin: -6px 4px 14px;
+  font-size: 0.82rem;
+  color: #1e8e3e;
+}

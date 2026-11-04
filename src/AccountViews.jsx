@@ -36,14 +36,6 @@ export function groupMembers(group, currentType, current) {
   if (!g) return [];
   return bothLists(currentType, current).filter((x) => groupOf(x.account).toLowerCase() === g);
 }
-function knownGroups(currentType, current) {
-  const seen = new Map();
-  bothLists(currentType, current).forEach((x) => {
-    const g = groupOf(x.account);
-    if (g && !seen.has(g.toLowerCase())) seen.set(g.toLowerCase(), g);
-  });
-  return [...seen.values()].sort((a, b) => a.localeCompare(b));
-}
 const typeOf = (config) => (config.basePath === '/prospects' ? 'prospect' : 'customer');
 
 // Re-exported so other files can keep importing these from here.
@@ -736,7 +728,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
           )}
           {!expanded && (
             <span className="av-chips">
-              {groupOf(a) && <span className="av-chip av-chip-group">{groupOf(a)}</span>}
+              {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
               <VisitChips account={a} config={config} onPick={pickVisit} />
               <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
@@ -1142,11 +1134,11 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           return (
             <>
               <div className="av-section-title">
-                {groupOf(account)} · {others.length + 1} location{others.length === 0 ? '' : 's'}
+                Group · {others.length + 1} location{others.length === 0 ? '' : 's'}
               </div>
               <div className="av-group">
                 {others.length === 0 ? (
-                  <div className="av-row av-static-row av-muted-row">No other locations yet. Give another account the same group name.</div>
+                  <div className="av-row av-static-row av-muted-row">No other locations yet. Tap Edit → Add 2nd location.</div>
                 ) : (
                   others.map((x) => (
                     <button
@@ -1381,9 +1373,36 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [addrState, setAddrState] = useState(startAddr.state);
   const [zip, setZip] = useState(startAddr.zip);
   const [group, setGroup] = useState(existing ? groupOf(existing) : '');
-  const groupChoices = knownGroups(typeOf(config), accounts).filter(
-    (g) => g.toLowerCase() !== group.trim().toLowerCase() && (!group.trim() || g.toLowerCase().includes(group.trim().toLowerCase()))
-  );
+  // Add another location: creates its own account right away, linked by the (hidden) group id.
+  const [newLoc, setNewLoc] = useState(null); // { street, town, state, zip } while the form is open
+  const [locMsg, setLocMsg] = useState('');
+  const otherLocations = existing
+    ? groupMembers(group, typeOf(config), accounts).filter((x) => !(x.type === typeOf(config) && String(x.account.id) === String(existing.id)))
+    : [];
+  const ordinal = (n) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
+  const addLocation = () => {
+    if (!newLoc || !(newLoc.street.trim() || newLoc.town.trim())) return;
+    const g = group || `${(name || existing.name || 'Group').trim()} · ${Date.now().toString(36)}`;
+    const loc = {
+      id: Date.now(),
+      name: (name || existing.name || '').trim(),
+      street: newLoc.street.trim(),
+      town: newLoc.town.trim(),
+      state: newLoc.state.trim().toUpperCase(),
+      zip: newLoc.zip.trim(),
+      address: joinAddress({ street: newLoc.street, town: newLoc.town, state: newLoc.state.toUpperCase(), zip: newLoc.zip }),
+      group: g,
+      contacts: [],
+      notes: [],
+      [config.visitDaysField]: [],
+      visitFrequency: 'weekly',
+    };
+    if (config.hasStage) loc.stage = stage || null;
+    setAccounts((prev) => [...prev.map((a) => (a.id === existing.id ? { ...a, group: g } : a)), loc]);
+    setGroup(g);
+    setNewLoc(null);
+    setLocMsg(`Added: ${loc.name}${loc.town ? ` – ${loc.town}` : ''}`);
+  };
   const [accountNumber, setAccountNumber] = useState(existing ? existing.accountNumber || '' : '');
   const [contacts, setContacts] = useState(
     existing && existing.contacts ? existing.contacts.map((c) => ({ ...BLANK_CONTACT, ...c })) : []
@@ -1440,7 +1459,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       state: addrState.trim().toUpperCase(),
       zip: zip.trim(),
       address: joinAddress({ street, town, state: addrState.toUpperCase(), zip }),
-      group: group.trim(), // locations of the same business share this name
+      group: group.trim(), // locations of the same business share this (hidden) group id
       // drop contact rows that were left completely empty
       contacts: contacts
         .map((c) => ({
@@ -1558,23 +1577,71 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           </div>
         </div>
 
-        <div className="av-section-title">Group (more than one location)</div>
-        <div className="av-group">
-          <input
-            className="av-input"
-            placeholder="Leave blank if it's one location"
-            value={group}
-            onChange={(e) => setGroup(e.target.value)}
-          />
-        </div>
-        {groupChoices.length > 0 && (
-          <div className="av-group-pick">
-            {groupChoices.slice(0, 8).map((g) => (
-              <button key={g} type="button" className="av-group-choice" onClick={() => setGroup(g)}>
-                {g}
-              </button>
-            ))}
-          </div>
+        {!isNew && (
+          <>
+            <div className="av-section-title">Locations</div>
+            <div className="av-group">
+              {otherLocations.map((x) => (
+                <div key={`${x.type}-${x.account.id}`} className="av-row av-static-row">
+                  <span className="av-row-text">
+                    <span className="av-row-value">{displayName(x.account)}</span>
+                    <span className="av-row-sub">
+                      {[x.account.address || x.account.town, x.type === 'prospect' ? 'Prospect' : 'Customer'].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                </div>
+              ))}
+              {newLoc ? (
+                <div className="av-loc-form">
+                  <input
+                    className="av-input"
+                    placeholder="Street address"
+                    autoComplete="street-address"
+                    value={newLoc.street}
+                    onChange={(e) => setNewLoc({ ...newLoc, street: e.target.value })}
+                    autoFocus
+                  />
+                  <div className="av-addr-row">
+                    <input className="av-input av-addr-town" placeholder="Town" value={newLoc.town} onChange={(e) => setNewLoc({ ...newLoc, town: e.target.value })} />
+                    <input
+                      className="av-input av-addr-state"
+                      placeholder="State"
+                      autoCapitalize="characters"
+                      maxLength={2}
+                      value={newLoc.state}
+                      onChange={(e) => setNewLoc({ ...newLoc, state: e.target.value.toUpperCase() })}
+                    />
+                    <input
+                      className="av-input av-addr-zip"
+                      placeholder="ZIP"
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={newLoc.zip}
+                      onChange={(e) => setNewLoc({ ...newLoc, zip: e.target.value })}
+                    />
+                  </div>
+                  <div className="av-loc-actions">
+                    <button type="button" className="av-loc-cancel" onClick={() => setNewLoc(null)}>Cancel</button>
+                    <button type="button" className="av-loc-add" disabled={!(newLoc.street.trim() || newLoc.town.trim())} onClick={addLocation}>
+                      Add location
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="av-row av-add-loc"
+                  onClick={() => {
+                    setLocMsg('');
+                    setNewLoc({ street: '', town: '', state: addrState || '', zip: '' });
+                  }}
+                >
+                  + Add {ordinal(otherLocations.length + 2)} location
+                </button>
+              )}
+            </div>
+            {locMsg && <div className="av-loc-msg">{locMsg}. It's in {config.plural} as its own {config.singular.toLowerCase()}, linked to this one.</div>}
+          </>
         )}
 
         {config.hasStage && (
