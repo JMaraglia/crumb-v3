@@ -4,7 +4,7 @@
 // A note looks like: { text, category, timestamp, done? }  (done is for Follow-ups and Samples)
 import React, { useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
-import { IoShareOutline, IoCalendarOutline } from 'react-icons/io5';
+import { IoShareOutline } from 'react-icons/io5';
 import { shareText, shareFile, safeFileName } from './share';
 import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
@@ -45,10 +45,9 @@ export function noteDate(timestamp) {
   return `${day} · ${time}`;
 }
 
-function CategoryChips({ value, onChange }) {
+function CategoryChips({ value, onChange, extra = null }) {
   return (
     <div className="nv-cats">
-      <span className="nv-cats-label">Label:</span>
       {LABELS.map((c) => {
         const on = normalizeCategory(value) === c;
         const st = categoryStyle(c);
@@ -64,6 +63,7 @@ function CategoryChips({ value, onChange }) {
           </button>
         );
       })}
+      {extra}
     </div>
   );
 }
@@ -324,13 +324,17 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <CategoryChips value={category} onChange={setCategory} />
+          <CategoryChips
+            value={category}
+            onChange={setCategory}
+            extra={
+              <button type="button" className="nv-cat nv-cat-meeting" onClick={() => setMeeting(true)}>
+                Meeting
+              </button>
+            }
+          />
           {isCheckable(category) && <DueChips value={due} onChange={setDue} />}
           <div className="nv-compose-actions">
-            <button className="mt-open-btn" onClick={() => setMeeting(true)}>
-              <IoCalendarOutline className="mt-open-icon" />
-              Meeting
-            </button>
             <span className="nv-spacer" />
             <button className="nv-btn-primary" disabled={!text.trim()} onClick={add}>
               Add note

@@ -758,7 +758,6 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                               className="mt-open-btn"
                               onClick={() => setMeetingFor({ type: stop.accountType, id: acct.id, name: acct.name, address: acct.address })}
                             >
-                              <IoCalendarOutline className="mt-open-icon" />
                               Meeting
                             </button>
                             <span className="it-flash">{savedFlash}</span>

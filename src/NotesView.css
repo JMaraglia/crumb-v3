@@ -129,16 +129,30 @@
 .nv-cats {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   margin-top: 10px;
+}
+
+/* the new-note row fits all five (four labels + Meeting) on one line */
+.nv-compose .nv-cats {
+  flex-wrap: nowrap;
+  justify-content: space-between;
 }
 
 .nv-page .nv-cat,
 .nv-page .nv-cat:hover {
-  padding: 6px 11px;
+  padding: 6px 7px;
   border-radius: 14px;
-  font-size: 0.85rem;
+  font-size: min(0.76rem, 3.1vw);
   font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Meeting sits at the end of the label row (orange, opens "Set a meeting") */
+.nv-page .nv-cat-meeting,
+.nv-page .nv-cat-meeting:hover {
+  background: #fff1e0;
+  color: #d96b00;
 }
 
 .nv-compose-actions,
