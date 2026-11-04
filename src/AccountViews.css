@@ -1001,3 +1001,26 @@
 .av-group-gap {
   margin-top: 12px;
 }
+
+/* Share button next to Edit on the account screen */
+.av-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.av-page .av-share-btn,
+.av-page .av-share-btn:hover {
+  font-size: 1.3rem;
+  justify-content: center;
+}
+
+.av-share-msg {
+  margin: 0 16px 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #e8f5ec;
+  color: #1e8e3e;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

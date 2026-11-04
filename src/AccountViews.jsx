@@ -8,6 +8,8 @@
 // (+ accountNumber for customers).
 import React, { useState } from 'react';
 import { FaArrowLeft, FaChevronRight, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
+import { IoShareOutline } from 'react-icons/io5';
+import { shareText, shareFile, contactCards, safeFileName } from './share';
 import { useNavigate, useParams } from 'react-router-dom';
 import './AccountViews.css';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed } from './schedule';
@@ -193,6 +195,74 @@ function isEmptyRecord(a) {
 
 function displayName(account) {
   return account.name && account.name.trim() ? account.name : '(No name)';
+}
+
+// Account tidied up for a contact card: formatted phones, address split into street/town/state/zip.
+function cardReady(account) {
+  const hasPieces = account.street || account.town || account.state || account.zip;
+  return {
+    ...account,
+    ...(hasPieces ? {} : splitAddress(account.address)),
+    contacts: (account.contacts || []).map((c) => ({
+      ...c,
+      phone: c.phone ? formatPhone(c.phone) : '',
+      textPhone: c.textPhone ? formatPhone(c.textPhone) : '',
+    })),
+  };
+}
+
+// Everything worth sending about one account, as plain text (pastes into a text or email).
+export function accountShareText(account, config) {
+  const lines = [];
+  const st = config.hasStage ? stageInfo(account.stage) : null;
+  lines.push(`${displayName(account)} (${[config.singular, st && st.label].filter(Boolean).join(' · ')})`);
+  if (config.hasAccountNumber && account.accountNumber) lines.push(`Acct #${account.accountNumber}`);
+  if (account.address) {
+    lines.push(`Address: ${account.address}`);
+    lines.push(`Map: https://maps.google.com/?q=${encodeURIComponent(account.address)}`);
+  }
+  const people = (account.contacts || []).filter((c) => c && (c.name || c.title || c.phone || c.textPhone || c.email));
+  if (people.length) {
+    lines.push('', 'Contacts:');
+    people.forEach((c) => {
+      const who = [c.name, c.title].filter(Boolean).join(', ') || 'Contact';
+      const how = [
+        c.phone && formatPhone(c.phone),
+        c.textPhone && c.textPhone !== c.phone && `text ${formatPhone(c.textPhone)}`,
+        c.email,
+      ].filter(Boolean);
+      lines.push(`• ${who}${how.length ? ` — ${how.join(' · ')}` : ''}`);
+    });
+  }
+  const visit = visitSummary(account, config);
+  const extra = [];
+  if (visit) extra.push(`Visits: ${visit}, ${frequencyLabel(account.visitFrequency).toLowerCase()}`);
+  if (config.deliveryDaysField && (account[config.deliveryDaysField] || []).length) {
+    extra.push(`Delivers: ${DAYS.filter((d) => account[config.deliveryDaysField].includes(d)).join(', ')}`);
+  }
+  if (config.hasCallNote) {
+    const call = [
+      typeof account.callTime === 'number' ? `call at ${timeLabel(account.callTime)}` : account.callTime === 'na' ? 'no call needed' : '',
+      account.onlineOrdering ? 'orders online' : '',
+      account.callNote || '',
+    ].filter(Boolean);
+    if (call.length) extra.push(`Ordering: ${call.join(' · ')}`);
+  }
+  if (extra.length) lines.push('', ...extra);
+  const bg = backgroundNotes(account);
+  if (bg.length) lines.push('', 'Background:', ...bg.map((n) => `• ${n.text}`));
+  const recent = (account.notes || [])
+    .filter((n) => !isBackground(n))
+    .sort((a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0))
+    .slice(0, 3);
+  if (recent.length) {
+    lines.push('', 'Recent notes:');
+    recent.forEach((n) => {
+      const label = n.category && n.category !== 'General' ? ` (${n.category})` : '';
+      lines.push(`• ${shortDate(n.timestamp)}${label}: ${n.text}`);
+    });
+  }
+  return lines.join('\n');
 }
 
 // Bottom pop-up with choices (Call / Text / Email, Apple Maps / Google Maps).
@@ -633,6 +703,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const [sheet, setSheet] = useState(null); // { title, actions }
   const [converting, setConverting] = useState(false);
   const [newAccountNumber, setNewAccountNumber] = useState('');
+  const [shareMsg, setShareMsg] = useState('');
   const account = accounts.find((a) => String(a.id) === id);
 
   if (!account) {
@@ -663,11 +734,36 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
         onBack={() => goBack(config.basePath)}
         title=""
         right={
-          <button className="av-link-btn" onClick={() => navigate(`${config.basePath}/${account.id}/edit`)}>
-            Edit
-          </button>
+          <span className="av-header-actions">
+            <button
+              className="av-icon-btn av-share-btn"
+              aria-label={`Share ${config.singular.toLowerCase()}`}
+              onClick={() =>
+                setSheet({
+                  title: `Share ${displayName(account)}`,
+                  actions: [
+                    {
+                      label: 'Send info as text',
+                      onClick: async () => setShareMsg(await shareText(displayName(account), accountShareText(account, config))),
+                    },
+                    {
+                      label: 'Send contact card',
+                      onClick: async () =>
+                        setShareMsg(await shareFile(contactCards(cardReady(account)), `${safeFileName(displayName(account))}.vcf`, displayName(account))),
+                    },
+                  ],
+                })
+              }
+            >
+              <IoShareOutline />
+            </button>
+            <button className="av-link-btn" onClick={() => navigate(`${config.basePath}/${account.id}/edit`)}>
+              Edit
+            </button>
+          </span>
         }
       />
+      {shareMsg && <div className="av-share-msg">{shareMsg}</div>}
 
       <div className="av-content">
         {/* Summary card: who, last note, visit schedule, quick buttons */}
