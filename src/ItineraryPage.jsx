@@ -518,6 +518,22 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     return cal.showVisits !== false && (!acct || acct.showOnCalendar !== false);
   };
   const [askingStop, setAskingStop] = useState(null); // stop waiting for "also the Calendar?" answer
+  // Same-time warning: { other, time, after, go(time) } while "keep both / put it after" is asked
+  const [timeClash, setTimeClash] = useState(null);
+  const stopLen = (st) => (st && typeof st.visitLength === 'number' ? st.visitLength : 30);
+  const clashAt = (time, exceptKey) =>
+    stops.find((st) => st.key !== exceptKey && typeof st.time === 'number' && time >= st.time && time < st.time + stopLen(st));
+  // Checks a new time against the other stops that day; asks first if one is already there.
+  const withClashCheck = (time, exceptKey, go) => {
+    const other = typeof time === 'number' ? clashAt(time, exceptKey) : null;
+    if (!other) return go(time);
+    let after = time;
+    for (let n = 0, c = other; c && n < 50; n++) {
+      after = c.time + stopLen(c);
+      c = clashAt(after, exceptKey);
+    }
+    setTimeClash({ other, time, after: Math.min(after, 23 * 60 + 55), go });
+  };
   const reloadStops = () => {
     setVisits(toVisitList(readJSON(VISITS_KEY, [])));
     setRemovedMap(readJSON(REMOVED_KEY, {}) || {});
@@ -1118,7 +1134,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           ].filter((a) => a.name && a.name.trim())}
           onCancel={() => setAdding(false)}
           canCreate={Boolean(setProspects)}
-          onAdd={(stop, asProspect) => {
+          onAdd={(newStop, asProspect) => withClashCheck(hhmmToMinutes(newStop.time), null, (t) => {
+            const stop = { ...newStop, time: t == null ? newStop.time : minutesToHhmm(t) };
             setAdding(false);
             if (asProspect && !stop.accountId) {
               checkRepeat(
@@ -1132,7 +1149,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
               return;
             }
             saveVisits([...visits, stop]);
-          }}
+          })}
         />
       )}
 
@@ -1223,6 +1240,23 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         </div>
       )}
 
+      {timeClash && (
+        <AskSheet
+          title={`${timeClash.other.title} is already at ${timeLabel(timeClash.other.time)}`}
+          message="Keep both at the same time, or put this one after it?"
+          choices={[
+            { label: `Keep both at ${timeLabel(timeClash.time)}`, value: 'keep' },
+            { label: `Put it after (${timeLabel(timeClash.after)})`, value: 'after' },
+          ]}
+          onPick={(v) => {
+            const c = timeClash;
+            setTimeClash(null);
+            c.go(v === 'after' ? c.after : c.time);
+          }}
+          onCancel={() => setTimeClash(null)}
+        />
+      )}
+
       {timing && (
         <TimeSheet
           stop={timing}
@@ -1232,7 +1266,11 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             return acct ? visitTimeOn(acct, date) : null;
           })()}
           onCancel={() => setTiming(null)}
-          onSave={(time) => saveTime(timing, time)}
+          onSave={(time) => {
+            const st = timing;
+            setTiming(null);
+            withClashCheck(time, st.key, (t) => saveTime(st, t));
+          }}
         />
       )}
 
