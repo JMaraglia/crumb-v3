@@ -392,7 +392,8 @@
 
 /* ---------- Haven't seen in a while ---------- */
 .it-stale { margin: 8px 0 90px; border-radius: 12px; background: #fff; overflow: hidden; border: 1px solid #ececf0; }
-.it-page .it-stale-bar {
+.it-page .it-stale-bar,
+.it-page .it-stale-bar:hover {
   display: flex; justify-content: space-between; align-items: center; width: 100%;
   background: none; border: 0; border-radius: 0; box-shadow: none; margin: 0;
   padding: 12px 14px; font-size: 0.92rem; font-weight: 600; color: #6e6e73; text-align: left;
@@ -403,7 +404,8 @@
 .it-stale-info { flex: 1; min-width: 0; }
 .it-stale-name { font-weight: 600; font-size: 0.95rem; color: #1c1c1e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .it-stale-sub { font-size: 0.78rem; color: #8e8e93; margin-top: 2px; }
-.it-page .it-stale-add {
+.it-page .it-stale-add,
+.it-page .it-stale-add:hover {
   flex: none; background: #eef5fc; color: #0077cc; border: 0; border-radius: 16px; box-shadow: none; margin: 0;
   padding: 6px 12px; font-size: 0.82rem; font-weight: 600; white-space: nowrap;
 }

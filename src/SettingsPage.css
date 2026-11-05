@@ -54,7 +54,8 @@
   overflow: hidden;
 }
 
-.st-page .st-row {
+.st-page .st-row,
+.st-page .st-row:hover {
   display: flex;
   align-items: center;
   gap: 12px;
