@@ -862,18 +862,18 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
         <Avatar name={a.name} size={expanded ? 48 : 40} />
         <span className="av-row-text">
           <span className={`av-row-name ${expanded ? 'is-big' : ''}`}>{displayName(a)}</span>
-          {expanded ? (
+          {/* account # and address always; opened up, the main contact shows underneath too */}
+          {(a.address || (config.hasAccountNumber && a.accountNumber)) && (
+            <span className="av-row-sub" style={expanded ? { whiteSpace: 'normal' } : undefined}>
+              {[config.hasAccountNumber && a.accountNumber ? `#${a.accountNumber}` : null, a.address]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
+          )}
+          {expanded && (
             <span className="av-row-sub">
               {mainContact ? [mainContact.name, mainContact.title].filter(Boolean).join(' · ') : 'No contact yet'}
             </span>
-          ) : (
-            (a.address || (config.hasAccountNumber && a.accountNumber)) && (
-              <span className="av-row-sub">
-                {[config.hasAccountNumber && a.accountNumber ? `#${a.accountNumber}` : null, a.address]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </span>
-            )
           )}
           {!expanded && (
             <span className="av-chips">
