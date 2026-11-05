@@ -2306,6 +2306,9 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           </label>
         </div>
 
+        {/* Same photos as the account screen (they save right away, like there) */}
+        {!isNew && existing && <AccountPhotos type={typeOf(config)} id={existing.id} name={displayName(existing)} />}
+
         {!isNew &&
           setAccounts &&
           (existing.inactive ? (
