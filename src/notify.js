@@ -196,7 +196,8 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
           at: when,
           title: `Still to do: ${due.length} ${due.length === 1 ? 'item' : 'items'}${late ? ` (${late} overdue)` : ''}`,
           body: list.join(' · '),
-          url: '/todo',
+          // unchecked stops → open the Itinerary's "Didn't get to these" so they can go on another day
+          url: kinds.stops && due.some((d) => d.stop) ? '/itinerary?leftover=1' : '/todo',
         });
       }
     }

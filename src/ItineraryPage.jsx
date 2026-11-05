@@ -143,6 +143,17 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [savedFlash, setSavedFlash] = useState('');
   const [sheet, setSheet] = useState(null);
   const [adding, setAdding] = useState(false);
+  // "Didn't get to these": put unchecked stops back on another day (opened from the end-of-day
+  // notification, or the link under the list)
+  const [leftoverOpen, setLeftoverOpen] = useState(() => {
+    try {
+      const on = /leftover=1/.test(window.location.search + window.location.hash);
+      if (on && window.location.search) window.history.replaceState(window.history.state, '', window.location.pathname); // only once
+      return on;
+    } catch {
+      return false;
+    }
+  });
   const [moving, setMoving] = useState(null); // { stop, acct } while the Move panel is open
 
   const [visits, setVisits] = useState(() => toVisitList(readJSON(VISITS_KEY, [])));
@@ -571,6 +582,45 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     clearTimeout(undoIt.timer);
     undoIt.restore();
     setUndoIt(null);
+  };
+
+  // Put stops that weren't checked off onto another day. Scheduled visits move just that one
+  // visit (like Move visit); hand-added stops change their day. Calendar appointments stay.
+  const putBack = (list, toKey) => {
+    const prevC = contacts;
+    const prevP = prospects;
+    const prevV = visits;
+    const byAcct = {};
+    list.forEach((st) => {
+      if (st.kind === 'scheduled') byAcct[`${st.accountType}-${st.accountId}`] = st;
+    });
+    const moveIn = (type) => (arr) =>
+      arr.map((x) => {
+        const st = byAcct[`${type}-${x.id}`];
+        if (!st) return x;
+        const from = st.movedFrom || date;
+        if (from === toKey) return x;
+        const moves = { ...(x.visitMoves || {}) };
+        moves[from] = { to: toKey, time: typeof st.time === 'number' ? st.time : null };
+        return { ...x, visitMoves: pruneMoves(moves) };
+      });
+    if (setProspects) setProspects(moveIn('prospect'));
+    if (setContacts) setContacts(moveIn('customer'));
+    const manual = new Set(list.filter((st) => st.kind === 'manual').map((st) => st.index));
+    if (manual.size) saveVisits(visits.map((v, i) => (manual.has(i) ? { ...v, date: toKey, done: false } : v)));
+    setLeftoverOpen(false);
+    if (undoIt && undoIt.timer) clearTimeout(undoIt.timer);
+    const timer = setTimeout(() => setUndoIt(null), 6000);
+    const day = fromKey(toKey).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    setUndoIt({
+      text: `Moved ${list.length} ${list.length === 1 ? 'stop' : 'stops'} to ${day}`,
+      restore: () => {
+        if (setContacts) setContacts(prevC);
+        if (setProspects) setProspects(prevP);
+        saveVisits(prevV);
+      },
+      timer,
+    });
   };
 
   /* ---- share / print the day as a checklist ---- */
@@ -1072,6 +1122,12 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         )}
         {stops.length > 0 && <div className="it-hint">Tap a stop for details · Double-tap to edit · Hold and slide to move · Tap ○ when done · Swipe left to remove</div>}
 
+        {date <= today && stops.some((st) => !st.done && st.kind !== 'event') && (
+          <button className="it-leftover-link" onClick={() => setLeftoverOpen(true)}>
+            Didn't get to some? Put them on another day ›
+          </button>
+        )}
+
         {/* Accounts not contacted in a while (limit set in Settings). Not on this day already. */}
         {(() => {
           const onDay = new Set(stops.filter((s) => s.accountId).map((s) => `${s.accountType}-${s.accountId}`));
@@ -1244,6 +1300,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             Undo
           </button>
         </div>
+      )}
+
+      {leftoverOpen && (
+        <LeftoverSheet
+          stops={stops.filter((st) => !st.done && st.kind !== 'event')}
+          viewDate={date}
+          onCancel={() => setLeftoverOpen(false)}
+          onSave={putBack}
+        />
       )}
 
       {timeClash && (
@@ -1501,6 +1566,85 @@ function MoveSheet({ stop, acct, viewDate, onSave, onCancel }) {
           <button className="it-move-undo" onClick={() => onSave(null)}>
             Undo move (back to {nice(original)})
           </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Didn't get to these: put them on another day ---------- */
+function LeftoverSheet({ stops, viewDate, onSave, onCancel }) {
+  const [picked, setPicked] = useState(() => new Set(stops.map((st) => st.key)));
+  const [pickDay, setPickDay] = useState(false);
+  const [dayKey, setDayKey] = useState(addDaysToKey(viewDate, 1));
+  const chosen = stops.filter((st) => picked.has(st.key));
+  const toggle = (k) =>
+    setPicked((cur) => {
+      const n = new Set(cur);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
+      return n;
+    });
+  const nice = (k) => fromKey(k).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const tomorrow = addDaysToKey(viewDate, 1);
+  const nextWeek = addDaysToKey(viewDate, 7);
+  const go = (k) => chosen.length && /^\d{4}-\d{2}-\d{2}$/.test(k) && k !== viewDate && onSave(chosen, k);
+  if (!stops.length) {
+    return (
+      <div className="it-sheet-backdrop" onClick={onCancel}>
+        <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="it-sheet-top">
+            <span />
+            <div className="it-sheet-title">All Done</div>
+            <button className="it-link it-bold" onClick={onCancel}>OK</button>
+          </div>
+          <div className="it-move-who"><span>Every stop on this day is checked off.</span></div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="it-sheet-backdrop" onClick={onCancel}>
+      <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="it-sheet-top">
+          <button className="it-link" onClick={onCancel}>Cancel</button>
+          <div className="it-sheet-title">Didn't Get To These</div>
+          <span style={{ width: 50 }} />
+        </div>
+        <div className="it-move-who">
+          <span>Pick the stops to put back on the Itinerary, then pick a day.</span>
+        </div>
+        <div className="it-sheet-group it-left-list">
+          {stops.map((st) => (
+            <button key={st.key} className="it-left-row" onClick={() => toggle(st.key)}>
+              <span className={`it-left-box ${picked.has(st.key) ? 'is-on' : ''}`}>{picked.has(st.key) ? '✓' : ''}</span>
+              <span className="it-left-name">{st.title}</span>
+              <span className="it-left-time">{st.time == null ? 'Anytime' : timeLabel(st.time)}</span>
+            </button>
+          ))}
+        </div>
+        {pickDay ? (
+          <div className="it-sheet-group">
+            <label className="it-sheet-row">
+              <span>Day</span>
+              <input type="date" className="it-move-date" value={dayKey} onChange={(e) => setDayKey(e.target.value)} />
+            </label>
+            <button className="it-left-go" disabled={!chosen.length} onClick={() => go(dayKey)}>
+              Put on {/^\d{4}-\d{2}-\d{2}$/.test(dayKey) ? nice(dayKey) : 'that day'}
+            </button>
+          </div>
+        ) : (
+          <div className="it-left-btns">
+            <button className="it-left-go" disabled={!chosen.length} onClick={() => go(tomorrow)}>
+              Tomorrow · {nice(tomorrow)}
+            </button>
+            <button className="it-left-go" disabled={!chosen.length} onClick={() => go(nextWeek)}>
+              Next Week · {nice(nextWeek)}
+            </button>
+            <button className="it-left-go is-plain" disabled={!chosen.length} onClick={() => setPickDay(true)}>
+              Pick A Day…
+            </button>
+          </div>
         )}
       </div>
     </div>
