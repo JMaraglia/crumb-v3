@@ -534,7 +534,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [timeClash, setTimeClash] = useState(null);
   const stopLen = (st) => (st && typeof st.visitLength === 'number' ? st.visitLength : 30);
   const clashAt = (time, exceptKey) =>
-    stops.find((st) => st.key !== exceptKey && typeof st.time === 'number' && time >= st.time && time < st.time + stopLen(st));
+    stops.find((st) => st.key !== exceptKey && typeof st.time === 'number' && st.time === time); // exact same time only
   // Checks a new time against the other stops that day; asks first if one is already there.
   const withClashCheck = (time, exceptKey, go) => {
     const other = typeof time === 'number' ? clashAt(time, exceptKey) : null;
