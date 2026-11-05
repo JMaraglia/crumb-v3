@@ -15,6 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
+import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, readJSON } from './schedule';
@@ -787,7 +788,7 @@ function SwipeIf({ onDelete, children }) {
   );
 }
 
-function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete, onStage, onVisit }) {
+function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete, onStage, onVisit }) {
   const pickVisit = onVisit ? () => onVisit(a) : undefined;
   const pickStage = onStage ? () => onSheet(stageSheet(a, (key) => onStage(a.id, key))) : undefined;
   const navigate = useNavigate();
@@ -878,6 +879,7 @@ function ListRow({ account: a, config, expanded, onToggle, onOpenFull, onEdit, o
               {a.inactive && <span className="av-chip av-chip-inactive">{inactiveLabel(a)}</span>}
               {a.inactive && a.inactive.revisit && <span className="av-chip av-chip-revisit">Revisit {revisitText({ revisit: a.inactive.revisit })}</span>}
               {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
+              {lastSeen && <span className="av-chip av-chip-stale">{lastSeen.never ? 'No contact yet' : lastSeen.days === 0 ? 'Today' : lastSeen.days === 1 ? '1 day' : `${lastSeen.days} days`}</span>}
               {!a.inactive && <VisitChips account={a} config={config} onPick={pickVisit} />}
               <DeliveryChip account={a} config={config} />
               {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
@@ -949,7 +951,7 @@ function Header({ onBack, title, right }) {
 export function AccountList({ config, accounts, setAccounts }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('az'); // az | za | town | group
+  const [sortBy, setSortBy] = useState('az'); // az | za | town | group | contact
   const [openId, setOpenId] = useState(null); // the one row that's opened up
   const [stageFilter, setStageFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false); // the Inactive drop-down at the bottom
@@ -967,6 +969,13 @@ export function AccountList({ config, accounts, setAccounts }) {
     (a.address || '').toLowerCase().includes(q) ||
     groupOf(a).toLowerCase().includes(q) ||
     (config.hasAccountNumber && String(a.accountNumber || '').toLowerCase().includes(q));
+  // Last contact for each account (for the "Last contact" sort and the gray "47 days" tag)
+  const acctType = config.singular === 'Customer' ? 'customer' : 'prospect';
+  const staleLimit = staleDays();
+  const contactIdx = contactIndex();
+  const lastOf = {};
+  realAccounts.forEach((a) => { lastOf[a.id] = lastContact(a, acctType, contactIdx); });
+  const lcDays = (a) => (lastOf[a.id] && lastOf[a.id].days != null ? lastOf[a.id].days : -1);
   const inactiveShown = realAccounts.filter((a) => a.inactive && matches(a)).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const shown = activeAccounts
     .filter((a) => stageFilter === 'all' || (stageFilter === 'groups' ? Boolean(groupOf(a)) : (a.stage || 'none') === stageFilter))
@@ -984,6 +993,13 @@ export function AccountList({ config, accounts, setAccounts }) {
       const bn = (b.name || '').trim();
       if (!an && bn) return 1; // unnamed ones go last
       if (an && !bn) return -1;
+      if (sortBy === 'contact') {
+        // Never contacted first, then the longest since last contact
+        const na = lastOf[a.id] && lastOf[a.id].never ? 1 : 0;
+        const nb = lastOf[b.id] && lastOf[b.id].never ? 1 : 0;
+        if (na !== nb) return nb - na;
+        return lcDays(b) - lcDays(a) || an.localeCompare(bn);
+      }
       return sortBy === 'za' ? bn.localeCompare(an) : an.localeCompare(bn);
     });
 
@@ -1018,6 +1034,7 @@ export function AccountList({ config, accounts, setAccounts }) {
             key={a.id}
             account={a}
             config={config}
+            lastSeen={!a.inactive && (sortBy === 'contact' || (staleLimit && lcDays(a) >= staleLimit)) ? lastOf[a.id] : null}
             expanded={openId === a.id}
             onToggle={() => setOpenId((cur) => (cur === a.id ? null : a.id))}
             onOpenFull={() => navigate(`${config.basePath}/${a.id}`)}
@@ -1115,6 +1132,7 @@ export function AccountList({ config, accounts, setAccounts }) {
             <option value="za">Z–A</option>
             <option value="town">By town</option>
             <option value="group">By group</option>
+            <option value="contact">Last contact</option>
           </select>
         </div>
 

@@ -15,6 +15,7 @@ import {
   CUSTOMER_DAYS_FIELD,
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
+import { staleAccounts, staleDays } from './lastContact';
 
 const SETTINGS_KEY = 'crumb_notify_settings';
 const DEVICE_KEY = 'crumb_push_device';
@@ -206,18 +207,23 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
       if (Date.parse(when) > nowMs) {
         const due = dueBy(); // morning summary always counts every kind
         const open = stops.filter((s) => !s.done);
-        if (open.length || due.length) {
+        // "Haven't seen in a while" count as of that morning (Settings → limit; 0 = off)
+        const limit = staleDays();
+        const staleN = limit ? staleAccounts(contacts, prospects, Math.max(1, limit - i)).length : 0;
+        const staleLine = staleN ? `${staleN} ${staleN === 1 ? 'account' : 'accounts'} you haven't seen in a while` : '';
+        if (open.length || due.length || staleN) {
           const late = due.filter((d) => d.late).length;
-          const title = [
+          const title = (open.length || due.length) ? [
             open.length ? `${open.length} ${open.length === 1 ? 'stop' : 'stops'}` : '',
             due.length ? `${due.length} to-do${due.length === 1 ? '' : 's'}${late ? ` (${late} overdue)` : ''}` : '',
           ]
             .filter(Boolean)
-            .join(' · ');
+            .join(' · ') : staleLine;
           const first = open.filter((s) => typeof s.time === 'number').sort((a, b) => a.time - b.time)[0] || open[0];
           const body = [
             first ? `First: ${first.title}${typeof first.time === 'number' ? `, ${timeText(first.time)}` : ''}` : '',
             due.length ? `Due: ${due[0].text}${due[0].who ? ` (${due[0].who})` : ''}${due.length > 1 ? ` +${due.length - 1} more` : ''}` : '',
+            open.length || due.length ? staleLine : '',
           ]
             .filter(Boolean)
             .join(' · ');
@@ -226,7 +232,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
             at: when,
             title: `${i === 0 ? 'Today' : fromKey(day).toLocaleDateString('en-US', { weekday: 'long' })}: ${title}`,
             body,
-            url: open.length ? '/itinerary' : '/todo',
+            url: open.length || !due.length ? '/itinerary' : '/todo',
           });
         }
       }

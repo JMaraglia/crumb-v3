@@ -1192,6 +1192,10 @@
   background: #ede7f6;
   color: #5e35b1;
 }
+.av-chip-stale {
+  background: #f0f0f3;
+  color: #6e6e73;
+}
 
 .av-group-pick {
   display: flex;

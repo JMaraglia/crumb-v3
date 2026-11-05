@@ -1,16 +1,30 @@
 // file: src/SettingsPage.jsx
 // Settings (the gear on Home): one place for Notifications, Calendar settings and Backup.
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
-import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
-import { loadNotifySettings } from './notify';
+import { loadNotifySettings, syncReminders } from './notify';
+import { staleDays, STALE_KEY } from './lastContact';
+import AskSheet from './AskSheet';
 import './SettingsPage.css';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const n = loadNotifySettings();
+  const [stale, setStale] = useState(staleDays);
+  const [pickStale, setPickStale] = useState(false);
+  const setStaleDays = (v) => {
+    try {
+      localStorage.setItem(STALE_KEY, String(v));
+    } catch {
+      /* not critical */
+    }
+    setStale(v);
+    setPickStale(false);
+    syncReminders(true).catch(() => {}); // morning summary count follows the new limit
+  };
   const last = Date.parse(readLastBackup());
   const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
   const rows = [
@@ -34,6 +48,12 @@ export default function SettingsPage() {
         }
         navigate('/calendar');
       },
+    },
+    {
+      icon: <IoTimeOutline />,
+      label: "Haven't seen in a while",
+      sub: stale ? `Accounts with no contact in ${stale}+ days (Itinerary, lists, morning summary)` : 'Off',
+      go: () => setPickStale(true),
     },
     {
       icon: <IoCloudUploadOutline />,
@@ -65,6 +85,15 @@ export default function SettingsPage() {
           ))}
         </div>
       </div>
+      {pickStale && (
+        <AskSheet
+          title="Haven't seen in a while"
+          message="Flag accounts with no visit, note or appointment for:"
+          choices={[30, 45, 60, 90].map((d) => ({ label: `${d} days${d === stale ? ' ✓' : ''}`, value: d })).concat([{ label: `Off${!stale ? ' ✓' : ''}`, value: 0 }])}
+          onPick={setStaleDays}
+          onCancel={() => setPickStale(false)}
+        />
+      )}
     </div>
   );
 }

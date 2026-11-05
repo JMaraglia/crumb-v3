@@ -46,6 +46,7 @@ import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import { removeStop, snapshotStops, restoreStops, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import MeetingSheet from './MeetingSheet';
+import { staleAccounts } from './lastContact';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -151,6 +152,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [removedMap, setRemovedMap] = useState(() => readJSON(REMOVED_KEY, {}) || {});
   const [meetingFor, setMeetingFor] = useState(null); // account getting a meeting set
   const [visitFor, setVisitFor] = useState(null);     // { acct, type } whose visits are being changed
+  const [staleOpen, setStaleOpen] = useState(false);  // "Haven't seen in a while" list opened
   // Same fields as the Customers / Prospects screens, so changes show everywhere.
   const daysConfig = (type) => ({ visitDaysField: type === 'prospect' ? PROSPECT_DAYS_FIELD : CUSTOMER_DAYS_FIELD });
   const updateAccount = (type, id, fields) => {
@@ -930,6 +932,60 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           </div>
         )}
         {stops.length > 0 && <div className="it-hint">Tap a stop for details · Double-tap or hold to edit · Tap ○ when done · Swipe left to remove</div>}
+
+        {/* Accounts not contacted in a while (limit set in Settings). Not on this day already. */}
+        {(() => {
+          const onDay = new Set(stops.filter((s) => s.accountId).map((s) => `${s.accountType}-${s.accountId}`));
+          const stale = staleAccounts(contacts, prospects).filter((x) => !onDay.has(`${x.type}-${x.account.id}`));
+          if (!stale.length) return null;
+          const dayWord = date === today ? 'today' : fromKey(date).toLocaleDateString('en-US', { weekday: 'short' });
+          return (
+            <div className="it-stale">
+              <button className="it-stale-bar" onClick={() => setStaleOpen((o) => !o)}>
+                <span>Haven't seen in a while ({stale.length})</span>
+                <span className={`it-stale-arrow${staleOpen ? ' is-open' : ''}`}>›</span>
+              </button>
+              {staleOpen && (
+                <div className="it-stale-list">
+                  {stale.map((x) => (
+                    <div className="it-stale-row" key={`${x.type}-${x.account.id}`}>
+                      <div className="it-stale-info">
+                        <div className="it-stale-name">{x.account.name}</div>
+                        <div className="it-stale-sub">
+                          {x.type === 'customer' ? 'Customer' : 'Prospect'}
+                          {x.account.town ? ` · ${x.account.town}` : ''}
+                          {' · '}
+                          {x.never ? `No contact yet (added ${x.days} days ago)` : `${x.days} days`}
+                        </div>
+                      </div>
+                      <button
+                        className="it-stale-add"
+                        onClick={() =>
+                          saveVisits([
+                            ...visits,
+                            {
+                              id: Date.now(),
+                              name: x.account.name,
+                              time: '',
+                              date,
+                              done: false,
+                              recurrence: 'none',
+                              type: x.type === 'customer' ? 'contact' : 'prospect',
+                              accountType: x.type,
+                              accountId: x.account.id,
+                            },
+                          ])
+                        }
+                      >
+                        + Add to {dayWord}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       <button className="it-fab" onClick={() => setAdding(true)} aria-label="Add stop">
