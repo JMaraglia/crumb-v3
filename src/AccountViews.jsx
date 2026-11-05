@@ -955,6 +955,7 @@ export function AccountList({ config, accounts, setAccounts }) {
   const [openId, setOpenId] = useState(null); // the one row that's opened up
   const [stageFilter, setStageFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false); // the Inactive drop-down at the bottom
+  const [openGroups, setOpenGroups] = useState(() => new Set()); // condensed groups that are opened up
   const [sheet, setSheet] = useState(null);   // Call/Text or Maps pop-up
   const [listMsg, setListMsg] = useState('');
   const [visitFor, setVisitFor] = useState(null); // account whose visits are being changed (quick panel)
@@ -1028,6 +1029,52 @@ export function AccountList({ config, accounts, setAccounts }) {
       items: map.get(k),
     }));
   })();
+
+  // Plain lists (no search, not split by town/group): a group's locations share one row; tap it
+  // to open the locations underneath.
+  const condense = !q && !sectionMode;
+  const renderItems = (items) => {
+    if (!condense) return items.map(renderRow);
+    const seen = new Set();
+    const out = [];
+    items.forEach((a) => {
+      const g = groupOf(a);
+      if (!g) return out.push(renderRow(a));
+      if (seen.has(g)) return;
+      seen.add(g);
+      const members = items.filter((x) => groupOf(x) === g);
+      if (members.length < 2) return out.push(renderRow(a));
+      const open = openGroups.has(g);
+      const towns = [...new Set(members.map((m) => (m.town || '').trim()).filter(Boolean))];
+      out.push(
+        <div key={`g-${g}`} className={`av-item av-gl ${open ? 'is-open' : ''}`}>
+          <button
+            className="av-row av-list-row"
+            onClick={() =>
+              setOpenGroups((cur) => {
+                const n = new Set(cur);
+                if (n.has(g)) n.delete(g);
+                else n.add(g);
+                return n;
+              })
+            }
+          >
+            <Avatar name={a.name} size={40} />
+            <span className="av-row-text">
+              <span className="av-row-name">{displayName(a)}</span>
+              {towns.length > 0 && <span className="av-row-sub">{towns.join(' · ')}</span>}
+              <span className="av-chips">
+                <span className="av-chip av-chip-group">{members.length} Locations</span>
+              </span>
+            </span>
+            <FaChevronRight className={`av-row-chevron ${open ? 'is-open' : ''}`} />
+          </button>
+          {open && <div className="av-gl-members">{members.map(renderRow)}</div>}
+        </div>
+      );
+    });
+    return out;
+  };
 
   const renderRow = (a) => (
           <ListRow
@@ -1144,7 +1191,7 @@ export function AccountList({ config, accounts, setAccounts }) {
           sections.map((sec) => (
             <React.Fragment key={sec.key}>
               {sec.title && <div className="av-section-title av-list-section">{sec.title}</div>}
-              <div className="av-group">{sec.items.map(renderRow)}</div>
+              <div className="av-group">{renderItems(sec.items)}</div>
             </React.Fragment>
           ))
         )}

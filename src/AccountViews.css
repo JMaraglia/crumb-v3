@@ -1079,7 +1079,8 @@
   background: #fff;
 }
 
-.av-item.is-open .av-swipe-row {
+.av-item.is-open:not(.av-gl) .av-swipe-row,
+.av-gl-members .av-item.is-open .av-swipe-row {
   box-shadow: inset 3px 0 0 #0077cc;
 }
 
@@ -1468,4 +1469,13 @@
 
 .av-page .av-group > a.av-row:first-child {
   border-top: none;
+}
+
+/* Condensed group in the list: one row, its locations open underneath */
+.av-gl-members {
+  margin-left: 18px;
+  border-left: 3px solid #d1c4e9;
+}
+.av-gl.is-open {
+  box-shadow: none;
 }
