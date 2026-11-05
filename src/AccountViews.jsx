@@ -1686,7 +1686,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             <input
               className="av-convert-input"
               placeholder="Customer account number"
-              inputMode="numeric"
+              autoCapitalize="characters" autoCorrect="off" spellCheck={false}
               value={newAccountNumber}
               onChange={(e) => setNewAccountNumber(e.target.value)}
               autoFocus
@@ -1952,7 +1952,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
             <input
               className="av-input"
               placeholder="Account number"
-              inputMode="numeric"
+              autoCapitalize="characters" autoCorrect="off" spellCheck={false}
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value)}
             />
@@ -2343,7 +2343,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
             <input
               className="av-convert-input"
               placeholder="Customer account number"
-              inputMode="numeric"
+              autoCapitalize="characters" autoCorrect="off" spellCheck={false}
               value={newAccountNumber}
               onChange={(e) => setNewAccountNumber(e.target.value)}
               autoFocus
