@@ -8,6 +8,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { NOTE_CATEGORIES, normalizeCategory, categoryStyle } from './NotesView';
 import { buildNotesPdf } from './notesPdf';
+import NotesRangeSheet from './NotesRangeSheet';
 import { isCheckable, isNoteDone } from './noteStatus';
 import SwipeRow from './SwipeRow';
 import './MasterNotesPage.css';
@@ -113,6 +114,8 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [shareMsg, setShareMsg] = useState('');
+  const [askFor, setAskFor] = useState(null);        // 'share' | 'print' while "which notes?" is open
+  const [out, setOut] = useState(null);              // { range, label } used by the printout
 
   // Gather every note with where it came from.
   const all = [];
@@ -228,10 +231,21 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
 
   const whenText = (n) => (grouping === 'Day' ? timeOnly(n.time) : `${shortDay(n.time)}, ${timeOnly(n.time)}`);
 
-  const shareNotes = async () => {
+  // Notes going out (share / print): what's on screen, narrowed to the days picked
+  const outGroups = (sel) =>
+    !sel || !sel.range
+      ? groups
+      : groups
+          .map((g) => ({ ...g, notes: g.notes.filter((n) => n.time >= sel.range[0] && n.time < sel.range[1]) }))
+          .filter((g) => g.notes.length);
+  const outHeading = (sel) => [filterSummary === 'All notes' && sel && sel.label ? '' : filterSummary, sel && sel.label].filter(Boolean).join(' · ') || 'All notes';
+
+  const shareNotes = async (sel = null) => {
     setShareMsg('');
     const fileName = 'Crumb notes.pdf';
-    const blob = buildNotesPdf({ heading: filterSummary, groups, groupSide, whenText });
+    const gs = outGroups(sel);
+    if (!gs.length) return setShareMsg('No notes on those days.');
+    const blob = buildNotesPdf({ heading: outHeading(sel), groups: gs, groupSide, whenText });
     try {
       const file = new File([blob], fileName, { type: 'application/pdf' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -253,13 +267,17 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
     setShareMsg('PDF downloaded.');
   };
 
-  const printNotes = () => {
+  const printNotes = (sel = null) => {
     setShareMsg('');
-    try {
-      window.print();
-    } catch {
-      setShareMsg("Printing isn't available here. Use Share instead.");
-    }
+    if (!outGroups(sel).length) return setShareMsg('No notes on those days.');
+    setOut(sel); // the printout below follows the days picked
+    setTimeout(() => {
+      try {
+        window.print();
+      } catch {
+        setShareMsg("Printing isn't available here. Use Share instead.");
+      }
+    }, 80);
   };
 
   // Right side of a group heading: the date for Today / Yesterday, otherwise how many notes
@@ -282,17 +300,29 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
         <div className="mn-title-row">
           <h1 className="mn-title">Notes</h1>
           <div className="mn-actions">
-            <button className="mn-pill" disabled={!shown.length} onClick={shareNotes}>
+            <button className="mn-pill" disabled={!shown.length} onClick={() => setAskFor('share')}>
               <IoShareOutline className="mn-pill-icon" />
               Share
             </button>
-            <button className="mn-pill" disabled={!shown.length} onClick={printNotes}>
+            <button className="mn-pill" disabled={!shown.length} onClick={() => setAskFor('print')}>
               <IoPrintOutline className="mn-pill-icon" />
               Print
             </button>
           </div>
         </div>
         {shareMsg && <div className="mn-share-msg">{shareMsg}</div>}
+        {askFor && (
+          <NotesRangeSheet
+            title={askFor === 'print' ? 'Print Which Notes?' : 'Share Which Notes?'}
+            onCancel={() => setAskFor(null)}
+            onPick={(sel) => {
+              const what = askFor;
+              setAskFor(null);
+              if (what === 'print') printNotes(sel);
+              else shareNotes(sel);
+            }}
+          />
+        )}
 
         <input
           className="mn-search"
@@ -393,9 +423,9 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
             <div className="mn-print-kicker">Notes</div>
           </div>
           <div className="mn-print-bottom">
-            <div className="mn-print-heading">{filterSummary}</div>
+            <div className="mn-print-heading">{outHeading(out)}</div>
           </div>
-          {groups.map((g) => (
+          {outGroups(out).map((g) => (
             <div key={g.label} className="mn-print-group">
               <div className="mn-print-group-head">
                 <span>{g.label}</span>

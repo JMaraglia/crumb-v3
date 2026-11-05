@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline } from 'react-icons/io5';
 import { shareText, shareFile, safeFileName } from './share';
+import NotesRangeSheet from './NotesRangeSheet';
 import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
 import { isCheckable, isNoteDone } from './noteStatus';
@@ -126,6 +127,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const [filter, setFilter] = useState('All');
   const [editing, setEditing] = useState(null); // { index, text, category }
   const [shareMsg, setShareMsg] = useState('');
+  const [askRange, setAskRange] = useState(false); // "Share which notes?" before sharing
   const [meeting, setMeeting] = useState(false); // "Set a meeting" panel open
   const [changingMeeting, setChangingMeeting] = useState(null); // index of a Meeting note whose time is being changed
 
@@ -202,8 +204,11 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   };
 
   // Share this account's notes (what's on screen: Background + the current filter) as a PDF
-  const shareAll = async () => {
-    const list = [...background, ...(filter === 'Background' ? [] : shown)];
+  // Asks which days first (one day, a stretch, or all). Background notes always come along.
+  const shareAll = async ({ range = null, label = '' } = {}) => {
+    const inRange = (n) => !range || ((Date.parse(n.timestamp) || 0) >= range[0] && (Date.parse(n.timestamp) || 0) < range[1]);
+    if (range && filter !== 'Background' && !shown.some(inRange)) return setShareMsg('No notes on those days.');
+    const list = [...background, ...(filter === 'Background' ? [] : shown.filter(inRange))];
     const seen = new Set();
     const items = list
       .filter((n) => !seen.has(n.index) && seen.add(n.index))
@@ -223,7 +228,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
       groups[groups.length - 1].notes.push(n);
     });
     const whenText = (n) => (n.time ? new Date(n.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '');
-    const heading = `${account.name || 'Notes'}${filter !== 'All' ? ` · ${filter}` : ''}`;
+    const heading = `${account.name || 'Notes'}${filter !== 'All' ? ` · ${filter}` : ''}${label ? ` · ${label}` : ''}`;
     const blob = buildNotesPdf({ heading, groups, groupSide: () => '', whenText, showAccount: false });
     setShareMsg(await shareFile(blob, `${safeFileName(account.name)} notes.pdf`, `${account.name} notes`));
   };
@@ -339,7 +344,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <div className="nv-header-sub">{kindLabel} notes</div>
         </div>
         {notes.length > 0 ? (
-          <button className="nv-icon-btn nv-share-btn" onClick={shareAll} aria-label="Share these notes as a PDF">
+          <button className="nv-icon-btn nv-share-btn" onClick={() => setAskRange(true)} aria-label="Share these notes as a PDF">
             <IoShareOutline />
           </button>
         ) : (
@@ -347,6 +352,15 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
         )}
       </header>
       {shareMsg && <div className="nv-share-msg">{shareMsg}</div>}
+      {askRange && (
+        <NotesRangeSheet
+          onCancel={() => setAskRange(false)}
+          onPick={(r) => {
+            setAskRange(false);
+            shareAll(r);
+          }}
+        />
+      )}
 
       <div className="nv-content">
         {/* Background notes stay pinned at the top */}
