@@ -13,16 +13,18 @@ import MeetingSheet, { niceMeeting } from './MeetingSheet';
 import SwipeRow from './SwipeRow';
 import './NotesView.css';
 
-export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Background', 'Meeting'];
+export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Contacted', 'Background', 'Meeting'];
 // Labels you can pick. A note with no label is saved as 'General' and shows no tag.
 // (Meeting is picked with the Meeting button, which also books it on the Calendar.)
-const LABELS = ['Visit', 'Sample', 'Follow-up', 'Background'];
+// Contacted = touched the account without a visit (email, text, call).
+const LABELS = ['Visit', 'Sample', 'Follow-up', 'Contacted', 'Background'];
 
 const CATEGORY_COLORS = {
   General: { bg: '#eeeef0', fg: '#3a3a3c' },
   Visit: { bg: '#e6f1fa', fg: '#0077cc' },
   Sample: { bg: '#e3f6e8', fg: '#1e8e3e' },
   'Follow-up': { bg: '#fff1de', fg: '#b25e00' },
+  Contacted: { bg: '#e0f4f6', fg: '#0e7c86' },
   Background: { bg: '#f3e8fb', fg: '#8a3fb5' },
   Meeting: { bg: '#fff1e0', fg: '#d96b00' },
 };

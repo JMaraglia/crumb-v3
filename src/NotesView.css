@@ -133,10 +133,17 @@
   margin-top: 10px;
 }
 
-/* the new-note row fits all five (four labels + Meeting) on one line */
+/* the new-note labels: six of them (five labels + Meeting) in two even rows of three */
 .nv-compose .nv-cats {
-  flex-wrap: nowrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.nv-page .nv-compose .nv-cat,
+.nv-page .nv-compose .nv-cat:hover {
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 7px 4px;
 }
 
 .nv-page .nv-cat,

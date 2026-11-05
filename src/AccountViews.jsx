@@ -444,7 +444,7 @@ function BackgroundBox({ notes, onClick }) {
 
 // Newest "last note" shown on lists, the account screen and the Itinerary:
 // only Visit, Follow-up, Sample and Meeting notes (not Background, not unlabeled).
-const LAST_NOTE_LABELS = ['visit', 'follow-up', 'sample', 'meeting'];
+const LAST_NOTE_LABELS = ['visit', 'follow-up', 'sample', 'meeting', 'contacted'];
 export function lastNote(account) {
   const notes = (account.notes || []).filter((n) => n && LAST_NOTE_LABELS.includes(String(n.category || '').toLowerCase()));
   if (notes.length === 0) return null;
