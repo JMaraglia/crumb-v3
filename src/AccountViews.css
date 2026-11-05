@@ -1479,3 +1479,16 @@
 .av-gl.is-open {
   box-shadow: none;
 }
+
+/* Opened row: owner + phone, address (tap to call/text or map) */
+.av-quickinfo { padding: 2px 0 8px; display: flex; flex-direction: column; gap: 4px; }
+.av-qi-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.av-qi-who { font-size: 0.95rem; font-weight: 600; color: #1c1c1e; min-width: 0; }
+.av-qi-muted { color: #8e8e93; font-weight: 500; }
+.av-page .av-qi-link,
+.av-page .av-qi-link:hover {
+  margin: 0; padding: 0; border: 0; background: none; box-shadow: none; width: auto;
+  color: #1c1c1e; font-size: 0.95rem; font-weight: 600; text-align: left; white-space: nowrap; /* tappable, not blue */
+}
+.av-page .av-qi-addr,
+.av-page .av-qi-addr:hover { font-weight: 500; white-space: normal; color: #3a3a3c; }

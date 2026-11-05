@@ -798,7 +798,8 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
   const visit = visitSummary(a, config);
   const latest = lastNote(a);
   const contacts = a.contacts || [];
-  const mainContact = contacts.find((c) => c.name || c.title);
+  // the owner first (if there is one), otherwise the first contact listed
+  const mainContact = contacts.find((c) => /owner/i.test(c.title || '') && (c.name || c.phone)) || contacts.find((c) => c.name || c.title);
   const reachable = contacts.some(canReach);
 
   const startHold = (e) => {
@@ -862,19 +863,10 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
         <Avatar name={a.name} size={expanded ? 48 : 40} />
         <span className="av-row-text">
           <span className={`av-row-name ${expanded ? 'is-big' : ''}`}>{displayName(a)}</span>
-          {/* account # and address always; opened up, the main contact shows underneath too */}
-          {(a.address || (config.hasAccountNumber && a.accountNumber)) && (
-            <span className="av-row-sub" style={expanded ? { whiteSpace: 'normal' } : undefined}>
-              {[config.hasAccountNumber && a.accountNumber ? `#${a.accountNumber}` : null, a.address]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
-          )}
-          {expanded && (
-            <span className="av-row-sub">
-              {mainContact ? [mainContact.name, mainContact.title].filter(Boolean).join(' · ') : 'No contact yet'}
-            </span>
-          )}
+          {/* Short: customers show the account #, prospects their town. Opened: contact + address below. */}
+          {config.hasAccountNumber
+            ? a.accountNumber && <span className="av-row-sub">#{a.accountNumber}</span>
+            : a.town && <span className="av-row-sub">{a.town}</span>}
           {!expanded && (
             <span className="av-chips">
               {a.inactive && <span className="av-chip av-chip-inactive">{inactiveLabel(a)}</span>}
@@ -894,6 +886,25 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
 
       {expanded && (
         <div className="av-expand">
+          <div className="av-quickinfo">
+            {mainContact ? (
+              <div className="av-qi-row">
+                <span className="av-qi-who">{[mainContact.name, mainContact.title].filter(Boolean).join(' · ') || 'Contact'}</span>
+                {(mainContact.phone || mainContact.textPhone) && (
+                  <button className="av-qi-link" onClick={() => onSheet(contactSheet([mainContact]))}>
+                    {formatPhone(mainContact.phone || mainContact.textPhone)}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="av-qi-row"><span className="av-qi-who av-qi-muted">No contact yet</span></div>
+            )}
+            {a.address && (
+              <button className="av-qi-link av-qi-addr" onClick={() => onSheet({ title: a.address, actions: mapActions(a.address) })}>
+                {a.address}
+              </button>
+            )}
+          </div>
           <BackgroundBox notes={backgroundNotes(a)} onClick={() => navigate(config.notesPath(a.id))} />
           {latest && (
             <button className="av-last-note" onClick={() => navigate(config.notesPath(a.id))}>
