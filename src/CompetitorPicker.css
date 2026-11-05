@@ -1,0 +1,25 @@
+/* Competitors (cp-). App.css styles every button, so reset here. */
+.cp-box { background: #fff; border-radius: 12px; padding: 10px 12px; margin-bottom: 16px; }
+.cp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.cp-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 5px 4px 5px 11px; border-radius: 14px;
+  background: #fdecea; color: #b3261e; font-size: 0.88rem; font-weight: 600;
+}
+.cp-box .cp-x, .cp-box .cp-x:hover {
+  margin: 0; padding: 0 6px; border: 0; background: none; box-shadow: none; color: #b3261e;
+  font-size: 1.1rem; line-height: 1; width: auto;
+}
+.cp-input {
+  display: block; width: 100%; box-sizing: border-box; padding: 10px 2px; border: 0;
+  border-top: 1px solid #ececf0; font-size: 16px; font-family: inherit; color: #1c1c1e; background: none; outline: none;
+}
+.cp-chips + .cp-input { border-top: 1px solid #ececf0; }
+.cp-box > .cp-input:first-child { border-top: 0; }
+.cp-suggest { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; }
+.cp-box .cp-opt, .cp-box .cp-opt:hover {
+  margin: 0; padding: 6px 11px; border: 1px solid #e3e3e8; border-radius: 14px; background: #f7f7fa;
+  box-shadow: none; color: #1c1c1e; font-size: 0.86rem; font-weight: 500; width: auto;
+}
+.cp-box .cp-new, .cp-box .cp-new:hover { background: #e9f2fb; border-color: #cfe3f5; color: #0077cc; font-weight: 600; }
+/* account screen: read-only chips */
+.cp-view { display: flex; flex-wrap: wrap; gap: 6px; background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 16px; }

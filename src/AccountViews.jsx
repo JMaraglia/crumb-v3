@@ -15,6 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
+import CompetitorPicker from './CompetitorPicker';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
@@ -1471,6 +1472,17 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           );
         })()}
 
+        {Array.isArray(account.competitors) && account.competitors.length > 0 && (
+          <>
+            <div className="av-section-title">Competitors</div>
+            <div className="cp-view">
+              {account.competitors.map((n) => (
+                <span key={n} className="cp-chip" style={{ paddingRight: 11 }}>{n}</span>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="av-section-title">Contacts</div>
         {contacts.length === 0 ? (
           <div className="av-group av-muted-row">No contacts yet.</div>
@@ -1726,6 +1738,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [addrState, setAddrState] = useState(startAddr.state);
   const [zip, setZip] = useState(startAddr.zip);
   const [website, setWebsite] = useState((existing && existing.website) || '');
+  const [competitors, setCompetitors] = useState(existing && Array.isArray(existing.competitors) ? existing.competitors : []);
   const [group, setGroup] = useState(existing ? groupOf(existing) : '');
   // Add another location: creates its own account right away, linked by the (hidden) group id.
   const [newLoc, setNewLoc] = useState(null); // { street, town, state, zip } while the form is open
@@ -1773,6 +1786,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       address: joinAddress({ street: newLoc.street, town: newLoc.town, state: newLoc.state.toUpperCase(), zip: newLoc.zip }),
       group: g,
       contacts: carried,
+      competitors: [...competitors], // same suppliers to start with
       notes: [],
       [config.visitDaysField]: [],
       visitFrequency: 'weekly',
@@ -1845,6 +1859,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       address: joinAddress({ street, town, state: addrState.toUpperCase(), zip }),
       group: group.trim(), // locations of the same business share this (hidden) group id
       website: website.trim(),
+      competitors, // who they buy from now (carries over on Convert)
       // drop contact rows that were left completely empty
       contacts: contacts
         .map((c) => ({
@@ -2115,6 +2130,9 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
             </div>
           </>
         )}
+
+        <div className="av-section-title">Competitors</div>
+        <CompetitorPicker value={competitors} onChange={setCompetitors} />
 
         <div className="av-section-title">Contacts</div>
         {contacts.map((c, i) => (
