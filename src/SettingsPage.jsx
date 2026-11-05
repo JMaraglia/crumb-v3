@@ -51,7 +51,7 @@ export default function SettingsPage() {
     },
     {
       icon: <IoTimeOutline />,
-      label: "Haven't seen in a while",
+      label: "Due For A Check-In",
       sub: stale ? `Accounts with no contact in ${stale}+ days (Itinerary, lists, morning summary)` : 'Off',
       go: () => setPickStale(true),
     },
@@ -87,7 +87,7 @@ export default function SettingsPage() {
       </div>
       {pickStale && (
         <AskSheet
-          title="Haven't seen in a while"
+          title="Due For A Check-In"
           message="Flag accounts with no visit, note or appointment for:"
           choices={[21, 30, 45, 60, 90].map((d) => ({ label: `${d} days${d === stale ? ' ✓' : ''}`, value: d })).concat([{ label: `Off${!stale ? ' ✓' : ''}`, value: 0 }])}
           onPick={setStaleDays}

@@ -942,7 +942,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           return (
             <div className="it-stale">
               <button className="it-stale-bar" onClick={() => setStaleOpen((o) => !o)}>
-                <span>Haven't seen in a while ({stale.length})</span>
+                <span>Due For A Check-In ({stale.length})</span>
                 <span className={`it-stale-arrow${staleOpen ? ' is-open' : ''}`}>›</span>
               </button>
               {staleOpen && (

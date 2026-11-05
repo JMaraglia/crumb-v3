@@ -210,7 +210,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
         // "Haven't seen in a while" count as of that morning (Settings → limit; 0 = off)
         const limit = staleDays();
         const staleN = limit ? staleAccounts(contacts, prospects, Math.max(1, limit - i)).length : 0;
-        const staleLine = staleN ? `${staleN} ${staleN === 1 ? 'account' : 'accounts'} you haven't seen in a while` : '';
+        const staleLine = staleN ? `${staleN} ${staleN === 1 ? 'account' : 'accounts'} due for a check-in` : '';
         if (open.length || due.length || staleN) {
           const late = due.filter((d) => d.late).length;
           const title = (open.length || due.length) ? [
