@@ -435,11 +435,34 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   };
   // A stop dropped at spot `to` gets a time that fits there: right after the stop above it
   // (that stop's time + its visit length), or before the stop below if it's now first.
+  // A stop's own time before any dragging: hand-added stops remember it (origTime); scheduled
+  // visits go back to the account's usual time.
+  const originalTime = (stop) => {
+    if (stop.kind === 'manual') {
+      const v = visits[stop.index];
+      if (!v) return null;
+      return hhmmToMinutes(v.origTime != null ? v.origTime : v.time);
+    }
+    const acct = findAccount(stop.accountType, stop.accountId);
+    const t = acct ? visitTimeOn(acct, date) : null;
+    return typeof t === 'number' ? t : null;
+  };
   const dropStop = (stop, to) => {
     const others = stops.filter((s) => s.key !== stop.key);
     const prev = others[to - 1] || null;
     const next = others[to] || null;
     const len = (s) => (s && typeof s.visitLength === 'number' ? s.visitLength : 30);
+    const timed = (s) => s && typeof s.time === 'number';
+    // Dragged back to where its own time fits → it gets its own time back.
+    const orig = originalTime(stop);
+    if (orig != null && (!timed(prev) || prev.time <= orig) && (!timed(next) || orig <= next.time)) {
+      if (stop.kind === 'manual') {
+        saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, time: minutesToHhmm(orig), origTime: undefined } : v)));
+      } else {
+        saveTime(stop, null); // back to the usual time
+      }
+      return;
+    }
     let time = null;
     if (prev && typeof prev.time === 'number') {
       time = prev.time + len(prev);
@@ -452,7 +475,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     } else {
       return; // among "Anytime" stops: nothing to go by
     }
-    saveTime(stop, Math.min(time, 23 * 60 + 55));
+    time = Math.min(time, 23 * 60 + 55);
+    if (stop.kind === 'manual') {
+      // remember the stop's own time so dragging it back restores it
+      saveVisits(
+        visits.map((v, i) => (i === stop.index ? { ...v, time: minutesToHhmm(time), origTime: v.origTime != null ? v.origTime : v.time } : v))
+      );
+      return;
+    }
+    saveTime(stop, time);
   };
 
   // Quick note → saved on the account as a "Visit" note
@@ -605,7 +636,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       if (lockMap[date] && typeof lockMap[date][stop.key] === 'number') saveLock(stop, null);
     };
     if (stop.kind === 'manual') {
-      saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, time: time == null ? '' : minutesToHhmm(time) } : v)));
+      saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, time: time == null ? '' : minutesToHhmm(time), origTime: undefined } : v)));
       clearDayLock();
     } else if (stop.kind === 'event') {
       if (time != null) {
