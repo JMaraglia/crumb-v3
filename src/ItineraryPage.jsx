@@ -23,6 +23,7 @@ import {
   VisitSheet,
   stageSheet,
   findRepeats,
+  groupOf,
 } from './AccountViews';
 import {
   keyOf,
@@ -908,6 +909,11 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                               onDoubleClick={(e) => e.stopPropagation()}
                             >
                               {stop.stage.label}
+                            </span>
+                          )}
+                          {acct && groupOf(acct) && (
+                            <span className="it-tag" style={{ color: '#5e35b1', borderColor: '#5e35b1' }}>
+                              Group
                             </span>
                           )}
                         </span>
