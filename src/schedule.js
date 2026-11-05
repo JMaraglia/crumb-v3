@@ -176,6 +176,8 @@ export function onItinerary(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
 }
 
 export const VISIT_BLOCK_MINUTES = 30;
+export const PROSPECT_COLOR = '#0077cc'; // prospects (blue)
+export const MEETING_COLOR = '#d96b00';  // meetings (orange, same as the Meeting note label)
 export const CUSTOMER_COLOR = '#1e8e3e'; // customers' scheduled visits (green) // scheduled visits show as 30-minute blocks on the calendar
 
 // Calendar blocks for prospects' scheduled visits and hand-added itinerary stops,
@@ -224,7 +226,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
         date: k,
         start: pTime,
         end: Math.min(pTime + VISIT_BLOCK_MINUTES, 1440),
-        color: st ? st.color : '#0077cc',
+        color: PROSPECT_COLOR,
         location: p.address || '',
         accountType: 'prospect',
         accountId: p.id,
@@ -250,7 +252,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
       date: v.date,
       start,
       end: Math.min(start + VISIT_BLOCK_MINUTES, 1440),
-      color: '#8e8e93',
+      color: v.accountType === 'customer' || v.type === 'contact' ? CUSTOMER_COLOR : PROSPECT_COLOR,
       location: '',
       accountType: v.accountType || null,
       accountId: v.accountId || null,

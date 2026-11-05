@@ -41,6 +41,8 @@ import {
   PROSPECT_DAYS_FIELD,
   CUSTOMER_DAYS_FIELD,
   CUSTOMER_COLOR,
+  PROSPECT_COLOR,
+  MEETING_COLOR,
 } from './schedule';
 import { PdfDoc } from './pdf';
 import SwipeRow from './SwipeRow';
@@ -192,6 +194,13 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       ? contacts.find((c) => String(c.id) === String(id))
       : null;
 
+  // Meetings: events saved from the Meeting button (flagged), or ones a Meeting note points at
+  const meetingIds = new Set();
+  [...prospects, ...contacts].forEach((a) =>
+    (a.notes || []).forEach((n) => n && n.meeting && n.meeting.eventId != null && meetingIds.add(String(n.meeting.eventId)))
+  );
+  const isMeeting = (ev) => Boolean(ev && (ev.meeting || meetingIds.has(String(ev.id))));
+
   /* ---- build the stops for a day (today's list, plus the next day for the printout) ---- */
   const buildStops = (day) => {
     const doneToday = doneMap[day] || [];
@@ -210,10 +219,10 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           title: p.name,
           address: p.address,
           townLine: p.town ? [p.town, p.state].filter(Boolean).join(', ') : '',
-          tag: { label: 'Prospect', color: '#8e8e93' },
+          tag: { label: 'Prospect', color: PROSPECT_COLOR },
           stage: st ? { label: st.label, color: st.color } : null, // shown next to "Prospect"
           revisit: Boolean(p.inactive), // an inactive account's revisit day
-          color: st ? st.color : '#0077cc',
+          color: PROSPECT_COLOR,
           accountType: 'prospect',
           accountId: p.id,
           done: doneToday.includes(key),
@@ -253,8 +262,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           endTime: ev.end,
           title: ev.title,
           address: ev.location,
-          tag: { label: 'Calendar', color: ev.color || '#0077cc' },
-          color: ev.color || '#0077cc',
+          tag: isMeeting(ev) ? { label: 'Meeting', color: MEETING_COLOR } : { label: 'Calendar', color: ev.color || '#0077cc' },
+          color: isMeeting(ev) ? MEETING_COLOR : ev.color || '#0077cc',
           accountType: ev.accountType,
           accountId: ev.accountId,
           done: doneToday.includes(key),
@@ -283,9 +292,9 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         time: hhmmToMinutes(v.time),
         title: (acct && acct.name) || v.name || '(No name)',
         address: (acct && acct.address) || '',
-        tag: { label: isCustomerStop ? 'Customer' : 'Prospect', color: '#8e8e93' },
+        tag: { label: isCustomerStop ? 'Customer' : 'Prospect', color: isCustomerStop ? CUSTOMER_COLOR : PROSPECT_COLOR },
         stage: mst ? { label: mst.label, color: mst.color } : null,
-        color: '#8e8e93',
+        color: isCustomerStop ? CUSTOMER_COLOR : PROSPECT_COLOR,
         accountType: v.accountType || null,
         accountId: v.accountId || null,
         done: Boolean(v.done),
@@ -942,7 +951,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             {stop.tag.label}
                           </span>
                           {stop.revisit && (
-                            <span className="it-tag" style={{ color: '#3a3a3c', borderColor: '#3a3a3c' }}>
+                            <span className="it-tag" style={{ color: '#c62828', borderColor: '#c62828' }}>
                               Revisit
                             </span>
                           )}

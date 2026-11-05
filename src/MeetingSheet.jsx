@@ -3,7 +3,7 @@
 // as a calendar event linked to the account, so it shows on the Calendar AND that day's Itinerary.
 import React, { useState } from 'react';
 import { TIME_OPTIONS, timeLabel } from './AccountViews';
-import { keyOf, addDaysToKey, fromKey, readJSON } from './schedule';
+import { keyOf, addDaysToKey, fromKey, readJSON, MEETING_COLOR } from './schedule';
 import './MeetingSheet.css';
 
 const EVENTS_KEY = 'crumb_calendar_events';
@@ -48,7 +48,9 @@ export default function MeetingSheet({ account, presetNotes = '', existing = nul
       end: Math.min(start + length, 1440),
       location: oldEvent ? oldEvent.location || '' : account.address || '',
       notes: notes.trim(),
-      color: oldEvent ? oldEvent.color : settings.defaultColor || '#0077cc',
+      // meetings are orange (an old meeting left on the default blue turns orange when changed)
+      color: oldEvent && oldEvent.color && oldEvent.color !== (settings.defaultColor || '#0077cc') ? oldEvent.color : MEETING_COLOR,
+      meeting: true,
       accountType: account.type,
       accountId: account.id,
       accountName: account.name || null,

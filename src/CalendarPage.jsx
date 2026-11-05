@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
 import EventSheet, { DEFAULT_EVENT_COLOR, EVENT_COLORS } from './EventSheet';
 import MonthView from './MonthView';
-import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey } from './schedule';
+import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey, MEETING_COLOR } from './schedule';
 import { removeStop, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import AskSheet from './AskSheet';
 import './CalendarPage.css';
@@ -134,7 +134,18 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   );
   // Events taken off the Calendar for a day (they can stay on the Itinerary)
   const hiddenMap = readJSON(HIDDEN_KEY, {}) || {};
-  const shownEvents = events.filter((ev) => !(hiddenMap[ev.date] || []).includes(`e-${ev.id}`));
+  // Meetings show orange (older ones were saved on the default blue)
+  const meetingIds = new Set();
+  [...prospects, ...contacts].forEach((a) =>
+    ((a && a.notes) || []).forEach((n) => n && n.meeting && n.meeting.eventId != null && meetingIds.add(String(n.meeting.eventId)))
+  );
+  const shownEvents = events
+    .filter((ev) => !(hiddenMap[ev.date] || []).includes(`e-${ev.id}`))
+    .map((ev) =>
+      (ev.meeting || meetingIds.has(String(ev.id))) && (!ev.color || ev.color === DEFAULT_EVENT_COLOR || ev.color === '#0077cc')
+        ? { ...ev, color: MEETING_COLOR }
+        : ev
+    );
   const allEvents = [...shownEvents, ...shownBlocks];
 
   // Hold a thumb on an event → delete it. If it's also on the Itinerary, ask about that too.
