@@ -4,7 +4,7 @@
 //   2. calendar events linked to an account (or any event switched to "Show in itinerary")
 //   3. stops added by hand (saved in visitData, same as before; old saved visits still show)
 // Tap a stop for Contact / Map and a quick note that saves to that account as a "Visit" note.
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { IoShareOutline, IoPrintOutline, IoCalendarOutline, IoNavigate } from 'react-icons/io5';
@@ -328,16 +328,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   // Double-tap or hold a stop → that customer's / prospect's Edit screen.
   const lastTap = useRef({ key: null, time: 0 });
   const hold = useRef(null); // { timer, x, y, fired }
+  const ignoreTapUntil = useRef(0);
   const editPath = (stop) => {
     const acct = stop.accountId ? findAccount(stop.accountType, stop.accountId) : null;
     if (!acct) return null;
     return stop.accountType === 'prospect' ? `/prospects/${acct.id}/edit` : `/customers/${acct.id}/edit`;
   };
   const tapStop = (stop) => {
-    if (hold.current && hold.current.fired) {
-      hold.current = null; // the lift after a hold
-      return;
-    }
+    if (Date.now() < ignoreTapUntil.current) return; // the lift after a hold
     const now = Date.now();
     const path = editPath(stop);
     if (path && lastTap.current.key === stop.key && now - lastTap.current.time < 350) {
@@ -348,30 +346,113 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     lastTap.current = { key: stop.key, time: now };
     openStop(stop);
   };
+  // Hold a stop: let go without moving → Edit screen. Hold and slide up/down → move the stop
+  // in the list; it takes the time of its new spot (calendar appointments stay put).
+  const listRef = useRef(null);
+  const [drag, setDrag] = useState(null); // { key, dy, from, to, height, tops }
+  const dragRef = useRef(null);
+  dragRef.current = drag;
+  useEffect(() => {
+    // While a stop is being moved, the page must not scroll (iPhone).
+    const stopScroll = (e) => {
+      if (hold.current && hold.current.fired && hold.current.canDrag) e.preventDefault();
+    };
+    window.addEventListener('touchmove', stopScroll, { passive: false });
+    return () => window.removeEventListener('touchmove', stopScroll);
+  }, []);
   const holdStart = (stop, e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const path = editPath(stop);
-    if (!path) return;
-    const h = { x: e.clientX, y: e.clientY, fired: false };
+    const canDrag = stop.kind !== 'event';
+    if (!path && !canDrag) return;
+    const h = { x: e.clientX, y: e.clientY, fired: false, moved: false, path, canDrag, stop };
     h.timer = setTimeout(() => {
       h.fired = true;
-      navigate(path);
-    }, 550);
+      if (!canDrag) {
+        ignoreTapUntil.current = Date.now() + 800;
+        hold.current = null;
+        navigate(path);
+        return;
+      }
+      // Measure the rows so the finger's position can be turned into a spot in the list.
+      const rows = listRef.current ? [...listRef.current.querySelectorAll(':scope > .it-stop')] : [];
+      const tops = rows.map((r) => {
+        const b = r.getBoundingClientRect();
+        return { key: r.dataset.stopkey, mid: b.top + b.height / 2, height: b.height };
+      });
+      const from = tops.findIndex((t) => t.key === stop.key);
+      if (from < 0) return;
+      try {
+        if (navigator.vibrate) navigator.vibrate(15);
+      } catch {
+        /* not on iPhone */
+      }
+      setDrag({ key: stop.key, dy: 0, from, to: from, height: tops[from].height, tops });
+    }, 500);
     hold.current = h;
   };
   const holdMove = (e) => {
     const h = hold.current;
-    if (h && !h.fired && (Math.abs(e.clientX - h.x) > 10 || Math.abs(e.clientY - h.y) > 10)) {
-      clearTimeout(h.timer);
-      hold.current = null;
+    if (!h) return;
+    if (!h.fired) {
+      if (Math.abs(e.clientX - h.x) > 10 || Math.abs(e.clientY - h.y) > 10) {
+        clearTimeout(h.timer);
+        hold.current = null;
+      }
+      return;
     }
+    const d = dragRef.current;
+    if (!d) return;
+    const dy = e.clientY - h.y;
+    if (Math.abs(dy) > 6) h.moved = true;
+    const fingerMid = d.tops[d.from].mid + dy;
+    let to = 0;
+    d.tops.forEach((t, i) => {
+      if (i !== d.from && fingerMid > t.mid) to += 1;
+    });
+    setDrag({ ...d, dy, to });
   };
   const holdEnd = () => {
     const h = hold.current;
-    if (h && !h.fired) {
-      clearTimeout(h.timer);
-      hold.current = null;
+    if (!h) return;
+    clearTimeout(h.timer);
+    if (h.fired && h.canDrag) {
+      const d = dragRef.current;
+      setDrag(null);
+      if (h.moved && d && d.to !== d.from) dropStop(h.stop, d.to);
+      else if (!h.moved && h.path) navigate(h.path);
     }
+    if (h.fired) ignoreTapUntil.current = Date.now() + 500; // ignore the click that follows the lift
+    hold.current = null;
+  };
+  const dragShift = (stop, i) => {
+    const d = drag;
+    if (!d) return 0;
+    if (stop.key === d.key) return d.dy;
+    if (d.from < d.to && i > d.from && i <= d.to) return -d.height;
+    if (d.from > d.to && i >= d.to && i < d.from) return d.height;
+    return 0;
+  };
+  // A stop dropped at spot `to` gets a time that fits there: right after the stop above it
+  // (that stop's time + its visit length), or before the stop below if it's now first.
+  const dropStop = (stop, to) => {
+    const others = stops.filter((s) => s.key !== stop.key);
+    const prev = others[to - 1] || null;
+    const next = others[to] || null;
+    const len = (s) => (s && typeof s.visitLength === 'number' ? s.visitLength : 30);
+    let time = null;
+    if (prev && typeof prev.time === 'number') {
+      time = prev.time + len(prev);
+      if (next && typeof next.time === 'number' && time > next.time) {
+        // not enough room: halfway between, on a 5-minute mark
+        time = prev.time + Math.floor((next.time - prev.time) / 2 / 5) * 5;
+      }
+    } else if (next && typeof next.time === 'number') {
+      time = Math.max(0, next.time - len(stop));
+    } else {
+      return; // among "Anytime" stops: nothing to go by
+    }
+    saveTime(stop, Math.min(time, 23 * 60 + 55));
   };
 
   // Quick note → saved on the account as a "Visit" note
@@ -718,13 +799,18 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             Set visit days on a prospect, link a calendar event, or tap + to add one.
           </div>
         ) : (
-          <div className="it-list">
-            {stops.map((stop) => {
+          <div className={`it-list ${drag ? 'is-dragging' : ''}`} ref={listRef}>
+            {stops.map((stop, stopIndex) => {
               const open = openKey === stop.key;
               const acct = stop.accountId ? findAccount(stop.accountType, stop.accountId) : null;
               const latest = acct ? lastNote(acct) : null;
               return (
-                <div key={stop.key} className={`it-stop ${stop.done ? 'is-done' : ''} ${open ? 'is-open' : ''}`}>
+                <div
+                  key={stop.key}
+                  data-stopkey={stop.key}
+                  className={`it-stop ${stop.done ? 'is-done' : ''} ${open ? 'is-open' : ''} ${drag && drag.key === stop.key ? 'is-lifted' : ''}`}
+                  style={drag ? { transform: `translateY(${dragShift(stop, stopIndex)}px)` } : undefined}
+                >
                   <SwipeRow className="it-stop-row" label={stop.kind === 'manual' ? 'Delete' : 'Remove'} onDelete={() => swipeRemove(stop)}>
                     <button
                       className="it-stop-main"
@@ -931,7 +1017,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             })}
           </div>
         )}
-        {stops.length > 0 && <div className="it-hint">Tap a stop for details · Double-tap or hold to edit · Tap ○ when done · Swipe left to remove</div>}
+        {stops.length > 0 && <div className="it-hint">Tap a stop for details · Double-tap to edit · Hold and slide to move · Tap ○ when done · Swipe left to remove</div>}
 
         {/* Accounts not contacted in a while (limit set in Settings). Not on this day already. */}
         {(() => {
