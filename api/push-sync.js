@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       id: clip(n.id, 120),
       at: clip(n.at, 40),
       title: clip(n.title, 120),
-      body: clip(n.body, 300),
+      body: clip(n.body, 1500), // morning rundown lists every stop
       url: clip(n.url, 100) || '/',
     }));
     await saveDevice(deviceId, {

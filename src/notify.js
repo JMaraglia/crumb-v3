@@ -219,14 +219,17 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
           ]
             .filter(Boolean)
             .join(' · ') : staleLine;
-          const first = open.filter((s) => typeof s.time === 'number').sort((a, b) => a.time - b.time)[0] || open[0];
-          const body = [
-            first ? `First: ${first.title}${typeof first.time === 'number' ? `, ${timeText(first.time)}` : ''}` : '',
-            due.length ? `Due: ${due[0].text}${due[0].who ? ` (${due[0].who})` : ''}${due.length > 1 ? ` +${due.length - 1} more` : ''}` : '',
-            open.length || due.length ? staleLine : '',
-          ]
+          // The rundown: every stop in order, one per line, then to-dos and the check-in count.
+          const ordered = [...open].sort((a, b) => (typeof a.time === 'number' ? a.time : 9999) - (typeof b.time === 'number' ? b.time : 9999));
+          const MAX_STOPS = 20;
+          const stopLines = ordered.slice(0, MAX_STOPS).map((s) => `${typeof s.time === 'number' ? timeText(s.time) : 'Anytime'}  ${s.title}`);
+          if (ordered.length > MAX_STOPS) stopLines.push(`+${ordered.length - MAX_STOPS} more stops`);
+          const dueLines = due.slice(0, 3).map((d) => `To-do: ${d.text}${d.who ? ` (${d.who})` : ''}`);
+          if (due.length > 3) dueLines.push(`+${due.length - 3} more to-dos`);
+          const body = [...stopLines, ...dueLines, open.length || due.length ? staleLine : '']
             .filter(Boolean)
-            .join(' · ');
+            .join('\n')
+            .slice(0, 1400);
           out.push({
             id: `m-${day}-${settings.morningTime}`,
             at: when,
