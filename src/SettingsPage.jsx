@@ -89,7 +89,7 @@ export default function SettingsPage() {
         <AskSheet
           title="Haven't seen in a while"
           message="Flag accounts with no visit, note or appointment for:"
-          choices={[30, 45, 60, 90].map((d) => ({ label: `${d} days${d === stale ? ' ✓' : ''}`, value: d })).concat([{ label: `Off${!stale ? ' ✓' : ''}`, value: 0 }])}
+          choices={[21, 30, 45, 60, 90].map((d) => ({ label: `${d} days${d === stale ? ' ✓' : ''}`, value: d })).concat([{ label: `Off${!stale ? ' ✓' : ''}`, value: 0 }])}
           onPick={setStaleDays}
           onCancel={() => setPickStale(false)}
         />

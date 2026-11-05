@@ -6,7 +6,7 @@
 import { readJSON, keyOf, todayKeyLocal } from './schedule';
 
 export const STALE_KEY = 'crumb_stale_days';
-export const STALE_CHOICES = [0, 30, 45, 60, 90]; // 0 = off
+export const STALE_CHOICES = [0, 21, 30, 45, 60, 90]; // 0 = off
 export function staleDays() {
   const raw = localStorage.getItem(STALE_KEY);
   if (raw == null || raw === '') return 30; // default: 30 days
