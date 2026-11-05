@@ -467,3 +467,13 @@
   text-underline-offset: 2px;
   cursor: pointer;
 }
+
+/* Edit a note's date/time */
+.nv-when-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px; font-size: 0.9rem; color: #6e6e73; font-weight: 600;
+}
+.nv-when-input {
+  border: 1px solid #e3e3e8; border-radius: 10px; padding: 7px 10px; font-size: 16px;
+  font-family: inherit; color: #1c1c1e; background: #f7f7fa;
+}

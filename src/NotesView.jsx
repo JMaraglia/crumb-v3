@@ -39,6 +39,15 @@ export function categoryStyle(cat) {
 }
 
 // "Tue, Nov 3 · 2:40 PM" (falls back to whatever was saved if it can't be read)
+// Note time ⇄ the date-and-time box on the edit screen ('YYYY-MM-DDTHH:MM', local time)
+function toWhen(timestamp) {
+  const t = Date.parse(timestamp);
+  if (!t) return '';
+  const d = new Date(t);
+  const p = (x) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export function noteDate(timestamp) {
   const t = Date.parse(timestamp);
   if (!t) return timestamp || '';
@@ -168,6 +177,11 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     if (!editing.text.trim()) return;
     const original = account.notes[editing.index];
     const updated = { ...original, text: editing.text.trim(), category: editing.category };
+    // Changed the date/time (e.g. a note from yesterday typed in today)
+    if (editing.when && editing.when !== editing.when0) {
+      const t = new Date(editing.when);
+      if (!Number.isNaN(t.getTime())) updated.timestamp = t.toLocaleString();
+    }
     if (isCheckable(editing.category)) {
       if (editing.due) updated.due = editing.due;
       else delete updated.due;
@@ -244,6 +258,17 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           {isCheckable(editing.category) && (
             <DueChips value={editing.due} onChange={(d) => setEditing({ ...editing, due: d })} />
           )}
+          {editing.when0 && (
+            <label className="nv-when-row">
+              <span>Date</span>
+              <input
+                type="datetime-local"
+                className="nv-when-input"
+                value={editing.when}
+                onChange={(e) => setEditing({ ...editing, when: e.target.value })}
+              />
+            </label>
+          )}
           <div className="nv-edit-actions">
             <button className="nv-btn-delete" onClick={() => remove(n.index)}>Delete</button>
             <button className="nv-btn-share" onClick={() => shareNote(n, editing.text.trim(), editing.category)}>
@@ -272,7 +297,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
         )}
         <button
           className="nv-note-body"
-          onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat, due: n.due || null })}
+          onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat, due: n.due || null, when: toWhen(n.timestamp), when0: toWhen(n.timestamp) })}
         >
           <span className="nv-note-meta">
             {n.cat !== 'General' && (
@@ -333,7 +358,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
                 <button
                   key={n.index}
                   className="nv-pinned-item"
-                  onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat, due: n.due || null })}
+                  onClick={() => setEditing({ index: n.index, text: n.text, category: n.cat, due: n.due || null, when: toWhen(n.timestamp), when0: toWhen(n.timestamp) })}
                 >
                   {n.text}
                 </button>
