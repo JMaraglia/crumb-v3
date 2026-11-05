@@ -31,6 +31,21 @@ function usePersistedState(key, initialValue) {
   return [state, setState];
 }
 
+// Adds { from, to, at } to a prospect's stageHistory whenever its stage changes (or it's added with one).
+function withStageHistory(prev, next) {
+  if (!Array.isArray(next)) return next;
+  const before = new Map((Array.isArray(prev) ? prev : []).map((p) => [String(p && p.id), p]));
+  const at = new Date().toISOString();
+  return next.map((p) => {
+    if (!p || typeof p !== 'object') return p;
+    const old = before.get(String(p.id));
+    const from = old ? old.stage || null : null;
+    const to = p.stage || null;
+    if (from === to || (!old && !to)) return p;
+    return { ...p, stageHistory: [...(Array.isArray(p.stageHistory) ? p.stageHistory : []), { from, to, at }] };
+  });
+}
+
 // Wrapper for notes (works for contacts or prospects)
 function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
   const { id } = useParams();
@@ -96,7 +111,13 @@ export default function App() {
     }
   ]);
 
-  const [prospects, setProspects] = usePersistedState('crumb_prospects', []);
+  const [prospects, setProspectsRaw] = usePersistedState('crumb_prospects', []);
+  // Every prospect stage change is quietly logged on the prospect (stageHistory: [{ from, to, at }])
+  // for a future Scoreboard. Nothing on screen changes.
+  const setProspects = React.useCallback(
+    (update) => setProspectsRaw((prev) => withStageHistory(prev, typeof update === 'function' ? update(prev) : update)),
+    [setProspectsRaw]
+  );
   const [itinerary, setItinerary] = usePersistedState('visitData', {});
 
   // Notifications: keep the server's reminder list fresh — when Crumb opens, when your
