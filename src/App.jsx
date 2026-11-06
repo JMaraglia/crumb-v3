@@ -21,14 +21,83 @@ import { syncReminders } from './notify';
 function usePersistedState(key, initialValue) {
   const [state, setState] = React.useState(() => {
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : initialValue;
+    if (!saved) return initialValue;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // Unreadable data: keep an untouched copy (never thrown away), start this screen empty.
+      try {
+        if (!localStorage.getItem(`${key}__unreadable`)) localStorage.setItem(`${key}__unreadable`, saved);
+      } catch {
+        /* no room for the copy */
+      }
+      return initialValue;
+    }
   });
 
+  // Save only when something actually changes (opening the app never writes).
+  const first = React.useRef(true);
   React.useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch {
+      window.dispatchEvent(new Event('crumb-save-failed')); // shows the "couldn't save" banner
+    }
   }, [key, state]);
 
   return [state, setState];
+}
+
+// If a screen ever breaks, show a message instead of a blank page. Saved data isn't touched.
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { broken: false };
+  }
+  static getDerivedStateFromError() {
+    return { broken: true };
+  }
+  componentDidCatch(err) {
+    console.error('Crumb screen error:', err); // eslint-disable-line no-console
+  }
+  render() {
+    if (!this.state.broken) return this.props.children;
+    return (
+      <div className="app-error">
+        <div className="app-error-title">Something went wrong on this screen.</div>
+        <div className="app-error-text">Your saved customers, prospects and notes weren't changed.</div>
+        <button className="app-error-btn" onClick={() => window.location.replace('/')}>
+          Go to Home
+        </button>
+      </div>
+    );
+  }
+}
+
+// Red banner when a save fails (usually: this phone's storage for Crumb is full).
+function SaveFailedBanner() {
+  const [show, setShow] = React.useState(false);
+  React.useEffect(() => {
+    const on = () => setShow(true);
+    window.addEventListener('crumb-save-failed', on);
+    return () => window.removeEventListener('crumb-save-failed', on);
+  }, []);
+  if (!show) return null;
+  return (
+    <div className="app-savefail" role="alert">
+      <span>
+        Crumb couldn't save your last change — this phone's storage for Crumb is full. Back up now (Settings → Backup &amp;
+        Restore) and send me a message.
+      </span>
+      <button className="app-savefail-x" onClick={() => setShow(false)} aria-label="Close">
+        ×
+      </button>
+    </div>
+  );
 }
 
 // Adds { from, to, at } to a prospect's stageHistory whenever its stage changes (or it's added with one).
@@ -134,6 +203,8 @@ export default function App() {
 
   return (
     <Router>
+      <SaveFailedBanner />
+      <ErrorBoundary>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/backup" element={<BackupPage />} />
@@ -221,6 +292,7 @@ export default function App() {
           }
         />
       </Routes>
+      </ErrorBoundary>
     </Router>
   );
 }

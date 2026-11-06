@@ -204,3 +204,17 @@ button:hover {
 .home-gear.is-due {
   color: #ff9500;
 }
+
+/* Save failed banner + screen error message */
+.app-savefail {
+  position: fixed; left: 10px; right: 10px; top: calc(env(safe-area-inset-top) + 8px); z-index: 200;
+  display: flex; gap: 10px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px;
+  background: #c62828; color: #fff; font-size: 0.9rem; line-height: 1.35; box-shadow: 0 6px 20px rgba(0,0,0,.2);
+}
+.app-savefail .app-savefail-x, .app-savefail .app-savefail-x:hover {
+  margin: 0; padding: 0 4px; width: auto; border: 0; background: none; box-shadow: none; color: #fff; font-size: 1.3rem; line-height: 1;
+}
+.app-error { padding: 80px 24px; text-align: center; }
+.app-error-title { font-size: 1.2rem; font-weight: 700; color: #1c1c1e; }
+.app-error-text { margin-top: 8px; color: #6e6e73; }
+.app-error .app-error-btn { margin-top: 20px; width: auto; padding: 12px 22px; }
