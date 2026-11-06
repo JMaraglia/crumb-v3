@@ -1740,15 +1740,14 @@
   flex: none; width: 36px; height: 36px; margin: 0 0 0 6px; padding: 0; border: 0; border-radius: 0; box-shadow: none;
   background: none; font-size: 1.6rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
 }
-/* a little twist each time it opens or closes */
-.it-lock-emoji { display: inline-block; animation: it-lock-twist 0.6s ease-in-out; transform-origin: 50% 60%; }
-@keyframes it-lock-twist {
-  0% { transform: rotate(0); }
-  25% { transform: rotate(-35deg); }
-  55% { transform: rotate(30deg); }
-  80% { transform: rotate(-12deg); }
-  100% { transform: rotate(0); }
+/* drawn padlock: open = shackle lifted out of the body and swung away on its left leg */
+.it-padlock { display: block; overflow: visible; }
+.it-padlock-shackle {
+  transform-box: view-box;
+  transform-origin: 10.5px 12px;
+  transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
 }
+.it-padlock.is-open .it-padlock-shackle { transform: translateY(-4.5px) rotate(-38deg); }
 .it-sheet-row .it-time-input { margin-left: auto; }
 .it-route-plan-row.is-lifted { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(0,0,0,.18); background: #fff; }
 .it-route-plan-list.is-dragging .it-route-plan-row { transition: transform 0.15s ease; }

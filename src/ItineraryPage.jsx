@@ -1664,9 +1664,7 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
                   setLock((v) => !v);
                 }}
               >
-                <span key={lock ? 'closed' : 'open'} className="it-lock-emoji">
-                  {lock || stop.locked === 'always' ? '🔒' : '🔓'}
-                </span>
+                <Padlock open={!(lock || stop.locked === 'always')} />
               </button>
             )}
           </label>
@@ -1765,6 +1763,32 @@ function MoveSheet({ stop, acct, viewDate, onSave, onCancel }) {
         )}
       </div>
     </div>
+  );
+}
+
+/* ---------- Gold padlock for the time panel: the shackle pops up and swings away when open ---------- */
+function Padlock({ open }) {
+  return (
+    <svg className={`it-padlock ${open ? 'is-open' : ''}`} viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+      <defs>
+        <linearGradient id="padlockGold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f7d774" />
+          <stop offset="0.55" stopColor="#d9a62e" />
+          <stop offset="1" stopColor="#b8861b" />
+        </linearGradient>
+        <linearGradient id="padlockSteel" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#9aa3ad" />
+          <stop offset="0.5" stopColor="#e3e8ee" />
+          <stop offset="1" stopColor="#8d96a0" />
+        </linearGradient>
+      </defs>
+      <g className="it-padlock-shackle">
+        <path d="M10.5 16 V10.5 a5.5 5.5 0 0 1 11 0 V16" fill="none" stroke="url(#padlockSteel)" strokeWidth="3.2" strokeLinecap="round" />
+      </g>
+      <rect x="6" y="14.5" width="20" height="15" rx="3.5" fill="url(#padlockGold)" stroke="#a87a17" strokeWidth="0.8" />
+      <circle cx="16" cy="21" r="2.1" fill="#6b4e0e" />
+      <rect x="15.2" y="21.5" width="1.6" height="4" rx="0.8" fill="#6b4e0e" />
+    </svg>
   );
 }
 
