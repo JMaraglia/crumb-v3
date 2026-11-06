@@ -30,6 +30,7 @@ export const DEFAULT_NOTIFY = {
   afternoon: true,     // end-of-day reminder: what's still open
   afternoonTime: 960,  // 4:00 PM
   afternoonInclude: { tasks: true, followups: true, samples: true, stops: false }, // what it lists
+  leadInclude: { appointments: true, stops: false }, // reminders before: calendar appointments / Itinerary stops
 };
 
 export const END_OF_DAY_KINDS = [
@@ -153,7 +154,12 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     // Reminders before visits and appointments (each one once, even if it's on both lists)
     if (settings.lead > 0) {
       const seen = new Set();
-      [...stops, ...appts].forEach((s) => {
+      const inc = { ...DEFAULT_NOTIFY.leadInclude, ...(settings.leadInclude || {}) };
+      const list = [
+        ...(inc.appointments ? appts : []),
+        ...(inc.stops ? stops.filter((s) => !String(s.key).startsWith('e-')) : []), // visits and hand-added stops
+      ];
+      list.forEach((s) => {
         if (s.done || typeof s.time !== 'number' || seen.has(s.key)) return;
         seen.add(s.key);
         const when = at(day, s.time - settings.lead);

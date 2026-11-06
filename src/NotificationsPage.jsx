@@ -174,8 +174,7 @@ export default function NotificationsPage() {
             })}
           <label className="nt-row">
             <span>
-              Visit & appointment reminders
-              <span className="nt-help">Scheduled visits, Itinerary stops, and calendar events with a time</span>
+              Reminders Before
             </span>
             <select className="nt-select" value={settings.lead} onChange={(e) => change({ lead: Number(e.target.value) })}>
               {LEADS.map(([m, l]) => (
@@ -183,6 +182,24 @@ export default function NotificationsPage() {
               ))}
             </select>
           </label>
+          {settings.lead > 0 &&
+            [
+              ['appointments', 'Calendar Appointments'],
+              ['stops', 'Itinerary Stops'],
+            ].map(([k, label]) => {
+              const inc = { ...DEFAULT_NOTIFY.leadInclude, ...(settings.leadInclude || {}) };
+              return (
+                <label key={k} className="nt-row nt-sub-row">
+                  <span>{label}</span>
+                  <input
+                    type="checkbox"
+                    className="nt-switch"
+                    checked={Boolean(inc[k])}
+                    onChange={(e) => change({ leadInclude: { ...inc, [k]: e.target.checked } })}
+                  />
+                </label>
+              );
+            })}
         </div>
 
         {on && upcoming.length > 0 && (
