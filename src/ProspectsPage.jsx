@@ -4,6 +4,7 @@
 import React from 'react';
 import { AccountList, AccountDetail, AccountEdit } from './AccountViews';
 import { readJSON, toVisitList } from './schedule';
+import { movePhotos, photoKey } from './photos';
 
 const PROSPECT_CONFIG = {
   singular: 'Prospect',
@@ -59,6 +60,15 @@ function convertProspect(prospect, accountNumber, contacts, setContacts, setPros
     });
     localStorage.setItem('crumb_itinerary_done', JSON.stringify(moved));
   }
+
+  // To-dos linked to the prospect now belong to the customer
+  const todos = readJSON('crumb_todos', null);
+  if (Array.isArray(todos)) localStorage.setItem('crumb_todos', JSON.stringify(todos.map(relink)));
+
+  // Photos follow too (they're filed under prospect-<id> / customer-<id>)
+  movePhotos(photoKey('prospect', prospect.id), photoKey('customer', newId))
+    .then(() => window.dispatchEvent(new Event('crumb-photos-moved'))) // the customer screen re-loads its photos
+    .catch(() => {});
   return `/customers/${newId}`;
 }
 

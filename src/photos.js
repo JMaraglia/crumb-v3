@@ -53,6 +53,15 @@ export async function deleteAccountPhotos(key) {
   return rows.length;
 }
 
+// Move every photo of one account to another key (prospect → customer on Convert). Nothing is deleted.
+export async function movePhotos(fromKey, toKey) {
+  if (fromKey === toKey) return 0;
+  const rows = await listPhotos(fromKey);
+  if (!rows.length) return 0;
+  await tx('readwrite', (st) => rows.forEach((p) => st.put({ ...p, key: toKey })));
+  return rows.length;
+}
+
 export function deletePhoto(id) {
   return tx('readwrite', (st) => st.delete(id));
 }

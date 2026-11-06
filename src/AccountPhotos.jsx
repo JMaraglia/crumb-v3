@@ -3,7 +3,7 @@
 // tap one to view it full screen, share or delete it. Saved on this phone (see photos.js).
 import React, { useEffect, useRef, useState } from 'react';
 import { IoCameraOutline, IoShareOutline, IoTrashOutline, IoClose } from 'react-icons/io5';
-import { listPhotos, addPhotos, deletePhoto, photoKey } from './photos';
+import { listPhotos, addPhotos, deletePhoto, photoKey, movePhotos } from './photos';
 import { shareFile, safeFileName } from './share';
 import './AccountPhotos.css';
 
@@ -79,12 +79,29 @@ export default function AccountPhotos({ type, id, name }) {
   const fileRef = useRef(null);
   const [justTaken, setJustTaken] = useState([]); // photos taken with the camera just now (offer: save to camera roll)
 
+  // Customers converted before Nov 6 may still have photos filed under the old prospect.
+  // If no prospect with that id still exists, bring them over (moved, never deleted).
+  const rescue = () => {
+    if (type !== 'customer') return Promise.resolve();
+    let prospects = [];
+    try {
+      prospects = JSON.parse(localStorage.getItem('crumb_prospects') || '[]');
+    } catch {
+      return Promise.resolve();
+    }
+    if (!Array.isArray(prospects) || prospects.some((p) => p && String(p.id) === String(id))) return Promise.resolve();
+    return movePhotos(photoKey('prospect', id), key).catch(() => {});
+  };
   const load = () =>
-    listPhotos(key)
+    rescue()
+      .then(() => listPhotos(key))
       .then(setPhotos)
       .catch(() => setMsg("Photos aren't available in this browser."));
   useEffect(() => {
     load();
+    const again = () => load();
+    window.addEventListener('crumb-photos-moved', again);
+    return () => window.removeEventListener('crumb-photos-moved', again);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
