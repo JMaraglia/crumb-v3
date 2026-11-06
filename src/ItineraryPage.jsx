@@ -56,6 +56,8 @@ import './ItineraryPage.css';
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
 const DONE_KEY = 'crumb_itinerary_done';            // checkmarks for scheduled/event stops
 const LOCKS_KEY = 'crumb_itinerary_locks';          // { date: { stopKey: minutes } } times locked for one day
+const TIMES_KEY = 'crumb_itinerary_times';          // { date: { stopKey: minutes } } scheduled visits re-timed for one day, NOT locked
+const LENGTHS_KEY = 'crumb_itinerary_lengths';      // { date: { stopKey: minutes } } how long a stop takes that day
 const EVENTS_KEY = 'crumb_calendar_events';         // calendar events (read only here)
 
 function niceDate(k) {
@@ -162,6 +164,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [visits, setVisits] = useState(() => toVisitList(readJSON(VISITS_KEY, [])));
   const [doneMap, setDoneMap] = useState(() => readJSON(DONE_KEY, {}));
   const [lockMap, setLockMap] = useState(() => readJSON(LOCKS_KEY, {}));
+  const [timesMap, setTimesMap] = useState(() => readJSON(TIMES_KEY, {}));
+  const [lengthsMap, setLengthsMap] = useState(() => readJSON(LENGTHS_KEY, {}));
   const [locking, setLocking] = useState(null); // stop whose time is being locked
   const [timing, setTiming] = useState(null);   // stop whose time is being changed (tapped the time)
   const [removedMap, setRemovedMap] = useState(() => readJSON(REMOVED_KEY, {}) || {});
@@ -311,9 +315,19 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     // Locked times: a lock for just this day wins; otherwise "Always at this time" accounts
     // and calendar events (real appointments) count as locked.
     const dayLocks = lockMap[day] || {};
+    const dayTimes = timesMap[day] || {};
+    const dayLengths = lengthsMap[day] || {};
     list.forEach((st) => {
       const acct = st.accountId ? findAccount(st.accountType, st.accountId) : null;
-      st.visitLength = acct && typeof acct.visitLength === 'number' ? acct.visitLength : null;
+      st.visitLength =
+        typeof dayLengths[st.key] === 'number'
+          ? dayLengths[st.key]
+          : st.kind === 'event' && typeof st.endTime === 'number' && typeof st.time === 'number'
+          ? st.endTime - st.time
+          : acct && typeof acct.visitLength === 'number'
+          ? acct.visitLength
+          : null;
+      if (st.kind === 'scheduled' && typeof dayTimes[st.key] === 'number') st.time = dayTimes[st.key]; // re-timed today (not locked)
       if (typeof dayLocks[st.key] === 'number') {
         st.time = dayLocks[st.key];
         st.locked = 'day';
@@ -710,6 +724,57 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
   // Tapped the time on the left. Hand-added stops and calendar events change their own time;
   // scheduled visits change for this day only (their usual time stays the same).
+  // Write new times (and lengths) for several stops of this day at once, without locking them.
+  // Hand-added stops change their own time; scheduled visits get a time for this day only.
+  const saveDayMap = (key, map, setMap, changes) => {
+    const forDay = { ...(map[date] || {}) };
+    changes.forEach(([k, v]) => {
+      if (v == null) delete forDay[k];
+      else forDay[k] = v;
+    });
+    const next = { ...map, [date]: forDay };
+    if (!Object.keys(forDay).length) delete next[date];
+    const cutoff = addDaysToKey(today, -60);
+    Object.keys(next).forEach((k) => k < cutoff && delete next[k]);
+    setMap(next);
+    localStorage.setItem(key, JSON.stringify(next));
+  };
+  const applyPlan = (timeChanges, lengthChanges = []) => {
+    const manual = new Map(timeChanges.filter((c) => c.stop.kind === 'manual').map((c) => [c.stop.index, c.time]));
+    if (manual.size)
+      saveVisits(visits.map((v, i) => (manual.has(i) ? { ...v, time: minutesToHhmm(manual.get(i)), origTime: undefined } : v)));
+    const sched = timeChanges.filter((c) => c.stop.kind === 'scheduled').map((c) => [c.stop.key, c.time]);
+    if (sched.length) saveDayMap(TIMES_KEY, timesMap, setTimesMap, sched);
+    if (lengthChanges.length) saveDayMap(LENGTHS_KEY, lengthsMap, setLengthsMap, lengthChanges);
+  };
+  // A stop now runs longer (or starts later): push the flexible stops after it later, only as far
+  // as needed. Locked stops and calendar appointments never move; report the ones it runs into.
+  const pushLater = (edited, startTime, length) => {
+    const changes = [];
+    const later = stops.filter((st) => st.key !== edited.key && typeof st.time === 'number' && !st.done);
+    const fixed = later.filter((st) => st.locked).sort((a, b) => a.time - b.time);
+    const overlaps = (t, len, f) => f.time < t + len && f.time + stopLen(f) > t;
+    // the edited stop itself running into something locked → just warn
+    const runsInto = fixed.filter((f) => overlaps(startTime, length, f));
+    let cursor = startTime + length;
+    later
+      .filter((st) => !st.locked && st.time >= startTime)
+      .sort((a, b) => a.time - b.time)
+      .forEach((st) => {
+        const len = stopLen(st);
+        let t = Math.max(st.time, cursor);
+        // hop over locked stops / appointments it would overlap
+        for (let n = 0; n < 20; n++) {
+          const hit = fixed.find((f) => overlaps(t, len, f));
+          if (!hit) break;
+          t = hit.time + stopLen(hit);
+        }
+        if (t !== st.time) changes.push({ stop: st, time: Math.min(t, 23 * 60 + 55) });
+        cursor = t + len;
+      });
+    return { changes, runsInto };
+  };
+
   const saveTime = (stop, time) => {
     const clearDayLock = () => {
       if (lockMap[date] && typeof lockMap[date][stop.key] === 'number') saveLock(stop, null);
@@ -732,6 +797,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       clearDayLock();
     } else {
       saveLock(stop, time); // null = back to the usual time
+      if (timesMap[date] && typeof timesMap[date][stop.key] === 'number') saveDayMap(TIMES_KEY, timesMap, setTimesMap, [[stop.key, null]]);
     }
     setTiming(null);
   };
@@ -1349,11 +1415,42 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             return acct ? visitTimeOn(acct, date) : null;
           })()}
           onCancel={() => setTiming(null)}
-          onSave={(time) => {
+          onSave={(time, length) => {
             const st = timing;
             setTiming(null);
-            withClashCheck(time, st.key, (t) => saveTime(st, t));
+            const lengthChanged = st.kind !== 'event' && typeof length === 'number' && length !== stopLen(st);
+            withClashCheck(time, st.key, (t) => {
+              if (!lengthChanged || typeof t !== 'number') return saveTime(st, t);
+              // Longer/shorter visit: save it, and push the flexible stops after it if they'd overlap.
+              const before = { visits, times: timesMap, lengths: lengthsMap };
+              const { changes, runsInto } = pushLater(st, t, length);
+              if (st.kind === 'manual') changes.push({ stop: st, time: t });
+              else if (t !== st.time) saveTime(st, t);
+              applyPlan(changes, [[st.key, length]]);
+              const moved = changes.filter((c) => c.stop.key !== st.key).length;
+              if (moved || runsInto.length) {
+                if (undoIt && undoIt.timer) clearTimeout(undoIt.timer);
+                const timer = setTimeout(() => setUndoIt(null), 8000);
+                setUndoIt({
+                  text: [
+                    moved ? `Moved ${moved} ${moved === 1 ? 'stop' : 'stops'} later` : '',
+                    runsInto.length ? `Runs into ${runsInto[0].title} (${timeLabel(runsInto[0].time)}, locked)` : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · '),
+                  restore: () => {
+                    saveVisits(before.visits);
+                    setTimesMap(before.times);
+                    localStorage.setItem(TIMES_KEY, JSON.stringify(before.times));
+                    setLengthsMap(before.lengths);
+                    localStorage.setItem(LENGTHS_KEY, JSON.stringify(before.lengths));
+                  },
+                  timer,
+                });
+              }
+            });
           }}
+          length={stopLen(timing)}
         />
       )}
 
@@ -1452,8 +1549,12 @@ function LockSheet({ stop, onSave, onCancel }) {
 }
 
 /* ---------- Change a stop's time (tap the time on the left) ---------- */
-function TimeSheet({ stop, usual, onSave, onCancel }) {
+const LENGTH_OPTIONS = [15, 30, 45, 60, 75, 90, 120, 150, 180, 240];
+const lengthLabel = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m / 60} hr`);
+
+function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) {
   const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : stop.kind === 'manual' ? '' : 9 * 60);
+  const [length, setLength] = useState(startLength);
   // Visits and stops: the iPhone time wheel, any minute. Calendar events keep 30-minute steps.
   const wheel = stop.kind !== 'event';
   const nice = (m) => (typeof m === 'number' ? timeLabel(m) : 'no set time');
@@ -1469,7 +1570,7 @@ function TimeSheet({ stop, usual, onSave, onCancel }) {
         <div className="it-sheet-top">
           <button className="it-link" onClick={onCancel}>Cancel</button>
           <div className="it-sheet-title">Change time</div>
-          <button className="it-link it-bold" onClick={() => onSave(time === '' ? null : Number(time))}>Save</button>
+          <button className="it-link it-bold" onClick={() => onSave(time === '' ? null : Number(time), length)}>Save</button>
         </div>
         <div className="it-move-who">
           <strong>{stop.title}</strong>
@@ -1496,6 +1597,16 @@ function TimeSheet({ stop, usual, onSave, onCancel }) {
               </select>
             )}
           </label>
+          {stop.kind !== 'event' && (
+            <label className="it-sheet-row">
+              <span>Visit length</span>
+              <select className="it-sheet-select" value={length} onChange={(e) => setLength(Number(e.target.value))}>
+                {[...new Set([...LENGTH_OPTIONS, length])].sort((a, b) => a - b).map((m) => (
+                  <option key={m} value={m}>{lengthLabel(m)}</option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
         {stop.kind === 'manual' && time !== '' && (
           <button className="it-move-undo" onClick={() => setTime('')}>
