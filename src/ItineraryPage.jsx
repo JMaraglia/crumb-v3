@@ -776,13 +776,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     });
   };
 
-  const saveTime = (stop, time) => {
+  // lock = true: this time is locked for the day (🔒 — Optimize Route and push-backs leave it alone)
+  const saveTime = (stop, time, lock = false) => {
     const clearDayLock = () => {
       if (lockMap[date] && typeof lockMap[date][stop.key] === 'number') saveLock(stop, null);
     };
     if (stop.kind === 'manual') {
       saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, time: time == null ? '' : minutesToHhmm(time), origTime: undefined } : v)));
-      clearDayLock();
+      if (lock && time != null) saveLock(stop, time);
+      else clearDayLock();
     } else if (stop.kind === 'event') {
       if (time != null) {
         const all = readJSON(EVENTS_KEY, []);
@@ -796,9 +798,16 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         }
       }
       clearDayLock();
-    } else {
-      saveLock(stop, time); // null = back to the usual time
+    } else if (time == null) {
+      // back to the usual time
+      clearDayLock();
       if (timesMap[date] && typeof timesMap[date][stop.key] === 'number') saveDayMap(TIMES_KEY, timesMap, setTimesMap, [[stop.key, null]]);
+    } else if (lock) {
+      saveLock(stop, time);
+      if (timesMap[date] && typeof timesMap[date][stop.key] === 'number') saveDayMap(TIMES_KEY, timesMap, setTimesMap, [[stop.key, null]]);
+    } else {
+      clearDayLock(); // a new time for today, not locked
+      saveDayMap(TIMES_KEY, timesMap, setTimesMap, [[stop.key, time]]);
     }
     setTiming(null);
   };
@@ -1461,17 +1470,18 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             return acct ? visitTimeOn(acct, date) : null;
           })()}
           onCancel={() => setTiming(null)}
-          onSave={(time, length) => {
+          onSave={(time, length, lock) => {
             const st = timing;
             setTiming(null);
             const lengthChanged = st.kind !== 'event' && typeof length === 'number' && length !== stopLen(st);
             withClashCheck(time, st.key, (t) => {
-              if (!lengthChanged || typeof t !== 'number') return saveTime(st, t);
+              if (!lengthChanged || typeof t !== 'number') return saveTime(st, t, lock);
+              if (lock) saveLock(st, t);
               // Longer/shorter visit: save it, and push the flexible stops after it if they'd overlap.
               const before = { visits, times: timesMap, lengths: lengthsMap };
               const { changes, runsInto } = pushLater(st, t, length);
               if (st.kind === 'manual') changes.push({ stop: st, time: t });
-              else if (t !== st.time) saveTime(st, t);
+              else if (t !== st.time && !lock) saveTime(st, t);
               applyPlan(changes, [[st.key, length]]);
               const moved = changes.filter((c) => c.stop.key !== st.key).length;
               if (moved || runsInto.length) {
@@ -1601,6 +1611,7 @@ const lengthLabel = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)
 function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) {
   const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : stop.kind === 'manual' ? '' : 9 * 60);
   const [length, setLength] = useState(startLength);
+  const [lock, setLock] = useState(stop.locked === 'day');
   // Visits and stops: the iPhone time wheel, any minute. Calendar events keep 30-minute steps.
   const wheel = stop.kind !== 'event';
   const nice = (m) => (typeof m === 'number' ? timeLabel(m) : 'no set time');
@@ -1616,7 +1627,7 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
         <div className="it-sheet-top">
           <button className="it-link" onClick={onCancel}>Cancel</button>
           <div className="it-sheet-title">Change time</div>
-          <button className="it-link it-bold" onClick={() => onSave(time === '' ? null : Number(time), length)}>Save</button>
+          <button className="it-link it-bold" onClick={() => onSave(time === '' ? null : Number(time), length, lock && time !== '')}>Save</button>
         </div>
         <div className="it-move-who">
           <strong>{stop.title}</strong>
@@ -1643,6 +1654,16 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
               </select>
             )}
           </label>
+          {stop.kind !== 'event' && (
+            <label className="it-sheet-row">
+              <span>🔒 Lock This Time</span>
+              {stop.locked === 'always' ? (
+                <span className="it-sheet-note">Always (set on the account)</span>
+              ) : (
+                <input type="checkbox" className="it-lock-switch" checked={lock} onChange={(e) => setLock(e.target.checked)} />
+              )}
+            </label>
+          )}
           {stop.kind !== 'event' && (
             <label className="it-sheet-row">
               <span>Visit length</span>
