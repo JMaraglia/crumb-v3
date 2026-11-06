@@ -1169,3 +1169,10 @@
 .it-lock-switch:checked { background: #34c759; }
 .it-lock-switch:checked::after { transform: translateX(20px); }
 .it-sheet-note { color: #8e8e93; font-size: 0.9rem; }
+
+.it-route-nudge { display: flex; gap: 4px; flex: none; }
+.it-sheet .it-route-nudge button,
+.it-sheet .it-route-nudge button:hover {
+  width: 30px; height: 30px; margin: 0; padding: 0; border: 0; border-radius: 8px; box-shadow: none;
+  background: #eef5fc; color: #0077cc; font-size: 0.75rem; line-height: 30px; text-align: center;
+}

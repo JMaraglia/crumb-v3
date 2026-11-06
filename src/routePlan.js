@@ -66,31 +66,39 @@ export async function planRoute(stops, len, startTime) {
   const lost = flex.filter((s) => !located(s));
   const todo = flex.filter((s) => located(s));
 
-  let pos = me ? 'here' : null;
+  const ctx = { fixed, drive, located, len, startTime, start: me ? 'here' : null, skipped: [...skipped, ...lost], fromHere: Boolean(me) };
+  return { ...timeRoute(ctx, todo, null), ctx };
+}
+
+// Lay the stops out in time. order = null → nearest stop next (the optimizer); or a list of stops
+// in the order you want (re-timed after you move one up/down in the preview).
+export function timeRoute(ctx, stops, order) {
+  const { fixed, drive, located, len, startTime } = ctx;
+  const todo = order ? [...order] : [...stops];
+  let pos = ctx.start;
   let time = startTime;
   let driveTotal = 0;
   const plan = [];
-  let fi = 0; // next fixed stop
+  let fi = 0;
   const nextFixed = () => {
     while (fi < fixed.length && fixed[fi].time + len(fixed[fi]) <= time) fi += 1;
     return fixed[fi] || null;
   };
+  const goToFixed = (fx) => {
+    if (pos && located(fx)) driveTotal += drive(pos, fx.key);
+    plan.push({ stop: fx, time: fx.time, fixed: true });
+    time = Math.max(time, fx.time + len(fx));
+    if (located(fx)) pos = fx.key;
+    fi += 1;
+  };
   let guard = 0;
-  while (todo.length && guard++ < 200) {
+  while (todo.length && guard++ < 300) {
     const fx = nextFixed();
-    const goToFixed = () => {
-      if (pos && located(fx)) driveTotal += drive(pos, fx.key);
-      plan.push({ stop: fx, time: fx.time, fixed: true });
-      time = Math.max(time, fx.time + len(fx));
-      if (located(fx)) pos = fx.key;
-      fi += 1;
-    };
     if (fx && fx.time <= time) {
-      goToFixed(); // already at / past its start: it comes first
+      goToFixed(fx);
       continue;
     }
-    // nearest stop that still fits before the next fixed one (drive there, visit, drive on in time)
-    const options = todo
+    const options = (order ? [todo[0]] : todo)
       .map((s) => {
         const d = pos ? drive(pos, s.key) : 0;
         const at = up5(time + d);
@@ -100,7 +108,7 @@ export async function planRoute(stops, len, startTime) {
       .sort((a, b) => a.d - b.d);
     const pick = options.find((o) => o.fits);
     if (!pick && fx) {
-      goToFixed(); // nothing fits before it: go there, carry on after it
+      goToFixed(fx); // nothing fits before it: go there, carry on after it
       continue;
     }
     const o = pick || options[0];
@@ -110,11 +118,10 @@ export async function planRoute(stops, len, startTime) {
     pos = o.s.key;
     todo.splice(todo.indexOf(o.s), 1);
   }
-  // fixed stops still ahead go in at their times
   fixed.forEach((f) => {
     if (!plan.some((p) => p.stop.key === f.key)) plan.push({ stop: f, time: f.time, fixed: true });
   });
-  plan.sort((a, b) => a.time - b.time);
+  plan.sort((a, b) => a.time - b.time || (a.fixed ? -1 : 1));
   const changes = plan.filter((p) => !p.fixed && p.time !== p.stop.time).map((p) => ({ stop: p.stop, time: p.time }));
-  return { plan, changes, skipped: [...skipped, ...lost], driveTotal, fromHere: Boolean(me) };
+  return { plan, changes, skipped: ctx.skipped, driveTotal, fromHere: ctx.fromHere };
 }

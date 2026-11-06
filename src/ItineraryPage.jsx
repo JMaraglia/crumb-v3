@@ -51,7 +51,7 @@ import AskSheet from './AskSheet';
 import { removeStop, snapshotStops, restoreStops, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import MeetingSheet from './MeetingSheet';
 import { staleAccounts } from './lastContact';
-import { planRoute } from './routePlan';
+import { planRoute, timeRoute } from './routePlan';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -757,6 +757,17 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     }
     setOptimizing(false);
   };
+  // Move a stop up or down in the preview: same stops, your order, times worked out again.
+  const nudgeRoute = (key, dir) => {
+    const pv = routePreview;
+    if (!pv) return;
+    const order = pv.plan.filter((p) => !p.fixed).map((p) => p.stop);
+    const i = order.findIndex((st) => st.key === key);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    setRoutePreview({ ...timeRoute(pv.ctx, order, order), ctx: pv.ctx });
+  };
   const applyRoute = () => {
     const pv = routePreview;
     setRoutePreview(null);
@@ -1409,7 +1420,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             <div className="it-move-who">
               <span>
                 {routePreview.fromHere ? 'Starting where you are' : "Couldn't get your location — starting at the first stop"} · about{' '}
-                {routePreview.driveTotal} min of driving. 🔒 stays put.
+                {routePreview.driveTotal} min of driving. 🔒 stays put. Use ▲▼ to change the order.
               </span>
             </div>
             <div className="it-sheet-group it-left-list">
@@ -1421,6 +1432,12 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                     {p.stop.title}
                   </span>
                   {!p.fixed && typeof p.drive === 'number' && <span className="it-left-time">{p.drive} min</span>}
+                  {!p.fixed && (
+                    <span className="it-route-nudge">
+                      <button aria-label="Earlier" onClick={() => nudgeRoute(p.stop.key, -1)}>▲</button>
+                      <button aria-label="Later" onClick={() => nudgeRoute(p.stop.key, 1)}>▼</button>
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
