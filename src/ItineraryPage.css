@@ -1734,14 +1734,14 @@
 
 
 
-/* Lock icon beside the time in the time panel */
+/* Lock icon beside the time in the time panel: just a lock, open or closed */
 .it-sheet .it-lock-toggle,
 .it-sheet .it-lock-toggle:hover {
-  flex: none; width: 40px; height: 40px; margin: 0 0 0 8px; padding: 0; border: 0; border-radius: 10px; box-shadow: none;
-  background: #f2f2f7; color: #8e8e93; font-size: 1.2rem; display: inline-flex; align-items: center; justify-content: center;
+  flex: none; width: 36px; height: 36px; margin: 0 0 0 6px; padding: 0; border: 0; border-radius: 0; box-shadow: none;
+  background: none; color: #8e8e93; font-size: 1.5rem; display: inline-flex; align-items: center; justify-content: center;
 }
 .it-sheet .it-lock-toggle.is-on,
-.it-sheet .it-lock-toggle.is-on:hover { background: #fff4e5; color: #d96b00; }
+.it-sheet .it-lock-toggle.is-on:hover { background: none; color: #1c1c1e; }
 .it-sheet-row .it-time-input { margin-left: auto; }
 .it-route-plan-row.is-lifted { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(0,0,0,.18); background: #fff; }
 .it-route-plan-list.is-dragging .it-route-plan-row { transition: transform 0.15s ease; }
