@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { IoShareOutline, IoPrintOutline, IoCalendarOutline, IoNavigate, IoLockClosedOutline, IoLockOpenOutline } from 'react-icons/io5';
+import { IoShareOutline, IoPrintOutline, IoCalendarOutline, IoNavigate } from 'react-icons/io5';
 import {
   TIME_OPTIONS,
   timeLabel,
@@ -1664,7 +1664,9 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
                   setLock((v) => !v);
                 }}
               >
-                {lock || stop.locked === 'always' ? <IoLockClosedOutline /> : <IoLockOpenOutline />}
+                <span key={lock ? 'closed' : 'open'} className="it-lock-emoji">
+                  {lock || stop.locked === 'always' ? '🔒' : '🔓'}
+                </span>
               </button>
             )}
           </label>

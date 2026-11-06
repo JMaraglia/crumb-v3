@@ -1738,10 +1738,15 @@
 .it-sheet .it-lock-toggle,
 .it-sheet .it-lock-toggle:hover {
   flex: none; width: 36px; height: 36px; margin: 0 0 0 6px; padding: 0; border: 0; border-radius: 0; box-shadow: none;
-  background: none; color: #8e8e93; font-size: 1.5rem; display: inline-flex; align-items: center; justify-content: center;
+  background: none; font-size: 1.6rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
 }
-.it-sheet .it-lock-toggle.is-on,
-.it-sheet .it-lock-toggle.is-on:hover { background: none; color: #1c1c1e; }
+/* a little twist each time it opens or closes */
+.it-lock-emoji { display: inline-block; animation: it-lock-twist 0.35s ease-out; }
+@keyframes it-lock-twist {
+  0% { transform: rotate(-25deg) scale(0.85); }
+  60% { transform: rotate(12deg) scale(1.1); }
+  100% { transform: rotate(0) scale(1); }
+}
 .it-sheet-row .it-time-input { margin-left: auto; }
 .it-route-plan-row.is-lifted { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(0,0,0,.18); background: #fff; }
 .it-route-plan-list.is-dragging .it-route-plan-row { transition: transform 0.15s ease; }
