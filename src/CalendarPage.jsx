@@ -21,8 +21,8 @@ const DEFAULT_SETTINGS = {
   eventLength: 60,      // minutes for a new event
   startHour: 7,         // grid opens scrolled to this hour
   weekDays: 5,          // Week view: 5 = Monday–Friday (swipe moves a week), 3 = 3 days from today
-  showVisits: true,     // customers' / prospects' scheduled visits
-  showStops: true,      // stops added by hand on the Itinerary
+  showVisits: false,    // customers' / prospects' scheduled visits (one "Itinerary Visits" switch sets both)
+  showStops: false,     // stops added by hand on the Itinerary — off: the Calendar is for commitments
   defaultColor: DEFAULT_EVENT_COLOR,
   colorNames: {},       // { '#34c759': 'Prospect meeting' }
 };
@@ -429,26 +429,17 @@ function CalendarSettings({ settings, onChange, onClose }) {
         <div className="cal-set-group">
           <label className="cal-set-row">
             <span>
-              Scheduled visits
-              <span className="cal-set-help">From customers' and prospects' visit schedules</span>
+              Itinerary Visits
+              <span className="cal-set-help">
+                Customer and prospect visits from the Itinerary (scheduled and added by hand), on every day. Off = only
+                your appointments and meetings. Nothing is deleted either way.
+              </span>
             </span>
             <input
               type="checkbox"
               className="cal-set-switch"
-              checked={settings.showVisits}
-              onChange={(e) => onChange({ showVisits: e.target.checked })}
-            />
-          </label>
-          <label className="cal-set-row">
-            <span>
-              Hand-added itinerary stops
-              <span className="cal-set-help">Stops added with + on the Itinerary</span>
-            </span>
-            <input
-              type="checkbox"
-              className="cal-set-switch"
-              checked={settings.showStops}
-              onChange={(e) => onChange({ showStops: e.target.checked })}
+              checked={Boolean(settings.showVisits || settings.showStops)}
+              onChange={(e) => onChange({ showVisits: e.target.checked, showStops: e.target.checked })}
             />
           </label>
         </div>
