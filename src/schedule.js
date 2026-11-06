@@ -182,6 +182,20 @@ export const CUSTOMER_COLOR = '#1e8e3e'; // customers' scheduled visits (green) 
 
 // Calendar blocks for prospects' scheduled visits and hand-added itinerary stops,
 // for every day from startKey to endKey. These are built on the fly, never saved.
+// Calendar events and hand-added stops linked to an account that's been made Inactive drop off the
+// Itinerary, Calendar and reminders from the day it went inactive on (except its revisit day).
+// Nothing is deleted: make the account active again and they come back. Earlier days stay as history.
+export function hiddenByInactive(item, customers = [], prospects = []) {
+  if (!item || item.accountId == null || !item.date) return false;
+  const isCustomer = item.accountType === 'customer' || item.type === 'contact';
+  const list = isCustomer ? customers : prospects;
+  const acct = (list || []).find((a) => a && String(a.id) === String(item.accountId));
+  if (!acct || !acct.inactive) return false;
+  if (acct.inactive.revisit && acct.inactive.revisit === item.date) return false;
+  const since = /^\d{4}-\d{2}-\d{2}$/.test(acct.inactive.since || '') ? acct.inactive.since : '0000-00-00';
+  return item.date >= since;
+}
+
 export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, customers = []) {
   const blocks = [];
   const hidden = readJSON('crumb_calendar_hidden', {}) || {}; // taken off the Calendar for one day
@@ -239,6 +253,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
     const start = hhmmToMinutes(v.time);
     if (!v.date || v.date < startKey || v.date > endKey || start == null) return;
     if ((hidden[v.date] || []).includes(`m-${v.id || i}`)) return;
+    if (hiddenByInactive(v, customers, prospects)) return;
     // Same account already has its scheduled visit that day → show it once.
     if (v.accountId) {
       const kind = v.accountType === 'customer' || v.type === 'contact' ? 'c' : 'p';

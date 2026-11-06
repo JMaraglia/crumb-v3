@@ -43,6 +43,7 @@ import {
   CUSTOMER_COLOR,
   PROSPECT_COLOR,
   MEETING_COLOR,
+  hiddenByInactive,
 } from './schedule';
 import { PdfDoc } from './pdf';
 import SwipeRow from './SwipeRow';
@@ -252,6 +253,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
     events
       .filter((ev) => ev.date === day)
+      .filter((ev) => !hiddenByInactive(ev, contacts, prospects))
       .filter((ev) => (typeof ev.showInItinerary === 'boolean' ? ev.showInItinerary : Boolean(ev.accountId)))
       .forEach((ev) => {
         const key = `e-${ev.id}`;
@@ -272,6 +274,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
     visits.forEach((v, index) => {
       if (v.date !== day) return;
+      if (hiddenByInactive(v, contacts, prospects)) return;
       // A hand-added stop for an account that's already scheduled today (e.g. it was just made into a
       // prospect with today as a visit day) shows once: as the account's scheduled stop.
       if (v.accountId) {

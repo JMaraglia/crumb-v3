@@ -13,6 +13,7 @@ import {
   visitTimeOn,
   PROSPECT_DAYS_FIELD,
   CUSTOMER_DAYS_FIELD,
+  hiddenByInactive,
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
@@ -120,6 +121,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     const onItin = (ev) => (typeof ev.showInItinerary === 'boolean' ? ev.showInItinerary : Boolean(ev.accountId));
     const appts = events
       .filter((ev) => ev && ev.date === day && typeof ev.start === 'number')
+      .filter((ev) => !hiddenByInactive(ev, contacts, prospects))
       .map((ev) => ({
         key: `e-${ev.id}`,
         title: ev.title || 'Appointment',
@@ -135,6 +137,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     for (let j = appts.length - 1; j >= 0; j--) if (offCal.includes(appts[j].key)) appts.splice(j, 1);
     visits.forEach((v, idx) => {
       if (!v || v.date !== day) return;
+      if (hiddenByInactive(v, contacts, prospects)) return;
       // Same as the Itinerary: a hand-added stop for an account already scheduled that day counts once.
       if (v.accountId) {
         const kind = v.accountType === 'customer' || v.type === 'contact' ? 'c' : 'p';

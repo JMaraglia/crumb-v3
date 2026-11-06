@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
 import EventSheet, { DEFAULT_EVENT_COLOR, EVENT_COLORS } from './EventSheet';
 import MonthView from './MonthView';
-import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey, MEETING_COLOR } from './schedule';
+import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey, MEETING_COLOR, hiddenByInactive } from './schedule';
 import { removeStop, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import AskSheet from './AskSheet';
 import './CalendarPage.css';
@@ -141,6 +141,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   );
   const shownEvents = events
     .filter((ev) => !(hiddenMap[ev.date] || []).includes(`e-${ev.id}`))
+    .filter((ev) => !hiddenByInactive(ev, contacts, prospects))
     .map((ev) =>
       (ev.meeting || meetingIds.has(String(ev.id))) && (!ev.color || ev.color === DEFAULT_EVENT_COLOR || ev.color === '#0077cc')
         ? { ...ev, color: MEETING_COLOR }
