@@ -428,13 +428,7 @@ function CalendarSettings({ settings, onChange, onClose }) {
         <div className="cal-set-section">Show on calendar</div>
         <div className="cal-set-group">
           <label className="cal-set-row">
-            <span>
-              Itinerary Visits
-              <span className="cal-set-help">
-                Customer and prospect visits from the Itinerary (scheduled and added by hand), on every day. Off = only
-                your appointments and meetings. Nothing is deleted either way.
-              </span>
-            </span>
+            <span>Show Itinerary Visits</span>
             <input
               type="checkbox"
               className="cal-set-switch"
