@@ -1769,7 +1769,7 @@ function MoveSheet({ stop, acct, viewDate, onSave, onCancel }) {
 /* ---------- Gold padlock for the time panel: the shackle pops up and swings away when open ---------- */
 function Padlock({ open }) {
   return (
-    <svg className={`it-padlock ${open ? 'is-open' : ''}`} viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+    <svg className={`it-padlock ${open ? 'is-open' : ''}`} viewBox="0 0 40 32" width="38" height="30" aria-hidden="true">
       <defs>
         <linearGradient id="padlockGold" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#f7d774" />
@@ -1783,7 +1783,7 @@ function Padlock({ open }) {
         </linearGradient>
       </defs>
       <g className="it-padlock-shackle">
-        <path d="M10.5 16 V10.5 a5.5 5.5 0 0 1 11 0 V16" fill="none" stroke="url(#padlockSteel)" strokeWidth="3.2" strokeLinecap="round" />
+        <path d="M10.5 16 V10.5 a5.5 5.5 0 0 1 11 0 V22" fill="none" stroke="url(#padlockSteel)" strokeWidth="3.2" strokeLinecap="round" />
       </g>
       <rect x="6" y="14.5" width="20" height="15" rx="3.5" fill="url(#padlockGold)" stroke="#a87a17" strokeWidth="0.8" />
       <circle cx="16" cy="21" r="2.1" fill="#6b4e0e" />

@@ -1740,14 +1740,25 @@
   flex: none; width: 36px; height: 36px; margin: 0 0 0 6px; padding: 0; border: 0; border-radius: 0; box-shadow: none;
   background: none; font-size: 1.6rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
 }
-/* drawn padlock: open = shackle lifted out of the body and swung away on its left leg */
+/* drawn padlock, like a real one: open = the shackle pops up, then twists half a turn on its long
+   (right) leg so the short end sits outside the lock */
 .it-padlock { display: block; overflow: visible; }
 .it-padlock-shackle {
   transform-box: view-box;
-  transform-origin: 10.5px 12px;
-  transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transform-origin: 21.5px 12px;
+  animation: it-shackle-close 0.45s ease-in-out both;
 }
-.it-padlock.is-open .it-padlock-shackle { transform: translateY(-4.5px) rotate(-38deg); }
+.it-padlock.is-open .it-padlock-shackle { animation: it-shackle-open 0.45s ease-in-out both; }
+@keyframes it-shackle-open {
+  0% { transform: translateY(0) scaleX(1); }
+  35% { transform: translateY(-5px) scaleX(1); }
+  100% { transform: translateY(-5px) scaleX(-1); }
+}
+@keyframes it-shackle-close {
+  0% { transform: translateY(-5px) scaleX(-1); }
+  65% { transform: translateY(-5px) scaleX(1); }
+  100% { transform: translateY(0) scaleX(1); }
+}
 .it-sheet-row .it-time-input { margin-left: auto; }
 .it-route-plan-row.is-lifted { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(0,0,0,.18); background: #fff; }
 .it-route-plan-list.is-dragging .it-route-plan-row { transition: transform 0.15s ease; }
