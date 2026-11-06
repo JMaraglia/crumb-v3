@@ -1157,22 +1157,593 @@
 .it-sheet .it-route-plan-row { cursor: default; box-sizing: border-box; }
 .it-sheet .it-route-plan-time { width: 72px; color: #0077cc; font-weight: 600; }
 
-/* Lock switch in the time panel (iPhone-style) */
-.it-lock-switch {
-  appearance: none; -webkit-appearance: none; width: 51px; height: 31px; border-radius: 16px; background: #e5e5ea;
-  position: relative; margin: 0; flex: none; transition: background 0.2s; cursor: pointer;
+.it-sheet-note {
+  font-size: 0.8rem;
+  color: #8e8e93;
+  padding: 10px 4px 0;
 }
-.it-lock-switch::after {
-  content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,.25); transition: transform 0.2s;
-}
-.it-lock-switch:checked { background: #34c759; }
-.it-lock-switch:checked::after { transform: translateX(20px); }
-.it-sheet-note { color: #8e8e93; font-size: 0.9rem; }
 
-.it-route-nudge { display: flex; gap: 4px; flex: none; }
-.it-sheet .it-route-nudge button,
-.it-sheet .it-route-nudge button:hover {
-  width: 30px; height: 30px; margin: 0; padding: 0; border: 0; border-radius: 8px; box-shadow: none;
-  background: #eef5fc; color: #0077cc; font-size: 0.75rem; line-height: 30px; text-align: center;
+/* ---------- Share / Print pills (on the progress line) ---------- */
+.it-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
 }
+
+.it-progress-row .it-progress-text {
+  margin-bottom: 0;
+}
+
+.it-share {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.it-page .it-pill,
+.it-page .it-pill:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: #e5f0fa;
+  color: #0077cc;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.it-page .it-pill:active {
+  background: #cfe3f5;
+}
+
+.it-pill-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.it-share-msg {
+  font-size: 0.85rem;
+  color: #3a3a3c;
+  margin: -4px 0 10px;
+}
+
+/* ---------- Printed / PDF checklist ---------- */
+.it-print {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .it-page {
+    position: static;
+    overflow: visible;
+    background: #fff;
+  }
+
+  /* Hide the app; show only the checklist */
+  .it-page > *:not(.it-print) {
+    display: none !important;
+  }
+
+  .it-print {
+    display: flex;
+    gap: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #000;
+  }
+
+  /* Two half-width days; dashed fold/cut line between them */
+  .it-print-day {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 12pt;
+  }
+
+  .it-print-day:first-child {
+    padding-left: 0;
+    border-right: 1px dashed #999;
+  }
+
+  .it-print-day:last-child {
+    padding-right: 0;
+  }
+
+  .it-print-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .it-print-brand {
+    font-size: 15pt;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0077cc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .it-print-kicker {
+    font-size: 8pt;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #000;
+  }
+
+  .it-print-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 2pt;
+    padding-bottom: 6pt;
+    border-bottom: 2px solid #0077cc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .it-print-heading {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #000;
+  }
+
+  .it-print-count {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #000;
+  }
+
+  .it-print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+
+  .it-print-table td {
+    height: 22pt;
+    border-bottom: 0.75px solid #000;
+    padding: 4pt 6pt;
+    text-align: left;
+    vertical-align: bottom;
+    font-weight: 600;
+    color: #000;
+    -webkit-text-stroke: 0.2px #000;
+  }
+
+  .it-print-table .it-print-box {
+    width: 18pt;
+    font-size: 13pt;
+    line-height: 1;
+  }
+
+  .it-print-table .it-print-town {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 400;
+    -webkit-text-stroke: 0.15px #000;
+  }
+
+  /* Write-in lines: lighter so printed stops stand out */
+  .it-print-table tr.it-print-blank td {
+    border-bottom-color: #c4c4c4;
+    color: #b0b0b0;
+    -webkit-text-stroke: 0;
+  }
+
+  .it-print-table tr {
+    break-inside: avoid;
+  }
+}
+
+/* ---------- One-off visit moves ---------- */
+.it-moved {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #c26a00;
+}
+
+.it-move-who {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 4px 12px;
+  font-size: 0.85rem;
+  color: #6e6e73;
+  line-height: 1.35;
+}
+
+.it-move-who strong {
+  font-size: 1rem;
+  color: #1c1c1e;
+}
+
+.it-move-date {
+  font-size: 16px;
+  font-family: inherit;
+  color: #0077cc;
+  background: #f2f2f7;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.it-sheet-backdrop .it-move-undo,
+.it-sheet-backdrop .it-move-undo:hover {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 13px 0;
+  border-radius: 12px;
+  background: #fff;
+  color: #ff3b30;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Calendar button (top right) for jumping to a date */
+.it-cal-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  color: #0077cc;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.it-move-warn {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff4e5;
+  color: #8a4b00;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+/* ---------- Locked times ---------- */
+.it-lock-icon {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.it-lock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f2f2f7;
+}
+
+.it-lock-text {
+  font-size: 0.82rem;
+  color: #3a3a3c;
+  line-height: 1.3;
+}
+
+.it-page .it-lock-btn,
+.it-page .it-lock-btn:hover {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: #e5f0fa;
+  color: #0077cc;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ---------- Start route ---------- */
+.it-page .it-route-btn,
+.it-page .it-route-btn:hover {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: #0077cc;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.it-page .it-route-btn:active {
+  background: #0066b0;
+}
+
+.it-route-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.it-route-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.it-route-main {
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.it-route-sub {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Unlinked hand-added stop → Make it a prospect */
+.it-make {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f2f7fd;
+}
+
+.it-make-text {
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: #3a3a3c;
+  margin-bottom: 10px;
+}
+
+.it-page .it-make-btn,
+.it-page .it-make-btn:hover {
+  width: 100%;
+  padding: 11px 0;
+  border-radius: 10px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+
+.it-sheet-help {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.75rem;
+  color: #8e8e93;
+}
+
+.it-switch {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 16px;
+  background: #e9e9eb;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.it-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.it-switch:checked {
+  background: #34c759;
+}
+
+.it-switch:checked::after {
+  transform: translateX(20px);
+}
+
+/* Start route row: big button + maps app picker */
+.it-route-row {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.it-maps-pick {
+  position: relative;
+  flex-shrink: 0;
+  width: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #e5f0fa;
+  color: #0077cc;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.it-maps-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+.it-maps-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.it-maps-select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Change time: the iPhone time wheel */
+.it-page .it-time-input,
+.it-time-input {
+  border: none;
+  background: #e9f2fb;
+  color: #0077cc;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  min-width: 110px;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Undo bar after swiping a stop away */
+.it-undo {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.it-page .it-undo-btn,
+.it-page .it-undo-btn:hover {
+  color: #64b5ff;
+  font-weight: 700;
+  background: none;
+  border: none;
+  padding: 4px 0;
+}
+
+@media print {
+  .it-undo {
+    display: none;
+  }
+}
+
+/* the row now has its own white background (for swiping), so show the open marker on it too */
+.it-stop.is-open .it-stop-row {
+  box-shadow: inset 3px 0 0 #0077cc;
+}
+
+/* holding a stop opens its Edit screen: no iPhone pop-up menu or text selection */
+.it-stop-main {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Visit + stage chips inside an opened stop (tap to change; same as Customers / Prospects) */
+.it-acct-chips {
+  margin: 0 0 10px;
+}
+
+.it-tag-tap {
+  cursor: pointer;
+}
+
+/* ---------- Didn't get to these ---------- */
+.it-page .it-leftover-link,
+.it-page .it-leftover-link:hover {
+  display: block; width: 100%; margin: 4px 0 6px; padding: 10px; background: none; border: 0; box-shadow: none;
+  color: #0077cc; font-size: 0.9rem; font-weight: 600; text-align: center;
+}
+.it-left-list { max-height: 40vh; overflow-y: auto; }
+.it-sheet .it-left-row,
+.it-sheet .it-left-row:hover {
+  display: flex; align-items: center; gap: 10px; width: 100%; margin: 0; padding: 11px 14px;
+  background: #fff; border: 0; border-top: 1px solid #f0f0f3; border-radius: 0; box-shadow: none;
+  color: #1c1c1e; font-size: 0.95rem; text-align: left;
+}
+.it-sheet .it-left-row:first-child { border-top: 0; }
+.it-left-box {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #c7c7cc;
+  display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: #fff;
+}
+.it-left-box.is-on { background: #0077cc; border-color: #0077cc; }
+.it-left-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.it-left-time { flex: none; color: #8e8e93; font-size: 0.82rem; }
+.it-left-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.it-sheet .it-left-go,
+.it-sheet .it-left-go:hover {
+  width: 100%; margin: 0; padding: 13px; border: 0; border-radius: 12px; box-shadow: none;
+  background: #0077cc; color: #fff; font-size: 1rem; font-weight: 600; text-align: center;
+}
+.it-sheet .it-left-go.is-plain,
+.it-sheet .it-left-go.is-plain:hover { background: #e9f2fb; color: #0077cc; }
+.it-sheet .it-left-go:disabled { opacity: 0.4; }
+.it-sheet-group .it-left-go { border-radius: 0 0 12px 12px; }
+
+/* Optimize Route */
+.it-page .it-optimize-btn,
+.it-page .it-optimize-btn:hover {
+  display: block; width: 100%; margin: 0 0 8px; padding: 12px; border: 0; border-radius: 14px; box-shadow: none;
+  background: #fff4e5; color: #b25e00; font-size: 1rem; font-weight: 700; text-align: center;
+}
+.it-page .it-optimize-btn:disabled { opacity: 0.6; }
+.it-sheet .it-route-plan-row { cursor: default; box-sizing: border-box; }
+.it-sheet .it-route-plan-time { width: 72px; color: #0077cc; font-weight: 600; }
+
+
+
+/* Lock icon beside the time in the time panel */
+.it-sheet .it-lock-toggle,
+.it-sheet .it-lock-toggle:hover {
+  flex: none; width: 40px; height: 40px; margin: 0 0 0 8px; padding: 0; border: 0; border-radius: 10px; box-shadow: none;
+  background: #f2f2f7; color: #8e8e93; font-size: 1.2rem; display: inline-flex; align-items: center; justify-content: center;
+}
+.it-sheet .it-lock-toggle.is-on,
+.it-sheet .it-lock-toggle.is-on:hover { background: #fff4e5; color: #d96b00; }
+.it-sheet-row .it-time-input { margin-left: auto; }
+.it-route-plan-row.is-lifted { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(0,0,0,.18); background: #fff; }
+.it-route-plan-list.is-dragging .it-route-plan-row { transition: transform 0.15s ease; }
+.it-route-plan-list.is-dragging .it-route-plan-row.is-lifted { transition: none; }
+.it-route-plan-row { touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

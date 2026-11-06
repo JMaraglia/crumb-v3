@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { IoShareOutline, IoPrintOutline, IoCalendarOutline, IoNavigate } from 'react-icons/io5';
+import { IoShareOutline, IoPrintOutline, IoCalendarOutline, IoNavigate, IoLockClosed, IoLockOpenOutline } from 'react-icons/io5';
 import {
   TIME_OPTIONS,
   timeLabel,
@@ -758,14 +758,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setOptimizing(false);
   };
   // Move a stop up or down in the preview: same stops, your order, times worked out again.
-  const nudgeRoute = (key, dir) => {
+  const reorderRoute = (key, to) => {
     const pv = routePreview;
     if (!pv) return;
     const order = pv.plan.filter((p) => !p.fixed).map((p) => p.stop);
     const i = order.findIndex((st) => st.key === key);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= order.length) return;
-    [order[i], order[j]] = [order[j], order[i]];
+    if (i < 0 || i === to) return;
+    const [moved] = order.splice(i, 1);
+    order.splice(to, 0, moved);
     setRoutePreview({ ...timeRoute(pv.ctx, order, order), ctx: pv.ctx });
   };
   const applyRoute = () => {
@@ -1420,27 +1420,10 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             <div className="it-move-who">
               <span>
                 {routePreview.fromHere ? 'Starting where you are' : "Couldn't get your location — starting at the first stop"} · about{' '}
-                {routePreview.driveTotal} min of driving. 🔒 stays put. Use ▲▼ to change the order.
+                {routePreview.driveTotal} min of driving. 🔒 stays put. Hold and drag a stop to change the order.
               </span>
             </div>
-            <div className="it-sheet-group it-left-list">
-              {routePreview.plan.map((p) => (
-                <div key={p.stop.key} className="it-left-row it-route-plan-row">
-                  <span className="it-left-time it-route-plan-time">{timeLabel(p.time)}</span>
-                  <span className="it-left-name">
-                    {p.fixed ? '🔒 ' : ''}
-                    {p.stop.title}
-                  </span>
-                  {!p.fixed && typeof p.drive === 'number' && <span className="it-left-time">{p.drive} min</span>}
-                  {!p.fixed && (
-                    <span className="it-route-nudge">
-                      <button aria-label="Earlier" onClick={() => nudgeRoute(p.stop.key, -1)}>▲</button>
-                      <button aria-label="Later" onClick={() => nudgeRoute(p.stop.key, 1)}>▼</button>
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+            <RoutePlanList plan={routePreview.plan} onMove={reorderRoute} />
             {routePreview.skipped.length > 0 && (
               <div className="it-move-who">
                 <span>
@@ -1670,17 +1653,21 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
                 ))}
               </select>
             )}
+            {stop.kind !== 'event' && (
+              <button
+                type="button"
+                className={`it-lock-toggle ${lock || stop.locked === 'always' ? 'is-on' : ''}`}
+                aria-label={lock ? 'Unlock this time' : 'Lock this time'}
+                disabled={stop.locked === 'always'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLock((v) => !v);
+                }}
+              >
+                {lock || stop.locked === 'always' ? <IoLockClosed /> : <IoLockOpenOutline />}
+              </button>
+            )}
           </label>
-          {stop.kind !== 'event' && (
-            <label className="it-sheet-row">
-              <span>🔒 Lock This Time</span>
-              {stop.locked === 'always' ? (
-                <span className="it-sheet-note">Always (set on the account)</span>
-              ) : (
-                <input type="checkbox" className="it-lock-switch" checked={lock} onChange={(e) => setLock(e.target.checked)} />
-              )}
-            </label>
-          )}
           {stop.kind !== 'event' && (
             <label className="it-sheet-row">
               <span>Visit length</span>
@@ -1775,6 +1762,101 @@ function MoveSheet({ stop, acct, viewDate, onSave, onCancel }) {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ---------- Optimize Route preview: hold a stop and drag it to change the order ---------- */
+function RoutePlanList({ plan, onMove }) {
+  const listRef = useRef(null);
+  const drag = useRef(null); // { key, y0, timer, active, rows, from }
+  const [view, setView] = useState(null); // { key, dy, from, to, height }
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return undefined;
+    const stop = (e) => {
+      if (drag.current && drag.current.active) e.preventDefault(); // no scrolling while dragging
+    };
+    el.addEventListener('touchmove', stop, { passive: false });
+    return () => el.removeEventListener('touchmove', stop);
+  }, []);
+  const flexRows = () => [...listRef.current.querySelectorAll('[data-flex="1"]')];
+  const down = (p, e) => {
+    if (p.fixed) return;
+    const d = { key: p.stop.key, y0: e.clientY, active: false };
+    d.timer = setTimeout(() => {
+      const rows = flexRows().map((r) => {
+        const b = r.getBoundingClientRect();
+        return { key: r.dataset.key, mid: b.top + b.height / 2, height: b.height };
+      });
+      const from = rows.findIndex((r) => r.key === d.key);
+      if (from < 0) return;
+      d.active = true;
+      d.rows = rows;
+      d.from = from;
+      setView({ key: d.key, dy: 0, from, to: from, height: rows[from].height });
+    }, 250);
+    drag.current = d;
+  };
+  const move = (e) => {
+    const d = drag.current;
+    if (!d) return;
+    if (!d.active) {
+      if (Math.abs(e.clientY - d.y0) > 8) {
+        clearTimeout(d.timer);
+        drag.current = null;
+      }
+      return;
+    }
+    const dy = e.clientY - d.y0;
+    const mid = d.rows[d.from].mid + dy;
+    let to = 0;
+    d.rows.forEach((r, i) => {
+      if (i !== d.from && mid > r.mid) to += 1;
+    });
+    setView({ key: d.key, dy, from: d.from, to, height: d.rows[d.from].height });
+  };
+  const up = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    clearTimeout(d.timer);
+    if (d.active && view && view.to !== view.from) onMove(d.key, view.to);
+    setView(null);
+  };
+  let flexIndex = -1;
+  return (
+    <div className={`it-sheet-group it-left-list it-route-plan-list ${view ? 'is-dragging' : ''}`} ref={listRef}>
+      {plan.map((p) => {
+        if (!p.fixed) flexIndex += 1;
+        const i = flexIndex;
+        let shift = 0;
+        if (view && !p.fixed) {
+          if (p.stop.key === view.key) shift = view.dy;
+          else if (view.from < view.to && i > view.from && i <= view.to) shift = -view.height;
+          else if (view.from > view.to && i >= view.to && i < view.from) shift = view.height;
+        }
+        return (
+          <div
+            key={p.stop.key}
+            data-key={p.stop.key}
+            data-flex={p.fixed ? '0' : '1'}
+            className={`it-left-row it-route-plan-row ${view && view.key === p.stop.key ? 'is-lifted' : ''}`}
+            style={shift ? { transform: `translateY(${shift}px)` } : undefined}
+            onPointerDown={(e) => down(p, e)}
+            onPointerMove={move}
+            onPointerUp={up}
+            onPointerCancel={up}
+          >
+            <span className="it-left-time it-route-plan-time">{timeLabel(p.time)}</span>
+            <span className="it-left-name">
+              {p.fixed ? '🔒 ' : ''}
+              {p.stop.title}
+            </span>
+            {!p.fixed && typeof p.drive === 'number' && <span className="it-left-time">{p.drive} min</span>}
+          </div>
+        );
+      })}
     </div>
   );
 }
