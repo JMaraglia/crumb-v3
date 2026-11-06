@@ -23,9 +23,18 @@ export default async function handler(req, res) {
       body: clip(n.body, 1500), // morning rundown lists every stop
       url: clip(n.url, 100) || '/',
     }));
+    // A reminder that came due in the last 30 min but hasn't gone out yet (the 5-minute timer hasn't
+    // run) stays on the list, so a sync right after 4:00 can't wipe the 4:00 reminder.
+    const sentSet = new Set(existing.sent || []);
+    const now = Date.now();
+    const ids = new Set(list.map((n) => n.id));
+    const pending = (existing.notifications || []).filter((n) => {
+      const t = Date.parse(n.at);
+      return t && t <= now && now - t < 30 * 60 * 1000 && !sentSet.has(n.id) && !ids.has(n.id);
+    });
     await saveDevice(deviceId, {
       subscription: { endpoint: sub.endpoint, keys: { p256dh: clip(sub.keys.p256dh, 200), auth: clip(sub.keys.auth, 100) } },
-      notifications: list,
+      notifications: [...pending, ...list],
       sent: (existing.sent || []).slice(-500),
       syncedAt: new Date().toISOString(),
     });

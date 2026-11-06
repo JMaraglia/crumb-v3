@@ -33,7 +33,12 @@ export default async function handler(req, res) {
         }
       }
       if (gone) await forgetDevice(id);
-      else await saveDevice(id, { ...device, sent: Array.from(already).slice(-500) });
+      else {
+        // re-read: the phone may have sent a fresh list while these were going out — keep it
+        const fresh = (await loadDevice(id)) || device;
+        const sentAll = new Set([...(fresh.sent || []), ...already]);
+        await saveDevice(id, { ...fresh, sent: Array.from(sentAll).slice(-500) });
+      }
     }
     res.status(200).json({ ok: true, sent });
   } catch (err) {

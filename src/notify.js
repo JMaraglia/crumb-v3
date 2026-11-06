@@ -312,19 +312,35 @@ export async function sendTestNotification() {
 
 // Quietly keep the server's reminder list up to date (on open, and when leaving the app).
 let lastSync = 0;
+let lastSent = ''; // the list last sent successfully (skip sending the same thing again)
 export async function syncReminders(force = false) {
   const settings = loadNotifySettings();
   if (!settings.enabled || !pushSupport().supported || Notification.permission !== 'granted') return;
   if (!force && Date.now() - lastSync < 60 * 1000) return;
+  const notifications = buildReminders(settings);
+  const sig = JSON.stringify(notifications);
+  if (!force && sig === lastSent) return; // nothing changed since the last send
   lastSync = Date.now();
   try {
     const reg = await navigator.serviceWorker.getRegistration('/');
     const sub = reg && (await reg.pushManager.getSubscription());
     if (!sub) return;
-    await post('/api/push-sync', { deviceId: deviceId(), subscription: sub.toJSON(), notifications: buildReminders(settings) });
+    await post('/api/push-sync', { deviceId: deviceId(), subscription: sub.toJSON(), notifications });
+    lastSent = sig;
   } catch {
-    /* try again next time */
+    lastSync = 0; // didn't go through: try again on the next chance
   }
+}
+
+// While Crumb is open, keep the reminder list fresh every minute — checking off stops, adding stops,
+// moving times and to-dos all change what the 4 PM and morning reminders should say.
+let refreshing = false;
+export function startReminderRefresh() {
+  if (refreshing) return;
+  refreshing = true;
+  setInterval(() => {
+    if (document.visibilityState === 'visible') syncReminders();
+  }, 60 * 1000);
 }
 
 export function upcomingCount(settings) {

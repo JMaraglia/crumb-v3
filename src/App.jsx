@@ -15,7 +15,7 @@ import BackupPage from './BackupPage';
 import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
-import { syncReminders } from './notify';
+import { syncReminders, startReminderRefresh } from './notify';
 
 // Simple hook to sync state with localStorage
 function usePersistedState(key, initialValue) {
@@ -196,6 +196,7 @@ export default function App() {
     return () => clearTimeout(t);
   }, [contacts, prospects]);
   React.useEffect(() => {
+    startReminderRefresh();
     const onVis = () => syncReminders(document.visibilityState === 'hidden');
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
