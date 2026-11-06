@@ -1146,3 +1146,13 @@
 .it-sheet .it-left-go.is-plain:hover { background: #e9f2fb; color: #0077cc; }
 .it-sheet .it-left-go:disabled { opacity: 0.4; }
 .it-sheet-group .it-left-go { border-radius: 0 0 12px 12px; }
+
+/* Optimize Route */
+.it-page .it-optimize-btn,
+.it-page .it-optimize-btn:hover {
+  display: block; width: 100%; margin: 0 0 8px; padding: 12px; border: 0; border-radius: 14px; box-shadow: none;
+  background: #fff4e5; color: #b25e00; font-size: 1rem; font-weight: 700; text-align: center;
+}
+.it-page .it-optimize-btn:disabled { opacity: 0.6; }
+.it-sheet .it-route-plan-row { cursor: default; box-sizing: border-box; }
+.it-sheet .it-route-plan-time { width: 72px; color: #0077cc; font-weight: 600; }

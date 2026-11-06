@@ -51,6 +51,7 @@ import AskSheet from './AskSheet';
 import { removeStop, snapshotStops, restoreStops, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import MeetingSheet from './MeetingSheet';
 import { staleAccounts } from './lastContact';
+import { planRoute } from './routePlan';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -171,7 +172,10 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [removedMap, setRemovedMap] = useState(() => readJSON(REMOVED_KEY, {}) || {});
   const [meetingFor, setMeetingFor] = useState(null); // account getting a meeting set
   const [visitFor, setVisitFor] = useState(null);     // { acct, type } whose visits are being changed
-  const [staleOpen, setStaleOpen] = useState(false);  // "Haven't seen in a while" list opened
+  const [staleOpen, setStaleOpen] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeMsg, setOptimizeMsg] = useState('');
+  const [routePreview, setRoutePreview] = useState(null); // planRoute result waiting for Apply  // "Haven't seen in a while" list opened
   // Same fields as the Customers / Prospects screens, so changes show everywhere.
   const daysConfig = (type) => ({ visitDaysField: type === 'prospect' ? PROSPECT_DAYS_FIELD : CUSTOMER_DAYS_FIELD });
   const updateAccount = (type, id, fields) => {
@@ -738,6 +742,40 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     return { changes, runsInto };
   };
 
+  const optimizeRoute = async () => {
+    setOptimizeMsg('');
+    setOptimizing(true);
+    try {
+      const flexTimes = stops.filter((st) => !st.done && !st.locked && typeof st.time === 'number').map((st) => st.time);
+      const earliest = flexTimes.length ? Math.min(...flexTimes) : 8 * 60;
+      const now = new Date();
+      const nowMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
+      const startTime = date === today ? Math.max(nowMin, earliest) : earliest;
+      setRoutePreview(await planRoute(stops, stopLen, startTime));
+    } catch (err) {
+      setOptimizeMsg(err && err.message ? err.message : "Couldn't plan the route right now.");
+    }
+    setOptimizing(false);
+  };
+  const applyRoute = () => {
+    const pv = routePreview;
+    setRoutePreview(null);
+    if (!pv || !pv.changes.length) return;
+    const before = { visits, times: timesMap };
+    applyPlan(pv.changes);
+    if (undoIt && undoIt.timer) clearTimeout(undoIt.timer);
+    const timer = setTimeout(() => setUndoIt(null), 8000);
+    setUndoIt({
+      text: 'Route optimized',
+      restore: () => {
+        saveVisits(before.visits);
+        setTimesMap(before.times);
+        localStorage.setItem(TIMES_KEY, JSON.stringify(before.times));
+      },
+      timer,
+    });
+  };
+
   const saveTime = (stop, time) => {
     const clearDayLock = () => {
       if (lockMap[date] && typeof lockMap[date][stop.key] === 'number') saveLock(stop, null);
@@ -900,6 +938,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             </div>
           </div>
         )}
+
+        {/* Optimize Route: shortest driving order from where you are, times from drive + visit length */}
+        {stops.filter((st) => !st.done && !st.locked && st.kind !== 'event' && st.address).length >= 2 && (
+          <button className="it-optimize-btn" disabled={optimizing} onClick={optimizeRoute}>
+            {optimizing ? 'Planning the route…' : '⚡ Optimize Route'}
+          </button>
+        )}
+        {optimizeMsg && <div className="it-share-msg">{optimizeMsg}</div>}
 
         {/* Start route / Next stop in the maps app you pick (remembered) */}
         {routeStops.length > 0 && (
@@ -1340,6 +1386,43 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           <button className="it-undo-btn" onClick={undoRemove}>
             Undo
           </button>
+        </div>
+      )}
+
+      {routePreview && (
+        <div className="it-sheet-backdrop" onClick={() => setRoutePreview(null)}>
+          <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="it-sheet-top">
+              <button className="it-link" onClick={() => setRoutePreview(null)}>Cancel</button>
+              <div className="it-sheet-title">Optimized Route</div>
+              <button className="it-link it-bold" onClick={applyRoute}>Apply</button>
+            </div>
+            <div className="it-move-who">
+              <span>
+                {routePreview.fromHere ? 'Starting where you are' : "Couldn't get your location — starting at the first stop"} · about{' '}
+                {routePreview.driveTotal} min of driving. 🔒 stays put.
+              </span>
+            </div>
+            <div className="it-sheet-group it-left-list">
+              {routePreview.plan.map((p) => (
+                <div key={p.stop.key} className="it-left-row it-route-plan-row">
+                  <span className="it-left-time it-route-plan-time">{timeLabel(p.time)}</span>
+                  <span className="it-left-name">
+                    {p.fixed ? '🔒 ' : ''}
+                    {p.stop.title}
+                  </span>
+                  {!p.fixed && typeof p.drive === 'number' && <span className="it-left-time">{p.drive} min</span>}
+                </div>
+              ))}
+            </div>
+            {routePreview.skipped.length > 0 && (
+              <div className="it-move-who">
+                <span>
+                  Kept at their times (no address found): {routePreview.skipped.map((st) => st.title).join(', ')}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
