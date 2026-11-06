@@ -4,10 +4,10 @@
 // Tasks are saved under crumb_todos: [{ id, text, due: 'YYYY-MM-DD' | null, done, doneAt,
 //   createdAt, accountType: 'customer' | 'prospect' | null, accountId, accountName }]
 import React, { useRef, useState } from 'react';
+import { collectTodoItems } from './todoItems';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
-import { noteCat, isNoteDone } from './noteStatus';
 import { shareText } from './share';
 import './TodoPage.css';
 
@@ -56,45 +56,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
   };
 
   /* ---- everything on the list ---- */
-  const items = [];
-  todos.forEach((t) =>
-    items.push({
-      key: `t-${t.id}`,
-      kind: 'task',
-      id: t.id,
-      text: t.text,
-      due: t.due || null,
-      done: Boolean(t.done),
-      doneAt: t.doneAt || null,
-      accountType: t.accountType || null,
-      accountId: t.accountId ?? null,
-      accountName: t.accountName || '',
-    })
-  );
-  const collectFollowUps = (list, type) =>
-    list.filter(hasName).forEach((acct) =>
-      (acct.notes || []).forEach((n, index) => {
-        const cat = noteCat(n.category);
-        if (cat !== 'Follow-up' && cat !== 'Sample') return;
-        if (cat === 'Sample' && typeof n.done !== 'boolean') return; // old sample records, not to-dos
-        items.push({
-          key: `f-${type}-${acct.id}-${index}`,
-          kind: 'followup',
-          label: cat,
-          index,
-          text: n.text,
-          due: n.due || null,
-          done: isNoteDone(n),
-          doneAt: n.doneAt || null,
-          created: n.timestamp,
-          accountType: type,
-          accountId: acct.id,
-          accountName: acct.name,
-        });
-      })
-    );
-  collectFollowUps(contacts, 'customer');
-  collectFollowUps(prospects, 'prospect');
+  const items = collectTodoItems(todos, contacts, prospects);
 
   const open = items.filter((i) => !i.done);
   const byDue = (a, b) => (a.due || '9999') .localeCompare(b.due || '9999') || a.text.localeCompare(b.text);

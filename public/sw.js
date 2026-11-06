@@ -28,7 +28,8 @@ self.addEventListener('notificationclick', (event) => {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {
         if ('focus' in client) {
-          client.navigate(url).catch(() => {});
+          // Crumb is already open: tell it which screen to show (works on iPhone), then bring it up
+          client.postMessage({ type: 'crumb-open', url });
           return client.focus();
         }
       }

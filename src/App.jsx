@@ -79,6 +79,20 @@ class ErrorBoundary extends React.Component {
 }
 
 // Red banner when a save fails (usually: this phone's storage for Crumb is full).
+function NotificationTaps() {
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    const on = (e) => {
+      const d = e.data || {};
+      if (d.type === 'crumb-open' && typeof d.url === 'string' && d.url.startsWith('/')) navigate(d.url);
+    };
+    navigator.serviceWorker.addEventListener('message', on);
+    return () => navigator.serviceWorker.removeEventListener('message', on);
+  }, [navigate]);
+  return null;
+}
+
 function SaveFailedBanner() {
   const [show, setShow] = React.useState(false);
   React.useEffect(() => {
@@ -205,6 +219,7 @@ export default function App() {
   return (
     <Router>
       <SaveFailedBanner />
+      <NotificationTaps />
       <ErrorBoundary>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -280,6 +295,19 @@ export default function App() {
           }
         />
         <Route path="/calendar" element={<CalendarPage contacts={contacts} prospects={prospects} />} />
+        <Route
+          path="/wrap-up"
+          element={
+            <ItineraryPage
+              wrapUp
+              contacts={contacts}
+              setContacts={setContacts}
+              prospects={prospects}
+              setProspects={setProspects}
+              itinerary={itinerary}
+            />
+          }
+        />
         <Route
           path="/itinerary"
           element={

@@ -52,6 +52,7 @@ import { removeStop, snapshotStops, restoreStops, REMOVED_KEY, HIDDEN_KEY } from
 import MeetingSheet from './MeetingSheet';
 import { staleAccounts } from './lastContact';
 import { planRoute, timeRoute } from './routePlan';
+import { collectTodoItems } from './todoItems';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -140,7 +141,7 @@ function buildItineraryPdf(days) {
 }
 
 /* ---------- page ---------- */
-function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspects }) {
+function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspects, wrapUp = false }) {
   const navigate = useNavigate();
   const today = keyOf(new Date());
   const [date, setDate] = useState(today);
@@ -174,6 +175,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [visitFor, setVisitFor] = useState(null);     // { acct, type } whose visits are being changed
   const [staleOpen, setStaleOpen] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  const [, setWrapTick] = useState(0); // re-draw Wrap Up after a task changes
   const [optimizeMsg, setOptimizeMsg] = useState('');
   const [routePreview, setRoutePreview] = useState(null); // planRoute result waiting for Apply  // "Haven't seen in a while" list opened
   // Same fields as the Customers / Prospects screens, so changes show everywhere.
@@ -900,6 +902,92 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setOpenKey(null);
   };
 
+  /* ---- Wrap Up Today: what's still open today, in one place (opened by the 4 PM notification) ---- */
+  if (wrapUp) {
+    const leftover = buildStops(today).filter((st) => !st.done && st.kind !== 'event');
+    const todos = readJSON('crumb_todos', []) || [];
+    const dueItems = collectTodoItems(Array.isArray(todos) ? todos : [], contacts, prospects)
+      .filter((i) => !i.done && i.due && i.due <= today)
+      .sort((a, b) => a.due.localeCompare(b.due) || a.text.localeCompare(b.text));
+    const patchItem = (item, patch) => {
+      if (item.kind === 'task') {
+        const list = readJSON('crumb_todos', []) || [];
+        localStorage.setItem('crumb_todos', JSON.stringify(list.map((t) => (t.id === item.id ? { ...t, ...patch } : t))));
+        setWrapTick((n) => n + 1);
+        return;
+      }
+      const apply = (list) =>
+        list.map((a) => {
+          if (a.id !== item.accountId) return a;
+          const notes = [...(a.notes || [])];
+          notes[item.index] = { ...notes[item.index], ...patch };
+          return { ...a, notes };
+        });
+      if (item.accountType === 'prospect' && setProspects) setProspects(apply);
+      if (item.accountType === 'customer' && setContacts) setContacts(apply);
+    };
+    const tomorrow = addDaysToKey(today, 1);
+    return (
+      <div className="it-page">
+        <header className="it-header">
+          <button className="it-icon-btn" onClick={() => navigate('/itinerary')} aria-label="Back">
+            <FaArrowLeft />
+          </button>
+          <div className="it-header-title">Wrap Up Today</div>
+          <span style={{ width: 40 }} />
+        </header>
+        <div className="it-wrap it-sheet it-wrap-sheet">
+          <div className="it-wrap-date">{fromKey(today).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+
+          <div className="it-wrap-section">Stops You Didn't Get To{leftover.length ? ` (${leftover.length})` : ''}</div>
+          {leftover.length ? (
+            <LeftoverPanel key={leftover.map((st) => st.key).join('|')} stops={leftover} viewDate={today} onSave={putBack} />
+          ) : (
+            <div className="it-wrap-clear">✓ Every stop today is checked off.</div>
+          )}
+
+          <div className="it-wrap-section">To-Dos Due{dueItems.length ? ` (${dueItems.length})` : ''}</div>
+          {dueItems.length ? (
+            <div className="it-sheet-group it-wrap-list">
+              {dueItems.map((item) => (
+                <div key={item.key} className="it-wrap-row">
+                  <button
+                    className="it-wrap-check"
+                    aria-label="Mark done"
+                    onClick={() => patchItem(item, { done: true, doneAt: new Date().toISOString() })}
+                  />
+                  <div className="it-wrap-text">
+                    <div className="it-wrap-name">{item.text}</div>
+                    <div className="it-wrap-sub">
+                      {[item.label || 'Task', item.accountName, item.due < today ? 'Overdue' : 'Due today'].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <button className="it-wrap-later" onClick={() => patchItem(item, { due: tomorrow })}>
+                    Tomorrow
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="it-wrap-clear">✓ Nothing due today.</div>
+          )}
+
+          <button className="it-leftover-link" onClick={() => navigate('/itinerary')}>
+            Open Itinerary ›
+          </button>
+        </div>
+        {undoIt && (
+          <div className="it-undo">
+            <span>{undoIt.text}</span>
+            <button className="it-undo-btn" onClick={undoRemove}>
+              Undo
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="it-page">
       <header className="it-header">
@@ -1229,10 +1317,17 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         )}
         {stops.length > 0 && <div className="it-hint">Tap a stop for details · Double-tap to edit · Hold and slide to move · Tap ○ when done · Swipe left to remove</div>}
 
-        {date <= today && stops.some((st) => !st.done && st.kind !== 'event') && (
-          <button className="it-leftover-link" onClick={() => setLeftoverOpen(true)}>
-            Didn't get to some? Put them on another day ›
+        {date === today ? (
+          <button className="it-leftover-link" onClick={() => navigate('/wrap-up')}>
+            Wrap Up Today ›
           </button>
+        ) : (
+          date < today &&
+          stops.some((st) => !st.done && st.kind !== 'event') && (
+            <button className="it-leftover-link" onClick={() => setLeftoverOpen(true)}>
+              Didn't get to some? Put them on another day ›
+            </button>
+          )
         )}
 
         {/* Accounts not contacted in a while (limit set in Settings). Not on this day already. */}
@@ -1888,7 +1983,7 @@ function RoutePlanList({ plan, onMove }) {
 }
 
 /* ---------- Didn't get to these: put them on another day ---------- */
-function LeftoverSheet({ stops, viewDate, onSave, onCancel }) {
+function LeftoverPanel({ stops, viewDate, onSave }) {
   const [picked, setPicked] = useState(() => new Set(stops.map((st) => st.key)));
   const [pickDay, setPickDay] = useState(false);
   const [dayKey, setDayKey] = useState(addDaysToKey(viewDate, 1));
@@ -1904,28 +1999,8 @@ function LeftoverSheet({ stops, viewDate, onSave, onCancel }) {
   const tomorrow = addDaysToKey(viewDate, 1);
   const nextWeek = addDaysToKey(viewDate, 7);
   const go = (k) => chosen.length && /^\d{4}-\d{2}-\d{2}$/.test(k) && k !== viewDate && onSave(chosen, k);
-  if (!stops.length) {
-    return (
-      <div className="it-sheet-backdrop" onClick={onCancel}>
-        <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="it-sheet-top">
-            <span />
-            <div className="it-sheet-title">All Done</div>
-            <button className="it-link it-bold" onClick={onCancel}>OK</button>
-          </div>
-          <div className="it-move-who"><span>Every stop on this day is checked off.</span></div>
-        </div>
-      </div>
-    );
-  }
   return (
-    <div className="it-sheet-backdrop" onClick={onCancel}>
-      <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="it-sheet-top">
-          <button className="it-link" onClick={onCancel}>Cancel</button>
-          <div className="it-sheet-title">Didn't Get To These</div>
-          <span style={{ width: 50 }} />
-        </div>
+    <>
         <div className="it-move-who">
           <span>Pick the stops to put back on the Itinerary, then pick a day.</span>
         </div>
@@ -1960,6 +2035,33 @@ function LeftoverSheet({ stops, viewDate, onSave, onCancel }) {
               Pick A Day…
             </button>
           </div>
+        )}
+    </>
+  );
+}
+
+function LeftoverSheet({ stops, viewDate, onSave, onCancel }) {
+  return (
+    <div className="it-sheet-backdrop" onClick={onCancel}>
+      <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
+        {stops.length ? (
+          <>
+            <div className="it-sheet-top">
+              <button className="it-link" onClick={onCancel}>Cancel</button>
+              <div className="it-sheet-title">Didn't Get To These</div>
+              <span style={{ width: 50 }} />
+            </div>
+            <LeftoverPanel stops={stops} viewDate={viewDate} onSave={onSave} />
+          </>
+        ) : (
+          <>
+            <div className="it-sheet-top">
+              <span />
+              <div className="it-sheet-title">All Done</div>
+              <button className="it-link it-bold" onClick={onCancel}>OK</button>
+            </div>
+            <div className="it-move-who"><span>Every stop on this day is checked off.</span></div>
+          </>
         )}
       </div>
     </div>

@@ -1764,3 +1764,30 @@
 .it-route-plan-list.is-dragging .it-route-plan-row { transition: transform 0.15s ease; }
 .it-route-plan-list.is-dragging .it-route-plan-row.is-lifted { transition: none; }
 .it-route-plan-row { touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* ---------- Wrap Up Today ---------- */
+.it-sheet.it-wrap-sheet {
+  max-height: none; overflow: visible; background: transparent; border-radius: 0; animation: none;
+  padding: 4px max(16px, env(safe-area-inset-right, 0px)) calc(90px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left, 0px));
+}
+.it-wrap-date { font-size: 1.05rem; font-weight: 600; color: #6e6e73; padding: 4px 4px 4px; }
+.it-wrap-section {
+  margin: 18px 4px 8px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6e6e73;
+}
+.it-wrap-clear { background: #e5f4ea; color: #1e8e3e; font-weight: 600; border-radius: 12px; padding: 12px 14px; }
+.it-wrap-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-top: 1px solid #f0f0f3; background: #fff; }
+.it-wrap-row:first-child { border-top: 0; }
+.it-sheet .it-wrap-check,
+.it-sheet .it-wrap-check:hover {
+  flex: none; width: 24px; height: 24px; margin: 0; padding: 0; border-radius: 50%; border: 2px solid #c7c7cc;
+  background: #fff; box-shadow: none;
+}
+.it-wrap-text { flex: 1; min-width: 0; }
+.it-wrap-name { font-weight: 600; color: #1c1c1e; }
+.it-wrap-sub { font-size: 0.82rem; color: #8e8e93; margin-top: 2px; }
+.it-sheet .it-wrap-later,
+.it-sheet .it-wrap-later:hover {
+  flex: none; width: auto; margin: 0; padding: 6px 12px; border: 0; border-radius: 16px; box-shadow: none;
+  background: #eef5fc; color: #0077cc; font-size: 0.82rem; font-weight: 600;
+}
+.it-wrap .it-leftover-link { margin-top: 18px; }
