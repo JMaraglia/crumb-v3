@@ -471,57 +471,20 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     if (d.from > d.to && i >= d.to && i < d.from) return d.height;
     return 0;
   };
-  // A stop dropped at spot `to` gets a time that fits there: right after the stop above it
-  // (that stop's time + its visit length), or before the stop below if it's now first.
-  // A stop's own time before any dragging: hand-added stops remember it (origTime); scheduled
-  // visits go back to the account's usual time.
-  const originalTime = (stop) => {
-    if (stop.kind === 'manual') {
-      const v = visits[stop.index];
-      if (!v) return null;
-      return hhmmToMinutes(v.origTime != null ? v.origTime : v.time);
-    }
-    const acct = findAccount(stop.accountType, stop.accountId);
-    const t = acct ? visitTimeOn(acct, date) : null;
-    return typeof t === 'number' ? t : null;
-  };
+  // Dropped at spot `to`: the stops trade places AND time slots. The flexible stops keep the same
+  // set of times; they just go in the new order (two stops swapped = their times swapped). Nothing
+  // gets locked; locked stops and calendar appointments keep their times.
   const dropStop = (stop, to) => {
+    if (typeof stop.time !== 'number') return; // "Anytime" stops have no slot to trade
     const others = stops.filter((s) => s.key !== stop.key);
-    const prev = others[to - 1] || null;
-    const next = others[to] || null;
-    const len = (s) => (s && typeof s.visitLength === 'number' ? s.visitLength : 30);
-    const timed = (s) => s && typeof s.time === 'number';
-    // Dragged back to where its own time fits → it gets its own time back.
-    const orig = originalTime(stop);
-    if (orig != null && (!timed(prev) || prev.time <= orig) && (!timed(next) || orig <= next.time)) {
-      if (stop.kind === 'manual') {
-        saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, time: minutesToHhmm(orig), origTime: undefined } : v)));
-      } else {
-        saveTime(stop, null); // back to the usual time
-      }
-      return;
-    }
-    let time = null;
-    if (prev && typeof prev.time === 'number') {
-      time = prev.time + len(prev);
-      if (next && typeof next.time === 'number' && time > next.time) {
-        // not enough room: halfway between, on a 5-minute mark
-        time = prev.time + Math.floor((next.time - prev.time) / 2 / 5) * 5;
-      }
-    } else if (next && typeof next.time === 'number') {
-      time = Math.max(0, next.time - len(stop));
-    } else {
-      return; // among "Anytime" stops: nothing to go by
-    }
-    time = Math.min(time, 23 * 60 + 55);
-    if (stop.kind === 'manual') {
-      // remember the stop's own time so dragging it back restores it
-      saveVisits(
-        visits.map((v, i) => (i === stop.index ? { ...v, time: minutesToHhmm(time), origTime: v.origTime != null ? v.origTime : v.time } : v))
-      );
-      return;
-    }
-    saveTime(stop, time);
+    const order = [...others.slice(0, to), stop, ...others.slice(to)];
+    const flexible = (s) => !s.locked && typeof s.time === 'number' && s.kind !== 'event';
+    const slots = stops.filter(flexible).map((s) => s.time).sort((a, b) => a - b);
+    const changes = [];
+    order.filter(flexible).forEach((s, i) => {
+      if (slots[i] !== s.time) changes.push({ stop: s, time: slots[i] });
+    });
+    if (changes.length) applyPlan(changes);
   };
 
   // Quick note → saved on the account as a "Visit" note
