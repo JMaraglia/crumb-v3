@@ -10,6 +10,7 @@
 // * It can never disturb a save: it only hears about a save after it's finished, and errors are ignored.
 import { onSaved, readText, writeText } from './store';
 import { changesFor, combine } from './syncDiff';
+import { syncActive, isTestCopy, isRealSynced } from './syncMode';
 
 const FLAG_KEY = 'crumb_sync_record'; // this device only (not backed up)
 const DB_NAME = 'crumb-sync';
@@ -79,7 +80,7 @@ function record(changes) {
 // library never loads for normal use.
 let sendTimer = null;
 function scheduleSend() {
-  if (readText('crumb_sync_test_device') !== '1') return;
+  if (!syncActive()) return; // off, paused, locked or switched off: changes wait here
   clearTimeout(sendTimer);
   sendTimer = setTimeout(() => {
     import('./syncSend').then((m) => m.sendNow({ quiet: true })).catch(() => {});
@@ -87,16 +88,16 @@ function scheduleSend() {
 }
 if (typeof window !== 'undefined') window.addEventListener('crumb-outbox-changed', () => scheduleSend());
 
-// Sync step S4 (test copy only): check the cloud for changes from your other devices every 30 seconds
+// Sync step S4/S7 (a test copy, or a device syncing your real data): check the cloud for changes from your other devices every 30 seconds
 // while Crumb is open, and right away when you come back to it.
 let pullTimer = null;
 function pullSoon() {
-  if (readText('crumb_sync_test_device') !== '1') return;
+  if (!syncActive()) return;
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
   import('./syncSend').then((m) => m.pullNow({ quiet: true })).catch(() => {});
 }
 function startPulling() {
-  if (pullTimer || typeof window === 'undefined' || readText('crumb_sync_test_device') !== '1') return;
+  if (pullTimer || typeof window === 'undefined' || !(isTestCopy() || isRealSynced())) return;
   pullTimer = setInterval(pullSoon, 30000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') pullSoon();

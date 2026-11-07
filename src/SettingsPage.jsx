@@ -11,6 +11,17 @@ import AskSheet from './AskSheet';
 import { writeText } from './store';
 import './SettingsPage.css';
 import { useCloudRefresh } from './useCloudRefresh';
+import { syncBlockReason, isTestProject } from './syncMode';
+
+// One line under "Cloud": is this device syncing?
+function syncLine() {
+  const why = syncBlockReason();
+  if (why === '') return isTestProject() ? 'Test copy: syncing with the test cloud' : 'Syncing with your other devices';
+  if (why === 'paused') return 'Paused';
+  if (why === 'kill-switch') return 'Syncing is switched off for now';
+  if (isTestProject()) return 'Test cloud: sign in and try syncing with demo data';
+  return 'Not syncing yet: move your data to the cloud';
+}
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -63,8 +74,8 @@ export default function SettingsPage() {
     },
     {
       icon: <IoCloudOutline />,
-      label: 'Cloud Test',
-      sub: 'Try signing in to Crumb’s cloud (test only — nothing on this phone changes)',
+      label: 'Cloud',
+      sub: syncLine(),
       go: () => navigate('/cloud-test'),
     },
   ];

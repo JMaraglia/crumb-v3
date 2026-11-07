@@ -30,6 +30,6 @@ class FakeStorage {
 
 beforeEach(() => {
   globalThis.localStorage = new FakeStorage();
-  globalThis.window = { dispatchEvent: () => true, crypto: globalThis.crypto };
+  globalThis.window = { dispatchEvent: () => true, addEventListener: () => {}, removeEventListener: () => {}, crypto: globalThis.crypto };
   if (typeof globalThis.Event === 'undefined') globalThis.Event = class { constructor(t) { this.type = t; } };
 });

@@ -9,6 +9,8 @@ import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
 import { cloud, cloudReady, cloudProjectRef } from './cloud';
 import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox, stuckChanges } from './outbox';
 import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt, lastCheckedAt, lastPullNote, pullNow, joinFromCloud } from './syncSend';
+import { syncBlockReason, isTestProject, isRealSynced, setPaused, BLOCK_TEXT } from './syncMode';
+import { checkMove, moveMyData, downloadMyData, COUNT_NAMES } from './syncMove';
 import './CloudTestPage.css';
 
 const plainError = (err) => {
@@ -53,6 +55,11 @@ export default function CloudTestPage() {
   const [, setTick] = useState(0); // re-draw when sending status changes
   const testCopy = isTestDevice();
   const realData = !testCopy && hasRealAccounts();
+  const testProject = isTestProject();
+  const realSynced = isRealSynced();
+  const why = syncBlockReason();
+  const [dry, setDry] = useState(null);       // S7 dry run result
+  const [moved, setMoved] = useState(null);   // S7 move / download check result
 
   // Sync step S2: changes noted on this device (nothing is sent yet)
   useEffect(() => {
@@ -102,6 +109,29 @@ export default function CloudTestPage() {
     run('Downloading from the test cloud…', async () => {
       await joinFromCloud();
     });
+  // ---- S7: your real data
+  const checkWhatMoves = () =>
+    run('Counting what would move (nothing is sent)…', async () => {
+      setMoved(null);
+      setDry(await checkMove());
+    });
+  const moveNow = () =>
+    run('Moving your data…', async () => {
+      const r = await moveMyData((step) => setBusy(step));
+      setMoved(r);
+      if (r.ok) setDry(null);
+    });
+  const downloadNow = () =>
+    run('Downloading your data…', async () => {
+      const r = await downloadMyData((step) => setBusy(step));
+      setMoved(r);
+      if (r.ok && r.reload) setTimeout(() => window.location.reload(), 2500); // every screen picks up your data
+    });
+  const togglePause = () => {
+    setPaused(why !== 'paused');
+    setTick((n) => n + 1);
+    if (why === 'paused') setTimeout(() => pullNow({ quiet: true }), 300); // resumed: catch up now
+  };
   const toggleRecording = () => {
     const on = !recording;
     setRecording(on);
@@ -198,10 +228,11 @@ export default function CloudTestPage() {
         </button>
       </header>
       <div className="cl-content">
-        <h1 className="cl-title">Cloud Test</h1>
+        <h1 className="cl-title">{testProject ? 'Cloud Test' : 'Cloud'}</h1>
         <p className="cl-intro">
-          A test of Crumb’s cloud connection. Your customers, prospects and notes stay on this phone — nothing is
-          uploaded or changed.
+          {testProject
+            ? 'A test of Crumb’s cloud connection, with made-up demo data only. Your real customers are never sent to the test cloud.'
+            : 'Keeps your customers, notes, calendar, itinerary, to-dos and photos the same on your iPhone and iPad. Crumb always keeps a full copy on this device, so it works with no signal.'}
         </p>
 
         {!cloudReady && (
@@ -276,6 +307,137 @@ export default function CloudTestPage() {
           </div>
         )}
 
+        {cloudReady && !testProject && (
+          <>
+            <div className="cl-section">Your Data</div>
+            {testCopy && <div className="cl-card cl-err">{BLOCK_TEXT['test-copy-locked']}</div>}
+
+            {realSynced && (
+              <div className="cl-card">
+                <div className={`cl-status ${why ? 'is-off' : 'is-on'}`}>
+                  {why === '' ? 'Syncing ✓' : why === 'paused' ? 'Paused' : 'Not syncing'}
+                </div>
+                {why ? (
+                  <div className="cl-text">{BLOCK_TEXT[why] || ''}</div>
+                ) : (
+                  <div className="cl-text">
+                    Your changes go to your other devices a few seconds after you make them, and theirs come here every 30
+                    seconds while Crumb is open.
+                    {lastSentAt() ? ` Last sent: ${timeOf(lastSentAt())}.` : ''}
+                    {lastCheckedAt() ? ` Last checked: ${timeOf(lastCheckedAt())}.` : ''}
+                  </div>
+                )}
+                {!session && <div className="cl-err">Signed out: nothing syncs until you sign in above.</div>}
+                {lastPullNote() && <div className="cl-err">{lastPullNote()}</div>}
+                <div className="cl-outbox-count cl-card-gap">
+                  Changes waiting to send: <strong>{waiting == null ? '…' : waiting}</strong>
+                </div>
+                {!why && session && (
+                  <div className="cl-actions">
+                    <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={sendWaiting}>
+                      Send Now
+                    </button>
+                    <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={checkNow}>
+                      Check Now
+                    </button>
+                  </div>
+                )}
+                {(why === '' || why === 'paused') && (
+                  <button className="cl-switch-row cl-card-gap" onClick={togglePause} aria-pressed={why === 'paused'}>
+                    <span className="cl-switch-text">
+                      <span className="cl-switch-label">Pause syncing on this device</span>
+                      <span className="cl-switch-sub">Crumb keeps working here; changes wait until you turn this off.</span>
+                    </span>
+                    <span className={`cl-switch ${why === 'paused' ? 'is-on' : ''}`}>
+                      <span className="cl-switch-knob" />
+                    </span>
+                  </button>
+                )}
+                {stuck.length > 0 && (
+                  <div className="cl-err">
+                    {stuck.length} change{stuck.length === 1 ? '' : 's'} couldn’t be sent (kept on this device):
+                    <ul className="cl-outbox-list">
+                      {stuck.slice(0, 5).map((c) => (
+                        <li key={c.key}>{describe(c)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!realSynced && !testCopy && realData && (
+              <div className="cl-card">
+                <div className="cl-text">
+                  <strong>Move My Data To The Cloud.</strong> Your customers, prospects, notes, calendar, itinerary, to-dos,
+                  settings and photos go up to your cloud, so your other devices can get them. Nothing on this device changes.
+                </div>
+                {!session && <div className="cl-text cl-card-gap">Sign in above first.</div>}
+                {session && !dry && !(moved && moved.ok) && (
+                  <button className="cl-btn cl-card-gap" disabled={Boolean(busy)} onClick={checkWhatMoves}>
+                    Check What Would Move
+                  </button>
+                )}
+                {dry && (
+                  <div className="cl-card-gap">
+                    <div className="cl-text">
+                      <strong>Dry run</strong> (nothing was sent):
+                    </div>
+                    <ul className="cl-outbox-list">
+                      {COUNT_NAMES.map(([k, label]) => (
+                        <li key={k}>
+                          {label}: <strong>{dry.counts[k]}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                    {dry.warnings.map((w) => (
+                      <div key={w} className="cl-text cl-card-gap">⚠️ {w}</div>
+                    ))}
+                    {dry.blockers.map((b) => (
+                      <div key={b} className="cl-err">{b}</div>
+                    ))}
+                    {dry.blockers.length === 0 && (
+                      <button className="cl-btn cl-card-gap" disabled={Boolean(busy)} onClick={moveNow}>
+                        Move My Data
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!realSynced && !testCopy && !realData && (
+              <div className="cl-card">
+                <div className="cl-text">
+                  <strong>Download My Data.</strong> This device is empty. Sign in above with your account, then bring down
+                  everything from your cloud.
+                </div>
+                <button className="cl-btn cl-card-gap" disabled={Boolean(busy) || !session} onClick={downloadNow}>
+                  Download My Data
+                </button>
+              </div>
+            )}
+
+            {moved && (
+              <div className={moved.ok ? 'cl-check' : 'cl-card cl-err'}>
+                <div className={moved.ok ? 'cl-check-title' : ''}>
+                  {moved.ok ? 'Everything Matches ✓  This device is now syncing.' : 'The cloud doesn’t match this device, so syncing was NOT turned on. Nothing on this device changed. Send Claude a screenshot.'}
+                </div>
+                <ul>
+                  {moved.lines.map((l) => (
+                    <li key={l}>{l}</li>
+                  ))}
+                  {(moved.problems || []).map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                  {moved.problemCount > (moved.problems || []).length && <li>…and {moved.problemCount - moved.problems.length} more</li>}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+
+        {testProject && <>
         <div className="cl-section">Sync Test</div>
         {testCopy && (
           <div className="cl-card cl-testcopy">
@@ -372,11 +534,12 @@ export default function CloudTestPage() {
             </div>
           )}
         </div>
+        </>}
 
         {busy && <div className="cl-busy">{busy}</div>}
         {msg && <div className="cl-msg">{msg}</div>}
         {err && <div className="cl-err">{err}</div>}
-        {cloudReady && <div className="cl-foot">Test project: {cloudProjectRef() || 'unknown'}</div>}
+        {cloudReady && <div className="cl-foot">{testProject ? 'Test project' : 'Project'}: {cloudProjectRef() || 'unknown'}</div>}
       </div>
     </div>
   );

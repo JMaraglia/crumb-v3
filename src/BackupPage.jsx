@@ -305,6 +305,9 @@ export default function BackupPage() {
 
   const saveResult = (r) => {
     try {
+      // A device syncing your data is PAUSED after a restore or undo, so the restored data never
+      // silently mixes with the cloud. Resume it (Settings → Cloud) once you've decided what's right.
+      if (localStorage.getItem('crumb_sync_mode') === 'real') localStorage.setItem('crumb_sync_paused', '1');
       localStorage.setItem(RESULT_KEY, JSON.stringify(r));
     } catch {
       /* shown anyway below if the reload doesn't happen */

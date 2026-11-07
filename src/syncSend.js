@@ -16,11 +16,12 @@ import { pendingChanges, removeSent, parkStuck, setRecording, clearOutbox, flush
 import { planPull } from './syncPull';
 import { syncPhotos } from './syncPhotos';
 
-export const TEST_DEVICE_KEY = 'crumb_sync_test_device'; // '1' = this copy holds demo data only
-const UPLOADED_KEY = 'crumb_sync_uploaded';               // when the first upload finished
-const LAST_SENT_KEY = 'crumb_sync_last_sent';             // when changes were last sent
-const PULLED_KEY = 'crumb_sync_pulled_at';                // S4: cloud time of the last check (asks for changes since then)
-const LAST_CHECK_KEY = 'crumb_sync_last_checked';         // S4: when this device last checked the cloud
+import { TEST_DEVICE_KEY, syncActive, isTestProject } from './syncMode';
+export { TEST_DEVICE_KEY };
+export const UPLOADED_KEY = 'crumb_sync_uploaded';               // when the first upload finished
+export const LAST_SENT_KEY = 'crumb_sync_last_sent';             // when changes were last sent
+export const PULLED_KEY = 'crumb_sync_pulled_at';                // S4: cloud time of the last check (asks for changes since then)
+export const LAST_CHECK_KEY = 'crumb_sync_last_checked';         // S4: when this device last checked the cloud
 const BATCH = 50;
 
 export const isTestDevice = () => readText(TEST_DEVICE_KEY) === '1';
@@ -34,6 +35,7 @@ const status = () => window.dispatchEvent(new Event('crumb-sync-status'));
 
 // Fill an EMPTY copy of Crumb with the made-up demo data and make it a test copy. Refuses otherwise.
 export function loadDemoData() {
+  if (!isTestProject()) throw new Error('Demo data can only be used with the test cloud.');
   if (hasRealAccounts()) throw new Error('This copy of Crumb already has customers or prospects, so demo data was not loaded.');
   const data = demoData();
   Object.entries(data).forEach(([k, v]) => localStorage.setItem(k, v));
@@ -43,7 +45,7 @@ export function loadDemoData() {
 }
 
 let workspace = null;
-async function myWorkspace(sb) {
+export async function myWorkspace(sb) {
   if (workspace) return workspace;
   const { data, error } = await sb.from('workspaces').select('id');
   if (error) throw error;
@@ -63,7 +65,7 @@ const asOp = (c) => ({
   base_version: null,
 });
 
-async function sendBatch(sb, ws, entries) {
+export async function sendBatch(sb, ws, entries) {
   const { data, error } = await sb.rpc('apply_changes', {
     p_workspace: ws,
     p_batch: { device: deviceName(), ops: entries.map(asOp) },
@@ -77,13 +79,13 @@ function deviceName() {
   return /iPad/.test(ua) ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Device';
 }
 
-const opId = () => (crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+export const opId = () => (crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
 // First upload: everything in the test copy.
 export async function uploadAll() {
   const sb = cloud();
   if (!sb) throw new Error('Cloud isn’t set up in this version.');
-  if (!isTestDevice()) throw new Error('Only a test copy with demo data can upload right now.');
+  if (!isTestDevice() || !isTestProject()) throw new Error('Only a test copy with demo data can upload, and only to the test cloud.');
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) throw new Error('Sign in first.');
   const ws = await myWorkspace(sb);
@@ -108,7 +110,7 @@ export function sendNow({ quiet = false } = {}) {
   if (sending) return sending;
   sending = (async () => {
     const sb = cloud();
-    if (!sb || !isTestDevice() || !uploadedAt()) return { sent: 0, skipped: true };
+    if (!sb || !syncActive() || !uploadedAt()) return { sent: 0, skipped: true };
     const { data: s } = await sb.auth.getSession();
     if (!s || !s.session) return { sent: 0, skipped: true };
     const ws = await myWorkspace(sb);
@@ -201,7 +203,7 @@ export function pullNow({ quiet = false } = {}) {
   if (pulling) return pulling;
   pulling = (async () => {
     const sb = cloud();
-    if (!sb || !isTestDevice() || !uploadedAt()) return { skipped: true };
+    if (!sb || !syncActive() || !uploadedAt()) return { skipped: true };
     const { data: s } = await sb.auth.getSession();
     if (!s || !s.session) return { skipped: true };
     if (typing()) return { skipped: true, typing: true };
@@ -228,6 +230,7 @@ export function pullNow({ quiet = false } = {}) {
 // A second EMPTY copy joins the test: it gets everything from the test cloud and becomes a test copy.
 // Refuses on a copy with real customers or prospects.
 export async function joinFromCloud() {
+  if (!isTestProject()) throw new Error('This is for the test cloud only.');
   if (hasRealAccounts()) throw new Error('This copy of Crumb already has customers or prospects, so nothing was downloaded.');
   const sb = cloud();
   if (!sb) throw new Error('Cloud isn’t set up in this version.');
