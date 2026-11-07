@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     const { id, kind, area, message } = readJsonBody(req);
     const isProblem = kind !== 'suggestion';
     const num = Number.isInteger(Number(id)) && Number(id) > 0 ? ` #${Number(id)}` : '';
-    const title = `${isProblem ? 'New ticket' : 'New suggestion'}${num}${area ? ` · ${clip(area, 30)}` : ''}`;
+    const title = `ADMIN · ${isProblem ? 'New ticket' : 'New suggestion'}${num}${area ? ` · ${clip(area, 30)}` : ''}`;
     const body = clip(message, 140) || 'Open Crumb Admin to read it.';
 
     let sent = 0;
