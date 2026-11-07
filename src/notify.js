@@ -18,7 +18,7 @@ import {
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
-import { loadCustomers, loadProspects } from './store';
+import { loadCustomers, loadProspects, loadEvents } from './store';
 
 const SETTINGS_KEY = 'crumb_notify_settings';
 const DEVICE_KEY = 'crumb_push_device';
@@ -96,7 +96,7 @@ const hasName = (a) => a && a.name && String(a.name).trim();
 export function buildReminders(settings = loadNotifySettings(), now = new Date()) {
   const contacts = loadCustomers();
   const prospects = loadProspects();
-  const events = toVisitList(readJSON('crumb_calendar_events', []));
+  const events = loadEvents();
   const visits = toVisitList(readJSON('visitData', []));
   const doneMap = readJSON('crumb_itinerary_done', {}) || {};
   const lockMap = readJSON('crumb_itinerary_locks', {}) || {};

@@ -3,10 +3,10 @@
 // as a calendar event linked to the account, so it shows on the Calendar AND that day's Itinerary.
 import React, { useState } from 'react';
 import { TIME_OPTIONS, timeLabel } from './AccountViews';
-import { keyOf, addDaysToKey, fromKey, readJSON, MEETING_COLOR } from './schedule';
+import { keyOf, addDaysToKey, fromKey, MEETING_COLOR } from './schedule';
+import { loadEvents, saveEvents, loadCalendarSettings } from './store';
 import './MeetingSheet.css';
 
-const EVENTS_KEY = 'crumb_calendar_events';
 const LENGTHS = [
   [30, '30 min'],
   [60, '1 hour'],
@@ -21,10 +21,10 @@ export function niceMeeting(dateKey, start) {
 // account: { type: 'customer' | 'prospect', id, name, address }
 // existing: a Meeting note's `meeting` ({ date, start, eventId }) → change that meeting instead of adding one.
 export default function MeetingSheet({ account, presetNotes = '', existing = null, onSaved, onCancel }) {
-  const settings = readJSON('crumb_calendar_settings', {}) || {};
-  const allEvents = readJSON(EVENTS_KEY, []);
+  const settings = loadCalendarSettings();
+  const allEvents = loadEvents();
   const oldEvent =
-    existing && Array.isArray(allEvents) ? allEvents.find((ev) => String(ev.id) === String(existing.eventId)) || null : null;
+    existing ? allEvents.find((ev) => String(ev.id) === String(existing.eventId)) || null : null;
   const oldLength = oldEvent && typeof oldEvent.end === 'number' ? oldEvent.end - oldEvent.start : null;
   const [day, setDay] = useState((existing && existing.date) || addDaysToKey(keyOf(new Date()), 1));
   const [start, setStart] = useState(existing && typeof existing.start === 'number' ? existing.start : 12 * 60);
@@ -37,8 +37,7 @@ export default function MeetingSheet({ account, presetNotes = '', existing = nul
 
   const save = () => {
     if (!valid) return;
-    const events = readJSON(EVENTS_KEY, []);
-    const list = Array.isArray(events) ? events : [];
+    const list = loadEvents();
     const event = {
       ...(oldEvent || {}),
       id: oldEvent ? oldEvent.id : Date.now(),
@@ -58,7 +57,7 @@ export default function MeetingSheet({ account, presetNotes = '', existing = nul
     };
     // Changing a meeting replaces its calendar event (or re-adds it if it was deleted from the Calendar).
     const others = oldEvent ? list.filter((ev) => String(ev.id) !== String(oldEvent.id)) : list;
-    localStorage.setItem(EVENTS_KEY, JSON.stringify([...others, event]));
+    saveEvents([...others, event]);
     if (existing) {
       onSaved(`Meeting changed: ${niceMeeting(day, start)}`, null, { date: day, start, eventId: event.id });
       return;

@@ -4,6 +4,7 @@
 // or a calendar event linked to it (on or before today).
 // Accounts with no contact at all count from the day they were added (ids are creation times).
 import { readJSON, keyOf, todayKeyLocal } from './schedule';
+import { loadEvents } from './store';
 
 export const STALE_KEY = 'crumb_stale_days';
 export const STALE_CHOICES = [0, 21, 30, 45, 60, 90]; // 0 = off
@@ -32,8 +33,7 @@ function contactIndex() {
     if (v && v.done && v.accountId) bump(`${v.accountType === 'customer' || v.type === 'contact' ? 'c' : 'p'}-${v.accountId}`, v.date);
   });
   const today = todayKeyLocal();
-  const events = readJSON('crumb_calendar_events', []);
-  (Array.isArray(events) ? events : []).forEach((ev) => {
+  loadEvents().forEach((ev) => {
     if (ev && ev.accountId && ev.date && ev.date <= today) bump(`${ev.accountType === 'customer' ? 'c' : 'p'}-${ev.accountId}`, ev.date);
   });
   return idx;

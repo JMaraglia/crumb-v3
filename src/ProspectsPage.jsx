@@ -5,6 +5,7 @@ import React from 'react';
 import { AccountList, AccountDetail, AccountEdit } from './AccountViews';
 import { readJSON, toVisitList } from './schedule';
 import { movePhotos, photoKey } from './photos';
+import { loadEvents, saveEvents } from './store';
 
 const PROSPECT_CONFIG = {
   singular: 'Prospect',
@@ -46,8 +47,8 @@ function convertProspect(prospect, accountNumber, contacts, setContacts, setPros
       ? { ...item, accountType: 'customer', accountId: newId, type: 'contact' }
       : item;
 
-  const events = readJSON('crumb_calendar_events', null);
-  if (Array.isArray(events)) localStorage.setItem('crumb_calendar_events', JSON.stringify(events.map(relink)));
+  const events = loadEvents();
+  if (events.length) saveEvents(events.map(relink));
 
   const visits = localStorage.getItem('visitData');
   if (visits) localStorage.setItem('visitData', JSON.stringify(toVisitList(JSON.parse(visits)).map(relink)));

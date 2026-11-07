@@ -6,6 +6,7 @@
 // "Both" really deletes hand-added stops and calendar events; scheduled visits just skip that day
 // (the regular schedule never changes).
 import { readJSON, toVisitList, addDaysToKey, todayKeyLocal } from './schedule';
+import { loadEvents, saveEvents } from './store';
 
 export const REMOVED_KEY = 'crumb_itinerary_removed';
 export const HIDDEN_KEY = 'crumb_calendar_hidden';
@@ -30,8 +31,7 @@ function addTo(storageKey, date, key) {
 export function removeStop(where, key, date) {
   if (where === 'both') {
     if (key.startsWith('e-')) {
-      const events = readJSON(EVENTS_KEY, []);
-      if (Array.isArray(events)) localStorage.setItem(EVENTS_KEY, JSON.stringify(events.filter((ev) => `e-${ev.id}` !== key)));
+      saveEvents(loadEvents().filter((ev) => `e-${ev.id}` !== key));
       return;
     }
     if (key.startsWith('m-')) {

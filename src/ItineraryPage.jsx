@@ -53,7 +53,7 @@ import MeetingSheet from './MeetingSheet';
 import { staleAccounts } from './lastContact';
 import { planRoute, timeRoute } from './routePlan';
 import { collectTodoItems } from './todoItems';
-import { changeNote } from './store';
+import { changeNote, loadEvents, saveEvents, loadCalendarSettings } from './store';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -61,7 +61,6 @@ const DONE_KEY = 'crumb_itinerary_done';            // checkmarks for scheduled/
 const LOCKS_KEY = 'crumb_itinerary_locks';          // { date: { stopKey: minutes } } times locked for one day
 const TIMES_KEY = 'crumb_itinerary_times';          // { date: { stopKey: minutes } } scheduled visits re-timed for one day, NOT locked
 const LENGTHS_KEY = 'crumb_itinerary_lengths';      // { date: { stopKey: minutes } } how long a stop takes that day
-const EVENTS_KEY = 'crumb_calendar_events';         // calendar events (read only here)
 
 function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -188,7 +187,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   };
   const pickStage = (acct) => setSheet(stageSheet(acct, (key) => updateAccount('prospect', acct.id, { stage: key })));
   const [undoIt, setUndoIt] = useState(null);   // { text, restore, timer } after swiping a stop away
-  const events = toVisitList(readJSON(EVENTS_KEY, []));
+  const events = loadEvents();
 
   const saveVisits = (next) => {
     setVisits(next);
@@ -520,7 +519,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     if ((readJSON(HIDDEN_KEY, {}) || {})[date]?.includes(stop.key)) return false;
     if (stop.kind === 'event') return true;
     if (typeof stop.time !== 'number') return false; // no time = not on the calendar grid
-    const cal = readJSON('crumb_calendar_settings', {}) || {};
+    const cal = loadCalendarSettings();
     if (stop.kind === 'manual') return cal.showStops !== false;
     const acct = findAccount(stop.accountType, stop.accountId);
     return cal.showVisits !== false && (!acct || acct.showOnCalendar !== false);
@@ -801,14 +800,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       else clearDayLock();
     } else if (stop.kind === 'event') {
       if (time != null) {
-        const all = readJSON(EVENTS_KEY, []);
-        if (Array.isArray(all)) {
+        const all = loadEvents();
+        if (all.length) {
           const next = all.map((ev) => {
             if (`e-${ev.id}` !== stop.key) return ev;
             const length = typeof ev.end === 'number' && typeof ev.start === 'number' ? ev.end - ev.start : 60;
             return { ...ev, start: time, end: Math.min(time + length, 1440) };
           });
-          localStorage.setItem(EVENTS_KEY, JSON.stringify(next));
+          saveEvents(next);
         }
       }
       clearDayLock();

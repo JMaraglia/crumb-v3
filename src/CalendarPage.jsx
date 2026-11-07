@@ -10,11 +10,10 @@ import MonthView from './MonthView';
 import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey, MEETING_COLOR, hiddenByInactive } from './schedule';
 import { removeStop, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import AskSheet from './AskSheet';
+import { loadEvents, saveEvents, loadCalendarSettings, saveCalendarSettings } from './store';
 import './CalendarPage.css';
 
 // Calendar events are saved on the phone under this name (new; nothing else uses it).
-const EVENTS_KEY = 'crumb_calendar_events';
-const SETTINGS_KEY = 'crumb_calendar_settings';
 
 // Calendar settings (the gear). Saved on the phone; included in backups.
 const DEFAULT_SETTINGS = {
@@ -27,22 +26,9 @@ const DEFAULT_SETTINGS = {
   colorNames: {},       // { '#34c759': 'Prospect meeting' }
 };
 
+// Saved through store.js (the front door).
 function loadSettings() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-    return saved && typeof saved === 'object' ? { ...DEFAULT_SETTINGS, ...saved } : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-function loadEvents() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(EVENTS_KEY));
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
+  return { ...DEFAULT_SETTINGS, ...loadCalendarSettings() };
 }
 
 function startOfToday() {
@@ -89,11 +75,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   const updateSettings = (patch) =>
     setSettings((prev) => {
       const next = { ...prev, ...patch };
-      try {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
-      } catch {
-        /* not critical */
-      }
+      saveCalendarSettings(next);
       return next;
     });
 
@@ -113,7 +95,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   const updateEvents = (change) => {
     setEvents((prev) => {
       const next = change(prev);
-      localStorage.setItem(EVENTS_KEY, JSON.stringify(next));
+      saveEvents(next); // a failed save shows the "couldn't save" banner
       return next;
     });
   };

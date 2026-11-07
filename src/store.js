@@ -192,3 +192,19 @@ export function upgradeStopIds() {
   }
   return visits.filter((v) => v && typeof v === 'object' && !v.id).length; // how many stops got a tag
 }
+
+/* ---------- Calendar (central data layer, slice 2, Nov 6 2026) ----------
+   Calendar events (incl. meetings) and the Calendar's settings. Same keys, same saved format. */
+export const EVENTS_KEY = 'crumb_calendar_events';
+export const CAL_SETTINGS_KEY = 'crumb_calendar_settings';
+
+// Always a list. Unreadable saved events are copied aside (never thrown away) before anything saves over them.
+export const loadEvents = () => asList(readSaved(EVENTS_KEY, [], { keepUnreadable: true }));
+export const saveEvents = (list) => writeSaved(EVENTS_KEY, list);
+
+// The Calendar's saved settings as stored (screens add their own defaults). Always an object.
+export function loadCalendarSettings() {
+  const v = readSaved(CAL_SETTINGS_KEY, {});
+  return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+}
+export const saveCalendarSettings = (settings) => writeSaved(CAL_SETTINGS_KEY, settings);
