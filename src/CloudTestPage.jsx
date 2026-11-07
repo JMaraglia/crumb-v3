@@ -9,7 +9,7 @@ import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
 import { cloud, cloudReady, cloudProjectRef, cloudProblem } from './cloud';
 import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox, stuckChanges } from './outbox';
 import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt, lastCheckedAt, lastPullNote, pullNow, joinFromCloud } from './syncSend';
-import { syncBlockReason, isTestProject, isRealSynced, setPaused, BLOCK_TEXT } from './syncMode';
+import { syncBlockReason, isTestProject, isRealSynced, setPaused, maySync, BLOCK_TEXT } from './syncMode';
 import { checkMove, moveMyData, downloadMyData, COUNT_NAMES } from './syncMove';
 import './CloudTestPage.css';
 
@@ -58,6 +58,7 @@ export default function CloudTestPage() {
   const testProject = isTestProject();
   const realSynced = isRealSynced();
   const why = syncBlockReason();
+  const allowed = (s) => Boolean(s && s.user && maySync(s.user.email));
   const [dry, setDry] = useState(null);       // S7 dry run result
   const [moved, setMoved] = useState(null);   // S7 move / download check result
 
@@ -371,7 +372,14 @@ export default function CloudTestPage() {
               </div>
             )}
 
-            {!realSynced && !testCopy && realData && (
+            {!realSynced && !testCopy && session && !allowed(session) && (
+              <div className="cl-card cl-text">
+                <strong>Coming soon.</strong> Cloud sync isn’t open for this account yet. Your data stays on this device,
+                exactly as before.
+              </div>
+            )}
+
+            {!realSynced && !testCopy && realData && (!session || allowed(session)) && (
               <div className="cl-card">
                 <div className="cl-text">
                   <strong>Move My Data To The Cloud.</strong> Your customers, prospects, notes, calendar, itinerary, to-dos,
@@ -411,7 +419,7 @@ export default function CloudTestPage() {
               </div>
             )}
 
-            {!realSynced && !testCopy && !realData && (
+            {!realSynced && !testCopy && !realData && (!session || allowed(session)) && (
               <div className="cl-card">
                 <div className="cl-text">
                   <strong>Download My Data.</strong> This device is empty. Sign in above with your account, then bring down

@@ -20,7 +20,7 @@ function syncLine() {
   if (why === 'paused') return 'Paused';
   if (why === 'kill-switch') return 'Syncing is switched off for now';
   if (isTestProject()) return 'Test cloud: sign in and try syncing with demo data';
-  return 'Not syncing yet: move your data to the cloud';
+  return 'Off: your data stays on this device';
 }
 
 export default function SettingsPage() {

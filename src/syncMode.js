@@ -24,6 +24,11 @@ export const MODE_KEY = 'crumb_sync_mode';               // 'real' = this device
 export const PROJECT_KEY = 'crumb_sync_project';         // which cloud project it syncs with
 export const PAUSED_KEY = 'crumb_sync_paused';           // '1' = paused
 
+// Who may move or download real data for now (founder decision, Nov 7). Everyone else's Crumb stays
+// on their own phone ("coming soon"). To let someone in, add their email here.
+export const SYNC_EMAILS = ['jmaraglia@gmail.com'];
+export const maySync = (email) => SYNC_EMAILS.includes(String(email || '').trim().toLowerCase());
+
 export const isTestCopy = () => readText(TEST_DEVICE_KEY) === '1';
 export const isRealSynced = () => readText(MODE_KEY) === 'real';
 export const isPaused = () => readText(PAUSED_KEY) === '1';

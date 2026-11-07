@@ -14,7 +14,7 @@ import { planPull } from './syncPull';
 import { allPhotos } from './photos';
 import { syncPhotos, splitKey, PHOTOS_SENT_KEY, PHOTOS_PULLED_KEY } from './syncPhotos';
 import { clearOutbox, setRecording, quietly } from './outbox';
-import { isTestProject, isTestCopy, isRealSynced, projectRef, MODE_KEY, PROJECT_KEY, PAUSED_KEY } from './syncMode';
+import { isTestProject, isTestCopy, isRealSynced, projectRef, maySync, MODE_KEY, PROJECT_KEY, PAUSED_KEY } from './syncMode';
 import { myWorkspace, sendBatch, opId, UPLOADED_KEY, LAST_SENT_KEY, PULLED_KEY, LAST_CHECK_KEY } from './syncSend';
 
 const BACKUP_KEY = 'crumb_last_backup';
@@ -142,6 +142,7 @@ async function ready() {
   if (isRealSynced()) throw new Error('This device is already syncing.');
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) throw new Error('Sign in first.');
+  if (!maySync(s.session.user && s.session.user.email)) throw new Error('Cloud sync is coming soon. Your data stays on this device.');
   return { sb, ws: await myWorkspace(sb) };
 }
 

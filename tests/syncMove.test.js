@@ -71,3 +71,13 @@ describe('which devices sync (S7)', () => {
     expect(syncBlockReason('prodref', read({ crumb_sync_mode: 'real', crumb_sync_project: 'prodref' }), true)).toBe('kill-switch');
   });
 });
+
+describe('who may move real data (S7)', () => {
+  it('only approved emails', async () => {
+    const { maySync } = await import('../src/syncMode');
+    expect(maySync('jmaraglia@gmail.com')).toBe(true);
+    expect(maySync(' JMaraglia@Gmail.com ')).toBe(true);
+    expect(maySync('someone@example.com')).toBe(false);
+    expect(maySync('')).toBe(false);
+  });
+});
