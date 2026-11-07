@@ -196,6 +196,16 @@ export function hiddenByInactive(item, customers = [], prospects = []) {
   return item.date >= since;
 }
 
+// A scheduled visit's time on one day: a time locked for that day, else a time moved on the Itinerary
+// that day (drag, Optimize, longer visit), else the usual time.
+export function dayTimeOf(key, day, usual) {
+  const locks = (readJSON('crumb_itinerary_locks', {}) || {})[day] || {};
+  if (typeof locks[key] === 'number') return locks[key];
+  const times = (readJSON('crumb_itinerary_times', {}) || {})[day] || {};
+  if (typeof times[key] === 'number') return times[key];
+  return usual;
+}
+
 export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, customers = []) {
   const blocks = [];
   const hidden = readJSON('crumb_calendar_hidden', {}) || {}; // taken off the Calendar for one day
@@ -204,7 +214,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
     customers.forEach((c) => {
       if (!c.name || !c.name.trim()) return;
       if (c.showOnCalendar === false) return;
-      const cTime = visitTimeOn(c, k);
+      const cTime = dayTimeOf(`c-${c.id}`, k, visitTimeOn(c, k));
       if (cTime == null) return;
       if (!isDueOn(c, k, CUSTOMER_DAYS_FIELD)) return;
       if (gone.includes(`c-${c.id}`)) return;
@@ -227,7 +237,7 @@ export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, cus
     prospects.forEach((p) => {
       if (!p.name || !p.name.trim()) return;
       if (p.showOnCalendar === false) return;
-      const pTime = visitTimeOn(p, k);
+      const pTime = dayTimeOf(`p-${p.id}`, k, visitTimeOn(p, k));
       if (pTime == null) return; // no usual time = can't place it on the grid
       if (!isDueOn(p, k)) return;
       if (gone.includes(`p-${p.id}`)) return;

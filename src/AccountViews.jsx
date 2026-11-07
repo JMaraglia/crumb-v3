@@ -1483,15 +1483,18 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           );
         })()}
 
-        {Array.isArray(account.competitors) && account.competitors.length > 0 && (
-          <>
-            <div className="av-section-title">Competitors</div>
-            <div className="cp-view">
-              {account.competitors.map((n) => (
-                <span key={n} className="cp-chip" style={{ paddingRight: 11 }}>{n}</span>
-              ))}
-            </div>
-          </>
+        {/* Competitors: on every customer and prospect, even before any are added */}
+        <div className="av-section-title">Competitors</div>
+        {Array.isArray(account.competitors) && account.competitors.length > 0 ? (
+          <div className="cp-view">
+            {account.competitors.map((n) => (
+              <span key={n} className="cp-chip" style={{ paddingRight: 11 }}>{n}</span>
+            ))}
+          </div>
+        ) : (
+          <button className="av-group av-muted-row cp-add-row" onClick={() => navigate(`${config.basePath}/${account.id}/edit`)}>
+            + Add competitors
+          </button>
         )}
 
         <div className="av-section-title">Contacts</div>

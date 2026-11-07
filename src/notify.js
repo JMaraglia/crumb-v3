@@ -14,6 +14,7 @@ import {
   PROSPECT_DAYS_FIELD,
   CUSTOMER_DAYS_FIELD,
   hiddenByInactive,
+  dayTimeOf,
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
@@ -113,7 +114,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
       list.filter(hasName).forEach((a) => {
         if (!onItinerary(a, day, field)) return;
         const key = `${type === 'prospect' ? 'p' : 'c'}-${a.id}`;
-        const time = typeof locks[key] === 'number' ? locks[key] : visitTimeOn(a, day);
+        const time = typeof locks[key] === 'number' ? locks[key] : dayTimeOf(key, day, visitTimeOn(a, day));
         stops.push({ key, title: a.name, time, place: a.address || '', done: done.includes(key), url: '/itinerary' });
       });
     addAccounts(prospects, 'prospect', PROSPECT_DAYS_FIELD);

@@ -23,3 +23,7 @@
 .cp-box .cp-new, .cp-box .cp-new:hover { background: #e9f2fb; border-color: #cfe3f5; color: #0077cc; font-weight: 600; }
 /* account screen: read-only chips */
 .cp-view { display: flex; flex-wrap: wrap; gap: 6px; background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+
+.av-page .cp-add-row, .av-page .cp-add-row:hover {
+  display: block; width: 100%; margin: 0 0 16px; text-align: left; border: 0; box-shadow: none; color: #0077cc; font-weight: 600;
+}
