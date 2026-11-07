@@ -1,0 +1,129 @@
+/* Crumb Admin. Dark "headquarters" look, Crumb blue accent. Every class starts with ad-. */
+:root {
+  --ad-bg: #0e1a28;
+  --ad-card: #172a40;
+  --ad-line: #223852;
+  --ad-text: #f2f6fa;
+  --ad-muted: #a9bacb;
+  --ad-dim: #8fa3b8;
+  --ad-blue: #2f9bff;
+  --ad-ok: #3ddc84;
+  --ad-warn: #ffb35c;
+  --ad-bad: #ff8a7d;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--ad-bg); color: var(--ad-text); }
+body {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; cursor: pointer; }
+input { font: inherit; }
+
+.ad-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 20px) 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ad-with-tabs { padding-bottom: calc(env(safe-area-inset-bottom) + 96px); }
+
+.ad-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ad-brand { display: flex; align-items: baseline; gap: 8px; }
+.ad-brand-crumb { font-size: 30px; font-weight: 800; color: var(--ad-blue); letter-spacing: -0.02em; }
+.ad-brand-admin { font-size: 15px; font-weight: 800; letter-spacing: 0.12em; color: var(--ad-dim); }
+.ad-refresh { border: 0; background: none; padding: 6px 0; color: var(--ad-dim); font-size: 13px; }
+
+.ad-h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+.ad-h2 { margin: 6px 0 0; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ad-dim); }
+.ad-h2-warn { color: var(--ad-warn); }
+.ad-muted { margin: 0; color: var(--ad-muted); font-size: 15px; line-height: 1.4; }
+.ad-small { font-size: 13px; }
+.ad-note { margin-top: 4px; }
+.ad-error { margin: 0; color: var(--ad-bad); font-size: 15px; line-height: 1.4; }
+
+.ad-card { background: var(--ad-card); border-radius: 16px; }
+
+/* Tiles */
+.ad-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ad-tile { background: var(--ad-card); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ad-tile-label { font-size: 13px; color: var(--ad-muted); }
+.ad-tile-value { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ad-tile-sub { font-size: 12px; color: var(--ad-muted); }
+
+/* Status rows */
+.ad-rows { overflow: hidden; }
+.ad-row { display: flex; align-items: center; gap: 12px; padding: 15px 16px; }
+.ad-row + .ad-row { border-top: 1px solid var(--ad-line); }
+.ad-row-label { flex: 1; font-size: 16px; font-weight: 700; }
+.ad-row-value { font-size: 14px; color: var(--ad-muted); white-space: nowrap; }
+.ad-row-warn { background: #2a2116; color: #ffe2bf; }
+.ad-dot { width: 12px; height: 12px; border-radius: 6px; flex: none; }
+.ad-dot-ok { background: var(--ad-ok); }
+.ad-dot-warn { background: var(--ad-warn); }
+
+.ad-account { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 12px; }
+.ad-link-btn { border: 0; background: none; padding: 8px 0; color: #7cc2ff; font-size: 16px; font-weight: 700; }
+
+/* Sign in */
+.ad-signin { padding-top: calc(env(safe-area-inset-top) + 72px); }
+.ad-form { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.ad-field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--ad-muted); }
+.ad-field input {
+  padding: 13px 14px; border-radius: 12px; border: 1px solid var(--ad-line);
+  background: var(--ad-bg); color: var(--ad-text); font-size: 17px; outline: none;
+}
+.ad-field input:focus { border-color: var(--ad-blue); }
+.ad-btn {
+  border: 0; border-radius: 12px; padding: 14px; background: var(--ad-blue); color: #fff;
+  font-size: 17px; font-weight: 700;
+}
+.ad-btn:disabled { opacity: 0.6; }
+
+/* Users */
+.ad-search {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px;
+  background: var(--ad-card); color: var(--ad-dim);
+}
+.ad-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ad-text); font-size: 16px; outline: none; }
+.ad-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.ad-chip { padding: 8px 14px; border-radius: 999px; border: 0; background: var(--ad-card); color: var(--ad-muted); font-size: 14px; font-weight: 700; }
+.ad-chip.is-on { background: var(--ad-blue); color: #fff; }
+.ad-list { display: flex; flex-direction: column; gap: 10px; }
+.ad-user { background: var(--ad-card); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.ad-user-top { display: flex; align-items: center; gap: 12px; }
+.ad-avatar {
+  width: 44px; height: 44px; border-radius: 22px; background: var(--ad-blue); flex: none;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800;
+}
+.ad-user-name { flex: 1; min-width: 0; }
+.ad-user-email { font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-user-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ad-user-stats span { display: block; font-size: 12px; color: var(--ad-muted); }
+.ad-user-stats b { display: block; font-size: 14px; }
+
+.ad-pill { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; flex: none; }
+.ad-pill-ok { background: #123d2a; color: var(--ad-ok); }
+.ad-pill-quiet { background: #1d2a3a; color: var(--ad-dim); }
+
+.ad-coming { padding: 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.ad-coming p { margin: 0; line-height: 1.45; color: var(--ad-muted); }
+.ad-coming ul { margin: 0; padding-left: 20px; color: var(--ad-muted); line-height: 1.7; }
+
+/* Tab bar */
+.ad-tabs {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 8px 8px calc(env(safe-area-inset-bottom) + 8px);
+  background: rgba(10, 20, 32, 0.96); border-top: 1px solid #1f3550;
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.ad-tab {
+  border: 0; background: none; padding: 4px 0; color: var(--ad-dim);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 700;
+}
+.ad-tab.is-on { color: var(--ad-blue); }
