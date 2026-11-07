@@ -2,9 +2,9 @@
 // Competitors an account buys from (saved on the account as `competitors: ['Sysco', …]`).
 // The pick list = these starters + every name you've typed before (crumb_competitors) + any name
 // already on an account, so new ones show up next time you type.
-export const COMPETITORS_KEY = 'crumb_competitors';
+export const COMPETITORS_KEY = COMPETITORS_LIST_KEY;
 
-import { loadCustomers, loadProspects } from './store';
+import { loadCustomers, loadProspects, loadArray, saveQuiet, COMPETITORS_LIST_KEY } from './store';
 
 export const STARTER_COMPETITORS = [
   'Sysco',
@@ -22,14 +22,7 @@ export const STARTER_COMPETITORS = [
   'Restaurant Depot',
 ];
 
-const read = (key) => {
-  try {
-    const v = JSON.parse(localStorage.getItem(key) || 'null');
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
-};
+const read = loadArray; // saved through store.js
 
 const norm = (s) => String(s || '').trim().toLowerCase();
 
@@ -52,11 +45,7 @@ export function rememberCompetitor(name) {
   const t = String(name || '').trim();
   if (!t) return;
   if (allCompetitors().some((n) => norm(n) === norm(t))) return;
-  try {
-    localStorage.setItem(COMPETITORS_KEY, JSON.stringify([...read(COMPETITORS_KEY), t]));
-  } catch {
-    /* not critical */
-  }
+  saveQuiet(COMPETITORS_KEY, [...read(COMPETITORS_KEY), t]); // not critical if it can't save
 }
 
 // If the typed name matches a known one (any capitalization), use the known spelling.

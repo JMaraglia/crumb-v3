@@ -6,7 +6,6 @@ import {
   keyOf,
   addDaysToKey,
   fromKey,
-  readJSON,
   hhmmToMinutes,
   onItinerary,
   visitTimeOn,
@@ -17,10 +16,10 @@ import {
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
+import { loadObject, saveQuiet, readText, writeText, NOTIFY_KEY, PUSH_DEVICE_KEY } from './store';
 import { loadCustomers, loadProspects, loadEvents, loadTodos, loadStops, loadDayMap, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
 
-const SETTINGS_KEY = 'crumb_notify_settings';
-const DEVICE_KEY = 'crumb_push_device';
+// Saved through store.js: NOTIFY_KEY (settings), PUSH_DEVICE_KEY (this phone's ID, never backed up)
 const DAYS_AHEAD = 7;
 
 export const DEFAULT_NOTIFY = {
@@ -42,33 +41,20 @@ export const END_OF_DAY_KINDS = [
 ];
 
 export function loadNotifySettings() {
-  return { ...DEFAULT_NOTIFY, ...readJSON(SETTINGS_KEY, {}) };
+  return { ...DEFAULT_NOTIFY, ...loadObject(NOTIFY_KEY) };
 }
 
 export function saveNotifySettings(s) {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-  } catch {
-    /* not critical */
-  }
+  saveQuiet(NOTIFY_KEY, s); // not critical if it can't save
 }
 
 function deviceId() {
-  let id = '';
-  try {
-    id = localStorage.getItem(DEVICE_KEY) || '';
-  } catch {
-    /* ignore */
-  }
+  let id = readText(PUSH_DEVICE_KEY) || '';
   if (!/^[a-f0-9]{32}$/.test(id)) {
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
     id = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-    try {
-      localStorage.setItem(DEVICE_KEY, id);
-    } catch {
-      /* ignore */
-    }
+    writeText(PUSH_DEVICE_KEY, id);
   }
   return id;
 }

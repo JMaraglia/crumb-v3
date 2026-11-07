@@ -4,12 +4,12 @@
 // or a calendar event linked to it (on or before today).
 // Accounts with no contact at all count from the day they were added (ids are creation times).
 import { keyOf, todayKeyLocal } from './schedule';
-import { loadEvents, loadStops, loadDayMap, DONE_KEY } from './store';
+import { loadEvents, loadStops, loadDayMap, DONE_KEY, readText, STALE_DAYS_KEY } from './store';
 
-export const STALE_KEY = 'crumb_stale_days';
+export const STALE_KEY = STALE_DAYS_KEY; // saved through store.js
 export const STALE_CHOICES = [0, 21, 30, 45, 60, 90]; // 0 = off
 export function staleDays() {
-  const raw = localStorage.getItem(STALE_KEY);
+  const raw = readText(STALE_KEY);
   if (raw == null || raw === '') return 30; // default: 30 days
   const v = Number(raw);
   return STALE_CHOICES.includes(v) ? v : 30;

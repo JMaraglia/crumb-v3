@@ -8,6 +8,7 @@ import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
 import AskSheet from './AskSheet';
+import { writeText } from './store';
 import './SettingsPage.css';
 
 export default function SettingsPage() {
@@ -16,11 +17,7 @@ export default function SettingsPage() {
   const [stale, setStale] = useState(staleDays);
   const [pickStale, setPickStale] = useState(false);
   const setStaleDays = (v) => {
-    try {
-      localStorage.setItem(STALE_KEY, String(v));
-    } catch {
-      /* not critical */
-    }
+    writeText(STALE_KEY, v); // not critical if it can't save
     setStale(v);
     setPickStale(false);
     syncReminders(true).catch(() => {}); // morning summary count follows the new limit

@@ -9,6 +9,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel, formatPhone } from './AccountViews';
 import { makeXlsx } from './xlsx';
+import { loadObject, writeSaved, ORDERED_KEY } from './store';
 import './CallSheetPage.css';
 
 const FULL_DAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -18,7 +19,7 @@ function nextDay(day) {
   return DAYS[(DAYS.indexOf(day) + 1) % 7];
 }
 
-const ORDERED_KEY = 'crumb_callsheet_ordered'; // { 'YYYY-MM-DD': [customerId, ...] }
+// "Ordered" marks are saved through store.js (ORDERED_KEY): { 'YYYY-MM-DD': [customerId, ...] }
 
 function keyOf(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -35,12 +36,7 @@ function dateThisWeek(day) {
 }
 
 function readOrdered() {
-  try {
-    const v = JSON.parse(localStorage.getItem(ORDERED_KEY));
-    return v && typeof v === 'object' ? v : {};
-  } catch {
-    return {};
-  }
+  return loadObject(ORDERED_KEY);
 }
 
 function todayShort() {
@@ -154,7 +150,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
     const nextList = list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
     const next = { ...orderedMap, [dateKeyForDay]: nextList };
     setOrderedMap(next);
-    localStorage.setItem(ORDERED_KEY, JSON.stringify(next));
+    writeSaved(ORDERED_KEY, next); // a failed save shows the "couldn't save" banner
   };
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(null); // { id, name, text } while editing a call note

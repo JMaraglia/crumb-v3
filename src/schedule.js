@@ -50,15 +50,7 @@ function mondayOf(k) {
   return d;
 }
 
-/* ---------- reading saved data safely ---------- */
-export function readJSON(key, fallback) {
-  try {
-    const v = JSON.parse(localStorage.getItem(key));
-    return v == null ? fallback : v;
-  } catch {
-    return fallback;
-  }
-}
+/* (Reading saved data now goes through store.js — the front door.) */
 // Saved visits should be a list. If they were stored as an object
 // (e.g. {} or grouped by date), turn them into a list instead of crashing.
 export function toVisitList(value) {

@@ -53,6 +53,9 @@ import { planRoute, timeRoute } from './routePlan';
 import { collectTodoItems } from './todoItems';
 import {
   changeNote,
+  readText,
+  writeText,
+  MAPS_APP_KEY,
   loadTodos,
   saveTodos,
   loadEvents,
@@ -840,21 +843,13 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   // ("Next stop"); Google Maps takes up to 4 stops per link on a phone (3 in between + the last).
   // Starts from wherever the phone is. Check stops off and tap again for the next one(s).
   const [mapsApp, setMapsAppState] = useState(() => {
-    try {
-      const saved = localStorage.getItem('crumb_maps_app');
-      if (saved === 'apple' || saved === 'google' || saved === 'waze') return saved;
-    } catch {
-      /* ignore */
-    }
+    const saved = readText(MAPS_APP_KEY);
+    if (saved === 'apple' || saved === 'google' || saved === 'waze') return saved;
     return /iPhone|iPad|Macintosh/.test(navigator.userAgent) ? 'apple' : 'google';
   });
   const setMapsApp = (v) => {
     setMapsAppState(v);
-    try {
-      localStorage.setItem('crumb_maps_app', v);
-    } catch {
-      /* ignore */
-    }
+    writeText(MAPS_APP_KEY, v);
   };
   const MAPS_NAMES = { apple: 'Apple Maps', google: 'Google Maps', waze: 'Waze' };
   const ROUTE_MAX = mapsApp === 'google' ? 4 : 1;

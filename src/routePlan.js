@@ -2,14 +2,12 @@
 // "Optimize Route": put the day's flexible stops in the shortest driving order, starting from where
 // you are, and give them times (drive time + visit length). Locked stops and calendar appointments
 // never move — flexible stops are fitted into the gaps around them.
-const CACHE_KEY = 'crumb_geo_cache'; // { address: [lat, lon] } so addresses aren't looked up twice
+import { loadObject, saveQuiet, GEO_CACHE_KEY } from './store';
+
+const CACHE_KEY = GEO_CACHE_KEY; // { address: [lat, lon] } so addresses aren't looked up twice
 
 const readCache = () => {
-  try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {};
-  } catch {
-    return {};
-  }
+  return loadObject(CACHE_KEY);
 };
 const up5 = (m) => Math.ceil(m / 5) * 5;
 
@@ -50,11 +48,7 @@ export async function planRoute(stops, len, startTime) {
     const c = j.coords && j.coords[s.key];
     if (c) cache[(s.address || '').trim()] = c;
   });
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    /* not critical */
-  }
+  saveQuiet(CACHE_KEY, cache); // not critical if it can't save
 
   const ids = points.map((p) => p.id);
   const drive = (a, b) => {

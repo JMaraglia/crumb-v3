@@ -260,3 +260,41 @@ export function restoreSaved(snap) {
 export const TODOS_KEY = 'crumb_todos';
 export const loadTodos = () => asList(readSaved(TODOS_KEY, [], { keepUnreadable: true }));
 export const saveTodos = (list) => writeSaved(TODOS_KEY, list);
+
+/* ---------- Settings and small lists (central data layer, slice 5, Nov 6 2026) ----------
+   Same keys, same saved format. Some of these are saved as plain text, not JSON
+   (check-in days "30", maps app "apple", this phone's notification ID). */
+export const NOTIFY_KEY = 'crumb_notify_settings';     // notification settings (object)
+export const STALE_DAYS_KEY = 'crumb_stale_days';      // "Due For A Check-In" days (plain text number)
+export const MAPS_APP_KEY = 'crumb_maps_app';          // 'apple' | 'google' | 'waze' (plain text)
+export const COMPETITORS_LIST_KEY = 'crumb_competitors'; // competitor names you added (list)
+export const ORDERED_KEY = 'crumb_callsheet_ordered';  // Call Sheet "Ordered" marks { date: [customerId] }
+export const GEO_CACHE_KEY = 'crumb_geo_cache';        // map coordinates already looked up (cache only)
+export const PUSH_DEVICE_KEY = 'crumb_push_device';    // this phone's notification ID (never backed up)
+
+// Plain-text values. Reading never throws; writing returns false if it couldn't save.
+export function readText(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+export function writeText(key, value) {
+  try {
+    localStorage.setItem(key, String(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// A saved object (always an object) / list (always a list).
+export function loadObject(key) {
+  const v = readSaved(key, {});
+  return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+}
+export const loadArray = (key) => asList(readSaved(key, []));
+
+// Save a preference quietly (if the phone is full, it just isn't remembered — no banner).
+export const saveQuiet = (key, value) => writeText(key, JSON.stringify(value));
