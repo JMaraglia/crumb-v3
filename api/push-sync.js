@@ -2,7 +2,7 @@
 // The phone sends its upcoming reminders (next 7 days). Nothing else from Crumb is sent.
 // With `token` (a signed-in device that syncs your data, S8): the list is filed under your ACCOUNT, and
 // this device is one of the devices that get your reminders (each reminder once per device).
-import { loadDevice, saveDevice, validDeviceId, readJsonBody, forgetDevice, verifyUser, loadUser, saveUser } from './_push.js';
+import { loadDevice, saveDevice, validDeviceId, readJsonBody, forgetDevice, verifyUser, loadUser, saveUser, isAdminToken } from './_push.js';
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);
 
@@ -87,6 +87,7 @@ async function accountSync(res, { deviceId, subscription, notifications, off, to
   user.notifications = [...recent, ...list];
   user.syncedAt = new Date().toISOString();
   user.from = deviceId;
+  user.isAdmin = await isAdminToken(token); // Crumb admins also get "new ticket" alerts on these devices
   await saveUser(uid, user);
   return res.status(200).json({ ok: true, count: list.length, account: true });
 }

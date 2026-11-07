@@ -130,6 +130,32 @@ export async function verifyUser(token) {
   return user && typeof user.id === 'string' && /^[0-9a-f-]{36}$/.test(user.id) ? user.id : null;
 }
 
+// Is this signed-in person a Crumb admin? Asks the database's own is_admin() with THEIR token (no secret key).
+export async function isAdminToken(token) {
+  const base = String(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+  const key = String(process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  if (!base || !key || !token) return false;
+  try {
+    const res = await fetch(`${base}/rest/v1/rpc/is_admin`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!res.ok) return false;
+    return (await res.json().catch(() => false)) === true;
+  } catch {
+    return false;
+  }
+}
+
+// Count something per time window (e.g. alerts per hour). Returns the new count.
+export async function bump(key, seconds) {
+  const run = store();
+  const n = await run('INCR', key);
+  if (n === 1) await run('EXPIRE', key, seconds);
+  return n;
+}
+
 const userKey = (uid) => `crumb:user:${uid}`;
 export async function loadUser(uid) {
   const raw = await store()('GET', userKey(uid));

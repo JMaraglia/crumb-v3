@@ -65,7 +65,8 @@ export default function FeedbackPage() {
     setBusy(true);
     setError('');
     try {
-      const { data, error: err } = await cloud().rpc('submit_feedback', {
+      const sb = cloud();
+      const { data, error: err } = await sb.rpc('submit_feedback', {
         p_kind: kind,
         p_area: area || 'Other',
         p_message: message.trim(),
@@ -74,6 +75,16 @@ export default function FeedbackPage() {
       });
       if (err) throw err;
       setSentId(data);
+      // Ping the Crumb team's phones (best effort: the ticket is already saved either way).
+      sb.auth.getSession().then(({ data: d }) => {
+        const tok = d && d.session && d.session.access_token;
+        if (!tok) return;
+        fetch('/api/feedback-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+          body: JSON.stringify({ id: data, kind, area: area || 'Other', message: message.trim() }),
+        }).catch(() => {});
+      }).catch(() => {});
     } catch (err) {
       setError(plainError(err));
     } finally {

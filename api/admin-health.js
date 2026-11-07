@@ -2,21 +2,9 @@
 // For Crumb Admin's Platform Health screen: is the reminder system running?
 // Only Crumb admins get an answer: the token is checked with Supabase, then the database's own
 // is_admin() decides. Returns counts and times only, never reminder text.
-import { verifyUser, allDevices, allUsers, loadUser, lastTick } from './_push.js';
+import { verifyUser, allDevices, allUsers, loadUser, lastTick, isAdminToken } from './_push.js';
 
 const ADMIN_ORIGINS = ['https://crumb-admin.vercel.app'];
-
-async function isAdmin(token) {
-  const base = String(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
-  const key = String(process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
-  const res = await fetch(`${base}/rest/v1/rpc/is_admin`, {
-    method: 'POST',
-    headers: { apikey: key, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: '{}',
-  });
-  if (!res.ok) return false;
-  return (await res.json().catch(() => false)) === true;
-}
 
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
@@ -32,7 +20,7 @@ export default async function handler(req, res) {
   const token = (req.headers.authorization || '').replace(/^Bearer /, '');
   try {
     const uid = await verifyUser(token);
-    if (!uid || !(await isAdmin(token))) return res.status(401).json({ error: 'Not allowed' });
+    if (!uid || !(await isAdminToken(token))) return res.status(401).json({ error: 'Not allowed' });
 
     const tick = await lastTick();
     const users = await allUsers();
