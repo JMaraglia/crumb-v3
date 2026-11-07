@@ -985,8 +985,8 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
               + Note
             </button>
             {!a.inactive && (
-              <button className="av-quick-btn" onClick={addToItinerary} aria-label="Add to the Itinerary">
-                + Stop
+              <button className="av-quick-btn" onClick={addToItinerary}>
+                + Itinerary
               </button>
             )}
           </div>

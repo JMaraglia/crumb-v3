@@ -561,14 +561,16 @@
 
 .av-quick {
   display: flex;
+  flex-wrap: wrap; /* a button that doesn't fit moves to a second line instead of squeezing its words */
   gap: 8px;
   margin-top: 12px;
 }
 
 .av-page .av-quick-btn,
 .av-page .av-quick-btn:hover {
-  flex: 1;
-  padding: 9px 0;
+  flex: 1 1 auto;
+  padding: 9px 10px;
+  white-space: nowrap;
   border-radius: 9px;
   background: #f0f6fc;
   color: #0077cc;
