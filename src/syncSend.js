@@ -12,16 +12,22 @@ import { readText, writeText, loadCustomers, loadProspects } from './store';
 import { cloud } from './cloud';
 import { demoData } from './demoData';
 import { fullUploadChanges, sendOrder } from './syncDiff';
-import { pendingChanges, removeSent, parkStuck, setRecording, clearOutbox, flushRecording } from './outbox';
+import { pendingChanges, removeSent, parkStuck, setRecording, clearOutbox, flushRecording, quietly } from './outbox';
+import { planPull } from './syncPull';
 
 export const TEST_DEVICE_KEY = 'crumb_sync_test_device'; // '1' = this copy holds demo data only
 const UPLOADED_KEY = 'crumb_sync_uploaded';               // when the first upload finished
 const LAST_SENT_KEY = 'crumb_sync_last_sent';             // when changes were last sent
+const PULLED_KEY = 'crumb_sync_pulled_at';                // S4: cloud time of the last check (asks for changes since then)
+const LAST_CHECK_KEY = 'crumb_sync_last_checked';         // S4: when this device last checked the cloud
 const BATCH = 50;
 
 export const isTestDevice = () => readText(TEST_DEVICE_KEY) === '1';
 export const uploadedAt = () => readText(UPLOADED_KEY) || '';
 export const lastSentAt = () => readText(LAST_SENT_KEY) || '';
+export const lastCheckedAt = () => readText(LAST_CHECK_KEY) || '';
+let pullNote = ''; // why the last check didn't apply (safety brake), shown in Cloud Test
+export const lastPullNote = () => pullNote;
 export const hasRealAccounts = () => loadCustomers().length > 0 || loadProspects().length > 0;
 const status = () => window.dispatchEvent(new Event('crumb-sync-status'));
 
@@ -146,4 +152,87 @@ export function sendNow({ quiet = false } = {}) {
       status();
     });
   return sending;
+}
+
+// ---------------------------------------------------------------- S4: bringing changes down
+// Typing somewhere? Then wait: a screen refresh would interrupt you. The next check (30 seconds) tries again.
+function typing() {
+  const el = typeof document !== 'undefined' ? document.activeElement : null;
+  if (!el) return false;
+  return /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable;
+}
+
+async function pullOnce(sb, { force = false } = {}) {
+  const ws = await myWorkspace(sb);
+  const since = readText(PULLED_KEY) || null;
+  const { data, error } = await sb.rpc('pull_changes', { p_workspace: ws, p_since: since });
+  if (error) throw error;
+  if (!force && typing()) return { skipped: true, typing: true };
+  const waiting = new Set((await pendingChanges()).map((c) => c.key));
+  const plan = planPull(data, readText, waiting);
+  writeText(LAST_CHECK_KEY, new Date().toISOString());
+  if (plan.blocked) {
+    pullNote = plan.blocked; // nothing applied; the same changes are asked for again next time
+    return { changed: 0, blocked: plan.blocked };
+  }
+  let ok = true;
+  quietly(() => {
+    Object.entries(plan.writes).forEach(([k, text]) => {
+      if (!writeText(k, text)) ok = false;
+    });
+  });
+  if (!ok) {
+    pullNote = 'This device ran out of room, so some changes from the cloud couldn’t be saved.';
+    return { changed: 0, blocked: pullNote };
+  }
+  pullNote = '';
+  // Ask from a little before the cloud's clock next time, so nothing saved at the same moment is missed
+  // (bringing a record down twice changes nothing).
+  const t = Date.parse(data && data.server_time);
+  if (!Number.isNaN(t)) writeText(PULLED_KEY, new Date(t - 120000).toISOString());
+  const keys = Object.keys(plan.writes);
+  if (keys.length) window.dispatchEvent(new CustomEvent('crumb-pulled', { detail: { keys } }));
+  return { changed: keys.length, skipped: plan.skipped };
+}
+
+let pulling = null;
+export function pullNow({ quiet = false } = {}) {
+  if (pulling) return pulling;
+  pulling = (async () => {
+    const sb = cloud();
+    if (!sb || !isTestDevice() || !uploadedAt()) return { skipped: true };
+    const { data: s } = await sb.auth.getSession();
+    if (!s || !s.session) return { skipped: true };
+    if (typing()) return { skipped: true, typing: true };
+    await sendNow({ quiet: true }); // this device's own changes go up first
+    return pullOnce(sb);
+  })()
+    .catch((err) => {
+      if (!quiet) throw err;
+      return { changed: 0, error: String(err && err.message) };
+    })
+    .finally(() => {
+      pulling = null;
+      status();
+    });
+  return pulling;
+}
+
+// A second EMPTY copy joins the test: it gets everything from the test cloud and becomes a test copy.
+// Refuses on a copy with real customers or prospects.
+export async function joinFromCloud() {
+  if (hasRealAccounts()) throw new Error('This copy of Crumb already has customers or prospects, so nothing was downloaded.');
+  const sb = cloud();
+  if (!sb) throw new Error('Cloud isn’t set up in this version.');
+  const { data: s } = await sb.auth.getSession();
+  if (!s || !s.session) throw new Error('Sign in first.');
+  writeText(PULLED_KEY, '');
+  const r = await pullOnce(sb, { force: true }); // everything in the test cloud
+  if (r.blocked) throw new Error(r.blocked);
+  // only now does this copy become a test copy
+  writeText(TEST_DEVICE_KEY, '1');
+  writeText(UPLOADED_KEY, new Date().toISOString()); // nothing to upload: everything came from the cloud
+  setRecording(true);
+  window.location.reload(); // every screen picks up the downloaded data
+  return r;
 }

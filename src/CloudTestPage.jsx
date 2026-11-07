@@ -8,7 +8,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
 import { cloud, cloudReady, cloudProjectRef } from './cloud';
 import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox, stuckChanges } from './outbox';
-import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt } from './syncSend';
+import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt, lastCheckedAt, lastPullNote, pullNow, joinFromCloud } from './syncSend';
 import './CloudTestPage.css';
 
 const plainError = (err) => {
@@ -90,6 +90,17 @@ export default function CloudTestPage() {
       const r = await sendNow();
       if (r.skipped) setMsg('Nothing sent: sign in first.');
       else setMsg(r.sent ? `Sent ${r.sent} change${r.sent === 1 ? '' : 's'}.${r.stuck ? ` ${r.stuck} couldn’t be sent (kept below).` : ''}${r.conflicts ? ` ${r.conflicts} need review.` : ''}` : 'Nothing waiting to send.');
+    });
+  const checkNow = () =>
+    run('Checking the cloud…', async () => {
+      const r = await pullNow();
+      if (r.skipped) setMsg('Nothing checked: sign in first.');
+      else if (r.blocked) setErr(r.blocked);
+      else setMsg(r.changed ? 'Brought down changes from your other devices.' : 'Up to date: no changes from your other devices.');
+    });
+  const join = () =>
+    run('Downloading from the test cloud…', async () => {
+      await joinFromCloud();
     });
   const toggleRecording = () => {
     const on = !recording;
@@ -284,9 +295,19 @@ export default function CloudTestPage() {
                   Changes here are sent automatically a few seconds after you make them.
                   {lastSentAt() ? ` Last sent: ${timeOf(lastSentAt())}.` : ''}
                 </div>
-                <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={sendWaiting}>
-                  Send Now
-                </button>
+                <div className="cl-text">
+                  Changes from your other devices are checked every 30 seconds while Crumb is open.
+                  {lastCheckedAt() ? ` Last checked: ${timeOf(lastCheckedAt())}.` : ''}
+                </div>
+                {lastPullNote() && <div className="cl-err">{lastPullNote()}</div>}
+                <div className="cl-actions">
+                  <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={sendWaiting}>
+                    Send Now
+                  </button>
+                  <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={checkNow}>
+                    Check Now
+                  </button>
+                </div>
               </>
             )}
             {stuck.length > 0 && (
@@ -303,8 +324,8 @@ export default function CloudTestPage() {
         )}
         {!testCopy && realData && (
           <div className="cl-card cl-text">
-            This copy of Crumb has your real customers, so it never sends anything. To test sending, open
-            crumb-v3.vercel.app in a regular Safari tab on your iPad (a separate, empty copy) and load the demo data there.
+            This copy of Crumb has your real customers, so it never sends or receives anything. To test syncing, open
+            crumb-v3.vercel.app in Chrome (a separate, empty copy) and use the demo data there.
           </div>
         )}
         {!testCopy && !realData && (
@@ -314,6 +335,12 @@ export default function CloudTestPage() {
             </div>
             <button className="cl-btn" disabled={Boolean(busy)} onClick={loadDemo}>
               Load Demo Data
+            </button>
+            <div className="cl-text cl-card-gap">
+              Already testing on another device? Sign in above with the same test account, then download what’s in the test cloud.
+            </div>
+            <button className="cl-btn" disabled={Boolean(busy) || !session} onClick={join}>
+              Download From Test Cloud
             </button>
           </div>
         )}

@@ -203,6 +203,19 @@ export default function App() {
     if (readSaved(PROSPECTS_KEY, null)) setProspectsRaw((prev) => withNoteIds(withStandardDates(prev)));
   }, [setContactsRaw, setProspectsRaw]);
 
+  // Sync step S4 (test copy only): changes from your other devices just arrived from the cloud.
+  // Re-read customers and prospects, and redraw the screen so it shows the new data.
+  const [pulledTick, setPulledTick] = React.useState(0);
+  React.useEffect(() => {
+    const onPulled = () => {
+      setContactsRaw(readSaved(CUSTOMERS_KEY, [], { keepUnreadable: true, keepNull: true }));
+      setProspectsRaw(readSaved(PROSPECTS_KEY, [], { keepUnreadable: true, keepNull: true }));
+      setPulledTick((n) => n + 1);
+    };
+    window.addEventListener('crumb-pulled', onPulled);
+    return () => window.removeEventListener('crumb-pulled', onPulled);
+  }, [setContactsRaw, setProspectsRaw]);
+
   // Notifications: keep the server's reminder list fresh — when Crumb opens, when your
   // customers/prospects change, and when you leave the app. (Does nothing if they're off.)
   React.useEffect(() => {
@@ -221,7 +234,7 @@ export default function App() {
       <SaveFailedBanner />
       <NotificationTaps />
       <ErrorBoundary>
-      <Routes>
+      <Routes key={pulledTick}>
         <Route path="/" element={<HomePage />} />
         <Route path="/backup" element={<BackupPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />

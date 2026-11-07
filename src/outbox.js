@@ -87,10 +87,39 @@ function scheduleSend() {
 }
 if (typeof window !== 'undefined') window.addEventListener('crumb-outbox-changed', () => scheduleSend());
 
+// Sync step S4 (test copy only): check the cloud for changes from your other devices every 30 seconds
+// while Crumb is open, and right away when you come back to it.
+let pullTimer = null;
+function pullSoon() {
+  if (readText('crumb_sync_test_device') !== '1') return;
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+  import('./syncSend').then((m) => m.pullNow({ quiet: true })).catch(() => {});
+}
+function startPulling() {
+  if (pullTimer || typeof window === 'undefined' || readText('crumb_sync_test_device') !== '1') return;
+  pullTimer = setInterval(pullSoon, 30000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pullSoon();
+  });
+  setTimeout(pullSoon, 1500);
+}
+
+// Changes that came FROM the cloud are saved quietly: not recorded as new changes (so they don't bounce back).
+let paused = 0;
+export function quietly(fn) {
+  paused += 1;
+  try {
+    return fn();
+  } finally {
+    paused -= 1;
+  }
+}
+
 let stop = null;
 function listen() {
   if (stop) return;
   stop = onSaved((key, before, after) => {
+    if (paused) return;
     const changes = changesFor(key, before, after, readText);
     record(changes);
   });
@@ -104,6 +133,7 @@ export function isRecording() {
 export function startRecordingIfOn() {
   if (isRecording()) listen();
   scheduleSend(); // a test copy sends anything still waiting from last time
+  startPulling(); // …and checks the cloud for changes from your other devices
 }
 
 export function setRecording(on) {
