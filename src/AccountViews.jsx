@@ -16,10 +16,11 @@ import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
 import CompetitorPicker from './CompetitorPicker';
+import { loadCustomers, loadProspects } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
-import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, readJSON } from './schedule';
+import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed } from './schedule';
 
 /* ---------- Groups: one business, several locations ----------
    Each location is its own customer or prospect. Locations share a `group` name
@@ -29,8 +30,8 @@ export function groupOf(account) {
 }
 // Every customer + prospect, as { type, account }. `current` = the list on screen (freshest copy).
 function bothLists(currentType, current) {
-  const customers = currentType === 'customer' ? current : readJSON('crumb_contacts', []) || [];
-  const prospects = currentType === 'prospect' ? current : readJSON('crumb_prospects', []) || [];
+  const customers = currentType === 'customer' ? current : loadCustomers();
+  const prospects = currentType === 'prospect' ? current : loadProspects();
   // (currentType null = read both from the phone)
   return [
     ...customers.map((a) => ({ type: 'customer', account: a })),

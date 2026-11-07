@@ -4,6 +4,8 @@
 // already on an account, so new ones show up next time you type.
 export const COMPETITORS_KEY = 'crumb_competitors';
 
+import { loadCustomers, loadProspects } from './store';
+
 export const STARTER_COMPETITORS = [
   'Sysco',
   'US Foods',
@@ -34,7 +36,7 @@ const norm = (s) => String(s || '').trim().toLowerCase();
 // Every known name, no repeats (first spelling wins), A–Z.
 export function allCompetitors() {
   const names = [...STARTER_COMPETITORS, ...read(COMPETITORS_KEY)];
-  [...read('crumb_contacts'), ...read('crumb_prospects')].forEach((a) => {
+  [...loadCustomers(), ...loadProspects()].forEach((a) => {
     if (a && Array.isArray(a.competitors)) names.push(...a.competitors);
   });
   const seen = new Map();

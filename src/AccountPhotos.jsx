@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { IoCameraOutline, IoShareOutline, IoTrashOutline, IoClose } from 'react-icons/io5';
 import { listPhotos, addPhotos, deletePhoto, photoKey, movePhotos } from './photos';
 import { shareFile, safeFileName } from './share';
+import { readSaved, PROSPECTS_KEY } from './store';
 import './AccountPhotos.css';
 
 // iPhone sometimes won't show a photo straight from its storage (a blue "?" instead of the picture).
@@ -107,12 +108,7 @@ export default function AccountPhotos({ type, id, name }) {
   // If no prospect with that id still exists, bring them over (moved, never deleted).
   const rescue = () => {
     if (type !== 'customer') return Promise.resolve();
-    let prospects = [];
-    try {
-      prospects = JSON.parse(localStorage.getItem('crumb_prospects') || '[]');
-    } catch {
-      return Promise.resolve();
-    }
+    const prospects = readSaved(PROSPECTS_KEY, [], { ifUnreadable: null }); // unreadable → don't move anything
     if (!Array.isArray(prospects) || prospects.some((p) => p && String(p.id) === String(id))) return Promise.resolve();
     return movePhotos(photoKey('prospect', id), key).catch(() => {});
   };

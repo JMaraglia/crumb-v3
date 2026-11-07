@@ -16,24 +16,12 @@ import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 import { syncReminders, startReminderRefresh } from './notify';
+import { readSaved, writeSaved, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
-// Simple hook to sync state with localStorage
+// Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
 function usePersistedState(key, initialValue) {
-  const [state, setState] = React.useState(() => {
-    const saved = localStorage.getItem(key);
-    if (!saved) return initialValue;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      // Unreadable data: keep an untouched copy (never thrown away), start this screen empty.
-      try {
-        if (!localStorage.getItem(`${key}__unreadable`)) localStorage.setItem(`${key}__unreadable`, saved);
-      } catch {
-        /* no room for the copy */
-      }
-      return initialValue;
-    }
-  });
+  // Unreadable data: an untouched copy is kept (never thrown away) and this screen starts empty.
+  const [state, setState] = React.useState(() => readSaved(key, initialValue, { keepUnreadable: true, keepNull: true }));
 
   // Save only when something actually changes (opening the app never writes).
   const first = React.useRef(true);
@@ -42,11 +30,7 @@ function usePersistedState(key, initialValue) {
       first.current = false;
       return;
     }
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch {
-      window.dispatchEvent(new Event('crumb-save-failed')); // shows the "couldn't save" banner
-    }
+    writeSaved(key, state); // a failed save shows the "couldn't save" banner
   }, [key, state]);
 
   return [state, setState];
@@ -176,7 +160,7 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
 
 export default function App() {
   // Persisted contacts, prospects, and itinerary
-  const [contacts, setContacts] = usePersistedState('crumb_contacts', [
+  const [contacts, setContacts] = usePersistedState(CUSTOMERS_KEY, [
     {
       id: 1,
       accountNumber: '100123456',
@@ -194,7 +178,7 @@ export default function App() {
     }
   ]);
 
-  const [prospects, setProspectsRaw] = usePersistedState('crumb_prospects', []);
+  const [prospects, setProspectsRaw] = usePersistedState(PROSPECTS_KEY, []);
   // Every prospect stage change is quietly logged on the prospect (stageHistory: [{ from, to, at }])
   // for a future Scoreboard. Nothing on screen changes.
   const setProspects = React.useCallback(

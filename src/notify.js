@@ -18,6 +18,7 @@ import {
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
+import { loadCustomers, loadProspects } from './store';
 
 const SETTINGS_KEY = 'crumb_notify_settings';
 const DEVICE_KEY = 'crumb_push_device';
@@ -93,8 +94,8 @@ const hasName = (a) => a && a.name && String(a.name).trim();
 
 // Everything Crumb should remind you about over the next 7 days.
 export function buildReminders(settings = loadNotifySettings(), now = new Date()) {
-  const contacts = readJSON('crumb_contacts', []) || [];
-  const prospects = readJSON('crumb_prospects', []) || [];
+  const contacts = loadCustomers();
+  const prospects = loadProspects();
   const events = toVisitList(readJSON('crumb_calendar_events', []));
   const visits = toVisitList(readJSON('visitData', []));
   const doneMap = readJSON('crumb_itinerary_done', {}) || {};

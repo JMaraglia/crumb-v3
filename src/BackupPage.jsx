@@ -23,6 +23,7 @@ import {
   loadSafetyCopy,
 } from './photos';
 import { isBackedUpKey, makeManifest, compareToManifest, countData, COUNT_LABELS } from './backupCheck';
+import { loadAccounts } from './store';
 import './BackupPage.css';
 
 const LAST_BACKUP_KEY = 'crumb_last_backup';       // when the last backup file was made
@@ -76,8 +77,8 @@ function summarize(c) {
 function accountName(key) {
   const m = /^(customer|prospect)-(.+)$/.exec(String(key || ''));
   if (!m) return 'an account';
-  const list = parse(localStorage.getItem(m[1] === 'customer' ? 'crumb_contacts' : 'crumb_prospects'), []);
-  const a = Array.isArray(list) ? list.find((x) => x && String(x.id) === m[2]) : null;
+  const list = loadAccounts(m[1]);
+  const a = list.find((x) => x && String(x.id) === m[2]);
   return (a && a.name) || `a ${m[1]} no longer in Crumb`;
 }
 const namesOf = (list) => [...new Set(list.map((p) => accountName(p.key)))].join(', ');
