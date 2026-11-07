@@ -61,6 +61,37 @@ function convertProspect(prospect, accountNumber, contacts, setContacts, setPros
     localStorage.setItem('crumb_itinerary_done', JSON.stringify(moved));
   }
 
+  // Per-day Itinerary settings follow too: locked times, moved times, visit lengths ({ date: { key: minutes } })
+  // and "taken off this day" marks on the Itinerary / Calendar ({ date: [key] }).
+  const oldKey = `p-${prospect.id}`;
+  const newKey = `c-${newId}`;
+  ['crumb_itinerary_locks', 'crumb_itinerary_times', 'crumb_itinerary_lengths'].forEach((storageKey) => {
+    const m = readJSON(storageKey, null);
+    if (!m || typeof m !== 'object') return;
+    let changed = false;
+    Object.keys(m).forEach((day) => {
+      const dayMap = m[day];
+      if (dayMap && typeof dayMap === 'object' && oldKey in dayMap) {
+        const { [oldKey]: value, ...others } = dayMap;
+        m[day] = { ...others, [newKey]: value };
+        changed = true;
+      }
+    });
+    if (changed) localStorage.setItem(storageKey, JSON.stringify(m));
+  });
+  ['crumb_itinerary_removed', 'crumb_calendar_hidden'].forEach((storageKey) => {
+    const m = readJSON(storageKey, null);
+    if (!m || typeof m !== 'object') return;
+    let changed = false;
+    Object.keys(m).forEach((day) => {
+      if (Array.isArray(m[day]) && m[day].includes(oldKey)) {
+        m[day] = [...new Set(m[day].map((k) => (k === oldKey ? newKey : k)))];
+        changed = true;
+      }
+    });
+    if (changed) localStorage.setItem(storageKey, JSON.stringify(m));
+  });
+
   // To-dos linked to the prospect now belong to the customer
   const todos = readJSON('crumb_todos', null);
   if (Array.isArray(todos)) localStorage.setItem('crumb_todos', JSON.stringify(todos.map(relink)));
