@@ -24,7 +24,9 @@ export function cloud() {
   if (!client && !cloudProblem) {
     try {
       client = createClient(URL, KEY, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        // 'implicit': email links (confirm, reset password) work even when they open in Safari instead of
+        // the Home Screen app (the other flow only works in the same browser that asked for the email).
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' },
       });
     } catch (err) {
       cloudProblem = String((err && err.message) || err || 'The cloud settings in this version look wrong.');

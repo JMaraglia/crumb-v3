@@ -19,6 +19,7 @@ const plainError = (err) => {
   if (/Email not confirmed/i.test(m)) return 'Check your email and tap the confirmation link first, then sign in.';
   if (/already registered/i.test(m)) return 'That email already has an account. Tap Sign In instead.';
   if (/Password should be/i.test(m)) return 'Use a longer password (at least 6 characters).';
+  if (/only request this after|security purposes/i.test(m)) return 'An email was just sent. Wait a minute before asking for another.';
   if (/rate limit|too many/i.test(m)) return 'Too many tries for now. Wait a few minutes and try again.';
   if (/fetch|network/i.test(m)) return 'Couldn’t reach the cloud. Check your signal and try again.';
   return m || 'Something went wrong.';
@@ -39,6 +40,13 @@ function describe(c) {
 
 export default function CloudTestPage() {
   const navigate = useNavigate();
+  // Opened from a "reset your password" email? (Read before the cloud library tidies the address.)
+  const [recovering, setRecovering] = useState(() => /type=recovery/.test(window.location.hash || ''));
+  const [linkProblem] = useState(() => {
+    const m = /error_description=([^&]+)/.exec(window.location.hash || '');
+    return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+  });
+  const [newPassword, setNewPassword] = useState('');
   const sb = cloud();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(Boolean(sb));
@@ -146,7 +154,10 @@ export default function CloudTestPage() {
       setSession((data && data.session) || null);
       setLoading(false);
     });
-    const { data } = sb.auth.onAuthStateChange((_event, s) => setSession(s || null));
+    const { data } = sb.auth.onAuthStateChange((event, s) => {
+      setSession(s || null);
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true);
+    });
     return () => data && data.subscription && data.subscription.unsubscribe();
   }, [sb]);
 
@@ -179,6 +190,23 @@ export default function CloudTestPage() {
       const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
       setPassword('');
+    });
+
+  // Forgot password: an email with a link that brings you back here to set a new one.
+  const forgot = () =>
+    run('Sending the email…', async () => {
+      if (!email.trim()) throw new Error('Type your email above first, then tap Forgot Password.');
+      const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/cloud-test` });
+      if (error) throw error;
+      setMsg(`Check your email (${email.trim()}) and tap the link. It brings you back here to set a new password.`);
+    });
+  const saveNewPassword = () =>
+    run('Saving your new password…', async () => {
+      const { error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword('');
+      setRecovering(false);
+      setMsg('Password changed. Use the new one from now on, on every device. Save it in your password manager.');
     });
 
   const signOut = () =>
@@ -283,9 +311,34 @@ export default function CloudTestPage() {
               </button>
             </div>
             <div className="cl-hint">New here? Type an email and a password (6+ characters), then Create Account.</div>
+            <button className="cl-link" disabled={Boolean(busy)} onClick={forgot}>
+              Forgot Password?
+            </button>
           </div>
         )}
 
+        {linkProblem && (
+          <div className="cl-card cl-err">That email link didn’t work ({linkProblem}). Links expire after a while: ask for a new one.</div>
+        )}
+        {cloudReady && !cloudProblem && !loading && session && recovering && (
+          <div className="cl-card">
+            <div className="cl-status">Set A New Password</div>
+            <label className="cl-label" htmlFor="cl-newpass">New password (6+ characters)</label>
+            <input
+              id="cl-newpass"
+              className="cl-input"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <div className="cl-actions">
+              <button className="cl-btn" disabled={newPassword.length < 6 || Boolean(busy)} onClick={saveNewPassword}>
+                Save New Password
+              </button>
+            </div>
+          </div>
+        )}
         {cloudReady && !cloudProblem && !loading && session && (
           <div className="cl-card">
             <div className="cl-status is-on">

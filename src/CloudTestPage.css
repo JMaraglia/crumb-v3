@@ -124,6 +124,14 @@
   font-size: 0.8rem;
   color: #8e8e93;
 }
+.cl-page .cl-link,
+.cl-page .cl-link:hover {
+  margin-top: 12px;
+  padding: 4px 0;
+  color: #0077cc;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
 .cl-check {
   margin-top: 14px;
   padding: 12px;
