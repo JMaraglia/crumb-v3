@@ -14,6 +14,7 @@ import { demoData } from './demoData';
 import { fullUploadChanges, sendOrder } from './syncDiff';
 import { pendingChanges, removeSent, parkStuck, setRecording, clearOutbox, flushRecording, quietly } from './outbox';
 import { planPull } from './syncPull';
+import { syncPhotos } from './syncPhotos';
 
 export const TEST_DEVICE_KEY = 'crumb_sync_test_device'; // '1' = this copy holds demo data only
 const UPLOADED_KEY = 'crumb_sync_uploaded';               // when the first upload finished
@@ -205,7 +206,13 @@ export function pullNow({ quiet = false } = {}) {
     if (!s || !s.session) return { skipped: true };
     if (typing()) return { skipped: true, typing: true };
     await sendNow({ quiet: true }); // this device's own changes go up first
-    return pullOnce(sb);
+    const r = await pullOnce(sb);
+    if (r.skipped || r.blocked) return r;
+    // S6: photos (up, then down)
+    const ph = await syncPhotos(sb, await myWorkspace(sb));
+    if (ph.note) pullNote = ph.note;
+    if (ph.down || ph.removed) window.dispatchEvent(new CustomEvent('crumb-pulled', { detail: { keys: ['photos'] } }));
+    return { ...r, changed: r.changed + ph.down + ph.removed, photos: ph };
   })()
     .catch((err) => {
       if (!quiet) throw err;

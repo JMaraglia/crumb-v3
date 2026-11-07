@@ -9,7 +9,8 @@ import { toVisitList } from './schedule';
 //   crumb_push_device: this phone's notification ID (two devices sharing one = duplicate reminders)
 //   crumb_last_backup / crumb_safety_copy / crumb_restore_result: the backup screen's own bookkeeping
 export const DEVICE_ONLY = ['crumb_push_device', 'crumb_last_backup', 'crumb_safety_copy', 'crumb_restore_result', 'crumb_sync_record',
-  'crumb_sync_test_device', 'crumb_sync_uploaded', 'crumb_sync_last_sent', 'crumb_sync_pulled_at', 'crumb_sync_last_checked'];
+  'crumb_sync_test_device', 'crumb_sync_uploaded', 'crumb_sync_last_sent', 'crumb_sync_pulled_at', 'crumb_sync_last_checked',
+  'crumb_sync_photos', 'crumb_sync_photos_pulled_at'];
 
 export function isBackedUpKey(k) {
   return !!k && (k.startsWith('crumb_') || k === 'visitData') && !DEVICE_ONLY.includes(k);
