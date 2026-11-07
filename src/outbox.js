@@ -15,22 +15,24 @@ const FLAG_KEY = 'crumb_sync_record'; // this device only (not backed up)
 const DB_NAME = 'crumb-sync';
 const STORE = 'outbox';
 
+const STUCK = 'stuck'; // changes the cloud refused (kept, shown in Cloud Test, never lost)
 function openDb() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(DB_NAME, 2);
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE, { keyPath: 'key' });
+      if (!req.result.objectStoreNames.contains(STUCK)) req.result.createObjectStore(STUCK, { keyPath: 'key' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
-function tx(mode, fn) {
+function tx(mode, fn, store = STORE) {
   return openDb().then(
     (db) =>
       new Promise((resolve, reject) => {
-        const t = db.transaction(STORE, mode);
-        const out = fn(t.objectStore(STORE));
+        const t = db.transaction(store, mode);
+        const out = fn(t.objectStore(store));
         t.oncomplete = () => resolve(out && 'result' in out ? out.result : undefined);
         t.onerror = () => reject(t.error);
         t.onabort = () => reject(t.error);
@@ -73,6 +75,18 @@ function record(changes) {
     .then(() => window.dispatchEvent(new Event('crumb-outbox-changed')));
 }
 
+// Sending (S3, test copy only) lives in syncSend.js and is loaded only on a test copy, so the cloud
+// library never loads for normal use.
+let sendTimer = null;
+function scheduleSend() {
+  if (readText('crumb_sync_test_device') !== '1') return;
+  clearTimeout(sendTimer);
+  sendTimer = setTimeout(() => {
+    import('./syncSend').then((m) => m.sendNow({ quiet: true })).catch(() => {});
+  }, 3000);
+}
+if (typeof window !== 'undefined') window.addEventListener('crumb-outbox-changed', () => scheduleSend());
+
 let stop = null;
 function listen() {
   if (stop) return;
@@ -89,6 +103,7 @@ export function isRecording() {
 // Called once when Crumb opens.
 export function startRecordingIfOn() {
   if (isRecording()) listen();
+  scheduleSend(); // a test copy sends anything still waiting from last time
 }
 
 export function setRecording(on) {
@@ -111,4 +126,34 @@ export function pendingChanges() {
 export function clearOutbox() {
   chain = chain.then(() => tx('readwrite', (st) => st.clear())).catch(() => {});
   return chain.then(() => window.dispatchEvent(new Event('crumb-outbox-changed')));
+}
+
+// ---- used by syncSend.js ----
+export const flushRecording = () => chain;
+// Remove changes that were sent — but only if they weren't changed again while sending (then they stay).
+export function removeSent(sent) {
+  chain = chain
+    .then(() =>
+      tx('readwrite', (st) => {
+        sent.forEach((c) => {
+          const req = st.get(c.key);
+          req.onsuccess = () => {
+            if (req.result && req.result.op_id === c.op_id) st.delete(c.key);
+          };
+        });
+      })
+    )
+    .catch(() => {});
+  return chain;
+}
+// Park a change the cloud refused: out of the way of the others, never lost.
+export function parkStuck(entry, reason) {
+  chain = chain
+    .then(() => tx('readwrite', (st) => st.put({ ...entry, reason: String(reason || '').slice(0, 200) }), STUCK))
+    .then(() => tx('readwrite', (st) => st.delete(entry.key)))
+    .catch(() => {});
+  return chain;
+}
+export function stuckChanges() {
+  return chain.then(() => tx('readonly', (st) => st.getAll(), STUCK)).then((r) => r || []).catch(() => []);
 }

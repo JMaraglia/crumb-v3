@@ -7,7 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
 import { cloud, cloudReady, cloudProjectRef } from './cloud';
-import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox } from './outbox';
+import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox, stuckChanges } from './outbox';
+import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt } from './syncSend';
 import './CloudTestPage.css';
 
 const plainError = (err) => {
@@ -48,6 +49,10 @@ export default function CloudTestPage() {
   const [recording, setRec] = useState(isRecording);
   const [waiting, setWaiting] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [stuck, setStuck] = useState([]);
+  const [, setTick] = useState(0); // re-draw when sending status changes
+  const testCopy = isTestDevice();
+  const realData = !testCopy && hasRealAccounts();
 
   // Sync step S2: changes noted on this device (nothing is sent yet)
   useEffect(() => {
@@ -57,10 +62,35 @@ export default function CloudTestPage() {
         setRecent(rows.sort((x, y) => String(y.at).localeCompare(String(x.at))).slice(0, 8))
       );
     };
-    refresh();
+    const refreshStatus = () => {
+      refresh();
+      stuckChanges().then(setStuck);
+      setTick((n) => n + 1);
+    };
+    refreshStatus();
     window.addEventListener('crumb-outbox-changed', refresh);
-    return () => window.removeEventListener('crumb-outbox-changed', refresh);
+    window.addEventListener('crumb-sync-status', refreshStatus);
+    return () => {
+      window.removeEventListener('crumb-outbox-changed', refresh);
+      window.removeEventListener('crumb-sync-status', refreshStatus);
+    };
   }, []);
+  const timeOf = (iso) => (iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '');
+  const loadDemo = () =>
+    run('Loading demo data…', async () => {
+      loadDemoData();
+    });
+  const upload = () =>
+    run('Uploading the demo data…', async () => {
+      const r = await uploadAll();
+      setMsg(`Uploaded ${r.sent} items to the cloud.${r.conflicts ? ` ${r.conflicts} need review.` : ''}`);
+    });
+  const sendWaiting = () =>
+    run('Sending…', async () => {
+      const r = await sendNow();
+      if (r.skipped) setMsg('Nothing sent: sign in first.');
+      else setMsg(r.sent ? `Sent ${r.sent} change${r.sent === 1 ? '' : 's'}.${r.stuck ? ` ${r.stuck} couldn’t be sent (kept below).` : ''}${r.conflicts ? ` ${r.conflicts} need review.` : ''}` : 'Nothing waiting to send.');
+    });
   const toggleRecording = () => {
     const on = !recording;
     setRecording(on);
@@ -236,8 +266,59 @@ export default function CloudTestPage() {
         )}
 
         <div className="cl-section">Sync Test</div>
-        <div className="cl-card">
-          <button className="cl-switch-row" onClick={toggleRecording} aria-pressed={recording}>
+        {testCopy && (
+          <div className="cl-card cl-testcopy">
+            <div className="cl-testcopy-badge">TEST COPY · made-up demo data only</div>
+            {!session && <div className="cl-text">Sign in above to send changes.</div>}
+            {session && !uploadedAt() && (
+              <>
+                <div className="cl-text">Step 1: send the demo data to the test cloud. After that, changes you make here are sent automatically.</div>
+                <button className="cl-btn" disabled={Boolean(busy)} onClick={upload}>
+                  Upload Demo Data
+                </button>
+              </>
+            )}
+            {session && uploadedAt() && (
+              <>
+                <div className="cl-text">
+                  Changes here are sent automatically a few seconds after you make them.
+                  {lastSentAt() ? ` Last sent: ${timeOf(lastSentAt())}.` : ''}
+                </div>
+                <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={sendWaiting}>
+                  Send Now
+                </button>
+              </>
+            )}
+            {stuck.length > 0 && (
+              <div className="cl-err">
+                {stuck.length} change{stuck.length === 1 ? '' : 's'} couldn’t be sent (kept on this device):
+                <ul className="cl-outbox-list">
+                  {stuck.slice(0, 5).map((c) => (
+                    <li key={c.key}>{describe(c)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+        {!testCopy && realData && (
+          <div className="cl-card cl-text">
+            This copy of Crumb has your real customers, so it never sends anything. To test sending, open
+            crumb-v3.vercel.app in a regular Safari tab on your iPad (a separate, empty copy) and load the demo data there.
+          </div>
+        )}
+        {!testCopy && !realData && (
+          <div className="cl-card">
+            <div className="cl-text">
+              This copy of Crumb is empty. Load made-up demo data to turn it into a test copy that can send changes to the test cloud.
+            </div>
+            <button className="cl-btn" disabled={Boolean(busy)} onClick={loadDemo}>
+              Load Demo Data
+            </button>
+          </div>
+        )}
+        <div className="cl-card cl-card-gap">
+          <button className="cl-switch-row" onClick={toggleRecording} aria-pressed={recording} disabled={testCopy}>
             <span className="cl-switch-text">
               <span className="cl-switch-label">Record changes on this device</span>
               <span className="cl-switch-sub">Test only. Notes what you change; nothing is sent anywhere yet.</span>

@@ -119,3 +119,25 @@ describe('the front door tells listeners only after the save', () => {
     expect(heard).toEqual([]);
   });
 });
+
+import { fullUploadChanges, sendOrder } from '../src/syncDiff';
+describe('first upload', () => {
+  it('sends everything as "added", accounts first, and never this phone’s own things', () => {
+    const saved = {
+      crumb_contacts: J([{ id: 1, name: 'A', notes: [{ id: 'n-1', text: 'x' }] }]),
+      crumb_prospects: J([{ id: 2, name: 'B', notes: [] }]),
+      crumb_calendar_events: J([{ id: 9, title: 'E', date: '2026-11-10', accountId: 1 }]),
+      crumb_itinerary_done: J({ '2026-11-10': ['c-1'] }),
+      crumb_stale_days: '45',
+      crumb_push_device: 'abc',
+      crumb_maps_app: 'apple',
+    };
+    const ch = fullUploadChanges((k) => (k in saved ? saved[k] : null));
+    expect(ch.map((c) => `${c.table}:${c.id}`)).toEqual(['accounts:1', 'notes:n-1', 'accounts:2', 'events:9', 'day_marks:done|2026-11-10', 'settings:staleDays']);
+    expect(ch.every((c) => c.type === 'upsert' && c.base === null)).toBe(true);
+  });
+  it('sending order puts accounts before what links to them', () => {
+    const list = [{ table: 'notes', at: '1' }, { table: 'events', at: '0' }, { table: 'accounts', at: '2' }].sort(sendOrder);
+    expect(list.map((x) => x.table)).toEqual(['accounts', 'notes', 'events']);
+  });
+});

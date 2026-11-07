@@ -207,3 +207,27 @@ export function combine(older, newer) {
   const type = older.type === 'convert' || newer.type === 'convert' ? 'convert' : 'upsert';
   return { ...newer, type, base: firstBase };
 }
+
+// The FIRST upload (S3 test copy; later the real move, S7): everything currently saved, as "added" changes.
+// Accounts (with their notes) come first, so every note, event, stop and to-do has its account in the cloud.
+export const UPLOAD_ORDER = [
+  'crumb_contacts', 'crumb_prospects', 'crumb_calendar_events', 'visitData', 'crumb_todos',
+  ...Object.keys(DAY_MAP_KEYS), ...Object.keys(SETTING_KEYS),
+];
+export function fullUploadChanges(readText) {
+  const out = [];
+  UPLOAD_ORDER.forEach((key) => {
+    const now = readText(key);
+    if (now == null || now === '') return;
+    const empty = key in DAY_MAP_KEYS ? '{}' : key in SETTING_KEYS ? null : '[]';
+    // no "other list" during a first upload: nothing is a Convert
+    out.push(...changesFor(key, empty, now, () => null));
+  });
+  return out;
+}
+
+// Sending order inside a batch: accounts before what links to them.
+const TABLE_ORDER = { accounts: 0, notes: 1, events: 2, stops: 3, todos: 4, day_marks: 5, settings: 6 };
+export function sendOrder(a, b) {
+  return (TABLE_ORDER[a.table] ?? 9) - (TABLE_ORDER[b.table] ?? 9) || String(a.at || '').localeCompare(String(b.at || ''));
+}
