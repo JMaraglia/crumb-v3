@@ -262,3 +262,20 @@
 .cl-card-gap {
   margin-top: 12px;
 }
+
+/* Troubleshooting: builder tools, folded away */
+.cl-trouble {
+  margin-top: 24px;
+}
+.cl-trouble > summary {
+  padding: 8px 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8e8e93;
+  cursor: pointer;
+}
+.cl-trouble[open] > summary {
+  margin-bottom: 8px;
+}

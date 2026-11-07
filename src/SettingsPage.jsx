@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
-import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
@@ -11,7 +11,17 @@ import AskSheet from './AskSheet';
 import { writeText } from './store';
 import './SettingsPage.css';
 import { useCloudRefresh } from './useCloudRefresh';
-import { syncBlockReason, isTestProject } from './syncMode';
+import { syncBlockReason, isTestProject, isRealSynced, projectRef } from './syncMode';
+
+// Who's signed in on this device (read from where the sign-in is remembered; no cloud library needed).
+function signedInEmail() {
+  try {
+    const v = JSON.parse(localStorage.getItem(`sb-${projectRef()}-auth-token`) || 'null');
+    return (v && v.user && v.user.email) || '';
+  } catch {
+    return '';
+  }
+}
 
 // One line under "Cloud": is this device syncing?
 function syncLine() {
@@ -27,6 +37,22 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const n = loadNotifySettings();
   const [stale, setStale] = useState(staleDays);
+  const [email] = useState(signedInEmail);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const signOut = async () => {
+    setAccountOpen(false);
+    setSigningOut(true);
+    try {
+      const { cloud } = await import('./cloud');
+      const sb = cloud();
+      if (sb) await sb.auth.signOut();
+    } catch {
+      /* signed out on this device anyway below */
+    }
+    if (isRealSynced()) navigate('/sign-in', { replace: true, state: { from: '/', gate: true } });
+    else window.location.reload();
+  };
   useCloudRefresh(() => setStale(staleDays())); // changes from your other device, re-read in place
   const [pickStale, setPickStale] = useState(false);
   const setStaleDays = (v) => {
@@ -88,6 +114,22 @@ export default function SettingsPage() {
       </header>
       <div className="st-content">
         <h1 className="st-title">Settings</h1>
+        {(email || isRealSynced()) && (
+          <div className="st-group st-group-gap">
+            <button
+              className="st-row"
+              disabled={signingOut}
+              onClick={() => (email ? setAccountOpen(true) : navigate('/sign-in', { state: { from: '/settings' } }))}
+            >
+              <span className="st-row-icon"><IoPersonCircleOutline /></span>
+              <span className="st-row-text">
+                <span className="st-row-label">Account</span>
+                <span className="st-row-sub">{signingOut ? 'Signing out…' : email || 'Not signed in: tap to sign in'}</span>
+              </span>
+              <FaChevronRight className="st-row-chev" />
+            </button>
+          </div>
+        )}
         <div className="st-group">
           {rows.map((r) => (
             <button key={r.label} className="st-row" onClick={r.go}>
@@ -101,6 +143,15 @@ export default function SettingsPage() {
           ))}
         </div>
       </div>
+      {accountOpen && (
+        <AskSheet
+          title="Account"
+          message={`Signed in as ${email}.${isRealSynced() ? ' Signing out stops syncing on this device until you sign in again.' : ''}`}
+          choices={[{ label: 'Sign Out', value: 'out' }]}
+          onPick={signOut}
+          onCancel={() => setAccountOpen(false)}
+        />
+      )}
       {pickStale && (
         <AskSheet
           title="Due For A Check-In"

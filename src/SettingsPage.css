@@ -112,3 +112,8 @@
   color: #ff9500;
   font-weight: 600;
 }
+
+/* Account sits in its own group above the others */
+.st-group-gap {
+  margin-bottom: 20px;
+}

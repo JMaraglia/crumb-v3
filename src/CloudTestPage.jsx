@@ -279,7 +279,7 @@ export default function CloudTestPage() {
             </div>
           </div>
         )}
-        {cloudReady && !cloudProblem && !loading && session && (
+        {cloudReady && !cloudProblem && !loading && session && testProject && (
           <div className="cl-card">
             <div className="cl-status is-on">
               <IoCloudDoneOutline className="cl-status-icon" /> Signed in
@@ -320,27 +320,12 @@ export default function CloudTestPage() {
                   <div className="cl-text">{BLOCK_TEXT[why] || ''}</div>
                 ) : (
                   <div className="cl-text">
-                    Your changes go to your other devices a few seconds after you make them, and theirs come here every 30
-                    seconds while Crumb is open.
-                    {lastSentAt() ? ` Last sent: ${timeOf(lastSentAt())}.` : ''}
-                    {lastCheckedAt() ? ` Last checked: ${timeOf(lastCheckedAt())}.` : ''}
+                    {waiting ? `Sending ${waiting} change${waiting === 1 ? '' : 's'}…` : 'Up to date.'}
+                    {lastCheckedAt() ? ` Last checked ${timeOf(lastCheckedAt())}.` : ''}
                   </div>
                 )}
-                {!session && <div className="cl-err">Signed out: nothing syncs until you sign in above.</div>}
+                {!session && <div className="cl-err">Signed out: nothing syncs until you sign in.</div>}
                 {lastPullNote() && <div className="cl-err">{lastPullNote()}</div>}
-                <div className="cl-outbox-count cl-card-gap">
-                  Changes waiting to send: <strong>{waiting == null ? '…' : waiting}</strong>
-                </div>
-                {!why && session && (
-                  <div className="cl-actions">
-                    <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={sendWaiting}>
-                      Send Now
-                    </button>
-                    <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={checkNow}>
-                      Check Now
-                    </button>
-                  </div>
-                )}
                 {(why === '' || why === 'paused') && (
                   <button className="cl-switch-row cl-card-gap" onClick={togglePause} aria-pressed={why === 'paused'}>
                     <span className="cl-switch-text">
@@ -542,10 +527,50 @@ export default function CloudTestPage() {
         </div>
         </>}
 
+        {cloudReady && !cloudProblem && !testProject && session && (
+          <details className="cl-trouble">
+            <summary>Troubleshooting</summary>
+            <div className="cl-card">
+              <div className="cl-text">
+                Last sent: {lastSentAt() ? timeOf(lastSentAt()) : 'never'} · Last checked: {lastCheckedAt() ? timeOf(lastCheckedAt()) : 'never'}
+              </div>
+              <div className="cl-outbox-count cl-card-gap">
+                Changes waiting to send: <strong>{waiting == null ? '…' : waiting}</strong>
+              </div>
+              {realSynced && !why && (
+                <div className="cl-actions">
+                  <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={sendWaiting}>
+                    Send Now
+                  </button>
+                  <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={checkNow}>
+                    Check Now
+                  </button>
+                </div>
+              )}
+              <div className="cl-actions">
+                <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={runCheck}>
+                  Run Connection Check
+                </button>
+              </div>
+              {check && check.ok && (
+                <div className="cl-check">
+                  <div className="cl-check-title">Connection Check Passed ✓</div>
+                  <ul>
+                    {check.lines.map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="cl-hint">Signed in as {session.user && session.user.email} · Project {cloudProjectRef() || 'unknown'}</div>
+            </div>
+          </details>
+        )}
+
         {busy && <div className="cl-busy">{busy}</div>}
         {msg && <div className="cl-msg">{msg}</div>}
         {err && <div className="cl-err">{err}</div>}
-        {cloudReady && <div className="cl-foot">{testProject ? 'Test project' : 'Project'}: {cloudProjectRef() || 'unknown'}</div>}
+        {cloudReady && testProject && <div className="cl-foot">Test project: {cloudProjectRef() || 'unknown'}</div>}
       </div>
     </div>
   );
