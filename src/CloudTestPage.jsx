@@ -1,0 +1,209 @@
+// file: src/CloudTestPage.jsx
+// Settings → Cloud Test. Sign up / sign in to Crumb's TEST cloud project and run a connection check:
+// save one small test item to the cloud, read it back, and confirm no one else's data is visible.
+// Nothing on this phone is uploaded, synced or changed.
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
+import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
+import { cloud, cloudReady, cloudProjectRef } from './cloud';
+import './CloudTestPage.css';
+
+const plainError = (err) => {
+  const m = String((err && (err.message || err.error_description)) || err || '');
+  if (/Invalid login credentials/i.test(m)) return 'That email and password don’t match. Check them, or tap Create Account if you’re new.';
+  if (/Email not confirmed/i.test(m)) return 'Check your email and tap the confirmation link first, then sign in.';
+  if (/already registered/i.test(m)) return 'That email already has an account. Tap Sign In instead.';
+  if (/Password should be/i.test(m)) return 'Use a longer password (at least 6 characters).';
+  if (/rate limit|too many/i.test(m)) return 'Too many tries for now. Wait a few minutes and try again.';
+  if (/fetch|network/i.test(m)) return 'Couldn’t reach the cloud. Check your signal and try again.';
+  return m || 'Something went wrong.';
+};
+
+export default function CloudTestPage() {
+  const navigate = useNavigate();
+  const sb = cloud();
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(Boolean(sb));
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const [check, setCheck] = useState(null); // { ok, lines: [] }
+
+  useEffect(() => {
+    if (!sb) return undefined;
+    sb.auth.getSession().then(({ data }) => {
+      setSession((data && data.session) || null);
+      setLoading(false);
+    });
+    const { data } = sb.auth.onAuthStateChange((_event, s) => setSession(s || null));
+    return () => data && data.subscription && data.subscription.unsubscribe();
+  }, [sb]);
+
+  const run = async (label, fn) => {
+    setErr('');
+    setMsg('');
+    setBusy(label);
+    try {
+      await fn();
+    } catch (e) {
+      setErr(plainError(e));
+    }
+    setBusy('');
+  };
+
+  const signUp = () =>
+    run('Creating account…', async () => {
+      const { data, error } = await sb.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/cloud-test` },
+      });
+      if (error) throw error;
+      if (data && data.session) setMsg('Account created and signed in.');
+      else setMsg('Account created. Check your email and tap the confirmation link — it brings you back here signed in.');
+    });
+
+  const signIn = () =>
+    run('Signing in…', async () => {
+      const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
+      setPassword('');
+    });
+
+  const signOut = () =>
+    run('Signing out…', async () => {
+      await sb.auth.signOut();
+      setCheck(null);
+    });
+
+  // The connection check: everything here happens in the cloud only.
+  const runCheck = () =>
+    run('Checking…', async () => {
+      setCheck(null);
+      const lines = [];
+      const { data: ws, error: e1 } = await sb.from('workspaces').select('id, name, kind');
+      if (e1) throw e1;
+      if (!ws || ws.length !== 1) throw new Error(`Expected 1 workspace, found ${ws ? ws.length : 0}.`);
+      lines.push(`Your workspace: “${ws[0].name}” (${ws[0].kind})`);
+
+      const stamp = new Date().toISOString();
+      const { error: e2 } = await sb
+        .from('settings')
+        .upsert({ workspace_id: ws[0].id, key: 'cloud_test', data: { savedAt: stamp } });
+      if (e2) throw e2;
+      lines.push('Saved a test item to the cloud');
+
+      const { data: back, error: e3 } = await sb.from('settings').select('data, version').eq('key', 'cloud_test');
+      if (e3) throw e3;
+      if (!back || back.length !== 1 || back[0].data.savedAt !== stamp) throw new Error('The test item didn’t read back the same.');
+      lines.push(`Read it back exactly (saved ${back[0].version} time${back[0].version === 1 ? '' : 's'})`);
+
+      const { data: others, error: e4 } = await sb.from('accounts').select('workspace_id').neq('workspace_id', ws[0].id);
+      if (e4) throw e4;
+      if (others && others.length) throw new Error('Could see records from another workspace!');
+      lines.push('No one else’s data is visible');
+
+      const { error: e5 } = await sb.from('admins').select('user_id').limit(1);
+      if (!e5) throw new Error('The admin list should not be readable from the app.');
+      lines.push('Admin-only areas are locked');
+
+      setCheck({ ok: true, lines });
+    });
+
+  return (
+    <div className="cl-page">
+      <header className="cl-header">
+        <button className="cl-icon-btn" onClick={() => navigate('/settings')} aria-label="Back">
+          <FaArrowLeft />
+        </button>
+      </header>
+      <div className="cl-content">
+        <h1 className="cl-title">Cloud Test</h1>
+        <p className="cl-intro">
+          A test of Crumb’s cloud connection. Your customers, prospects and notes stay on this phone — nothing is
+          uploaded or changed.
+        </p>
+
+        {!cloudReady && (
+          <div className="cl-card">
+            <div className="cl-status is-off">Not set up yet</div>
+            <div className="cl-text">This version of Crumb doesn’t have the cloud settings yet.</div>
+          </div>
+        )}
+
+        {cloudReady && loading && <div className="cl-card cl-text">Checking sign-in…</div>}
+
+        {cloudReady && !loading && !session && (
+          <div className="cl-card">
+            <div className="cl-status">
+              <IoCloudOutline className="cl-status-icon" /> Not signed in
+            </div>
+            <label className="cl-label" htmlFor="cl-email">Email</label>
+            <input
+              id="cl-email"
+              className="cl-input"
+              type="email"
+              autoComplete="email"
+              autoCapitalize="none"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <label className="cl-label" htmlFor="cl-pass">Password</label>
+            <input
+              id="cl-pass"
+              className="cl-input"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <div className="cl-actions">
+              <button className="cl-btn" disabled={!email.trim() || !password || Boolean(busy)} onClick={signIn}>
+                Sign In
+              </button>
+              <button className="cl-btn cl-btn-plain" disabled={!email.trim() || password.length < 6 || Boolean(busy)} onClick={signUp}>
+                Create Account
+              </button>
+            </div>
+            <div className="cl-hint">New here? Type an email and a password (6+ characters), then Create Account.</div>
+          </div>
+        )}
+
+        {cloudReady && !loading && session && (
+          <div className="cl-card">
+            <div className="cl-status is-on">
+              <IoCloudDoneOutline className="cl-status-icon" /> Signed in
+            </div>
+            <div className="cl-text">{session.user && session.user.email}</div>
+            <div className="cl-actions">
+              <button className="cl-btn" disabled={Boolean(busy)} onClick={runCheck}>
+                Run Connection Check
+              </button>
+              <button className="cl-btn cl-btn-plain" disabled={Boolean(busy)} onClick={signOut}>
+                Sign Out
+              </button>
+            </div>
+            {check && check.ok && (
+              <div className="cl-check">
+                <div className="cl-check-title">Connection Check Passed ✓</div>
+                <ul>
+                  {check.lines.map((l) => (
+                    <li key={l}>{l}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {busy && <div className="cl-busy">{busy}</div>}
+        {msg && <div className="cl-msg">{msg}</div>}
+        {err && <div className="cl-err">{err}</div>}
+        {cloudReady && <div className="cl-foot">Test project: {cloudProjectRef() || 'unknown'}</div>}
+      </div>
+    </div>
+  );
+}

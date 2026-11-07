@@ -1,0 +1,168 @@
+/* Cloud Test (cl-). App.css styles every button/input and pads the body, so reset here. */
+.cl-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  text-align: left;
+}
+.cl-header {
+  padding: calc(10px + env(safe-area-inset-top)) 12px 4px;
+}
+.cl-page button,
+.cl-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  box-shadow: none;
+  cursor: pointer;
+  width: auto;
+}
+.cl-page .cl-icon-btn,
+.cl-page .cl-icon-btn:hover {
+  padding: 8px;
+  color: #0077cc;
+  font-size: 1.3rem;
+}
+.cl-content {
+  padding: 0 16px 40px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.cl-page h1.cl-title {
+  margin: 0 0 6px;
+  text-align: left;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1c1c1e;
+}
+.cl-intro {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #6e6e73;
+}
+.cl-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+}
+.cl-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.cl-status.is-on {
+  color: #1e8e3e;
+}
+.cl-status.is-off {
+  color: #c26a00;
+}
+.cl-status-icon {
+  font-size: 1.4rem;
+}
+.cl-text {
+  font-size: 0.92rem;
+  color: #3a3a3c;
+  margin-bottom: 12px;
+  word-break: break-word;
+}
+.cl-label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8e8e93;
+}
+.cl-page .cl-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid #d1d1d6;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 16px; /* 16px stops iPhone zooming in */
+  color: #1c1c1e;
+}
+.cl-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.cl-page .cl-btn,
+.cl-page .cl-btn:hover {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 12px;
+  background: #0077cc;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+.cl-page .cl-btn-plain,
+.cl-page .cl-btn-plain:hover {
+  background: #e5f0fa;
+  color: #0077cc;
+}
+.cl-page .cl-btn:disabled {
+  opacity: 0.45;
+}
+.cl-hint {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #8e8e93;
+}
+.cl-check {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #e8f5ec;
+  font-size: 0.9rem;
+}
+.cl-check-title {
+  font-weight: 800;
+  color: #1e8e3e;
+  margin-bottom: 6px;
+}
+.cl-check ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+.cl-busy,
+.cl-msg {
+  margin: 12px 4px 0;
+  font-size: 0.9rem;
+  color: #1e8e3e;
+  font-weight: 600;
+}
+.cl-busy {
+  color: #6e6e73;
+}
+.cl-err {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffeceb;
+  color: #b3261e;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.cl-foot {
+  margin-top: 20px;
+  font-size: 0.75rem;
+  color: #aeaeb2;
+  text-align: center;
+}

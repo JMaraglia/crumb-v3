@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
-import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
@@ -58,6 +58,12 @@ export default function SettingsPage() {
       sub: !last ? 'Never backed up' : days === 0 ? 'Last backup: today' : days === 1 ? 'Last backup: yesterday' : `Last backup: ${days} days ago`,
       go: () => navigate('/backup'),
       due: !last || days >= 7,
+    },
+    {
+      icon: <IoCloudOutline />,
+      label: 'Cloud Test',
+      sub: 'Try signing in to Crumb’s cloud (test only — nothing on this phone changes)',
+      go: () => navigate('/cloud-test'),
     },
   ];
   return (

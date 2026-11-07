@@ -15,6 +15,8 @@ import BackupPage from './BackupPage';
 import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
+// Loaded only when Cloud Test is opened, so the cloud library never slows down the rest of Crumb.
+const CloudTestPage = React.lazy(() => import('./CloudTestPage'));
 import { syncReminders, startReminderRefresh } from './notify';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
@@ -221,6 +223,7 @@ export default function App() {
         <Route path="/backup" element={<BackupPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/cloud-test" element={<React.Suspense fallback={null}><CloudTestPage /></React.Suspense>} />
         <Route
           path="/todo"
           element={
