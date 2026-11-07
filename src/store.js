@@ -110,3 +110,85 @@ export function dropNote(notes, ref) {
   if (i < 0) return notes;
   return notes.filter((_, j) => j !== i);
 }
+
+/* ---------- Permanent ID tags for hand-added Itinerary stops (Nov 6 2026) ----------
+   Very old hand-added stops (visitData) have no `id`, so they were tracked by their position in the
+   list ("m-4"). This gives each one a tag once, and moves its per-day marks (checked off, removed for
+   the day, hidden on the Calendar, locked / moved time, visit length) from "m-<position>" to the new
+   "m-<tag>" — only on that stop's own day. Stops that already have a tag are never touched.
+   Runs once when Crumb opens, before any screen reads the stops. Saves nothing if there's nothing to do. */
+const VISITS_KEY = 'visitData';
+const STOP_LIST_MAPS = ['crumb_itinerary_done', 'crumb_itinerary_removed', 'crumb_calendar_hidden']; // { date: [key] }
+const STOP_VALUE_MAPS = ['crumb_itinerary_locks', 'crumb_itinerary_times', 'crumb_itinerary_lengths']; // { date: { key: value } }
+
+export function newStopId() {
+  return newNoteId().replace(/^n-/, 's-');
+}
+
+function visitList(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === 'object') return Object.values(value).flat().filter((v) => v && typeof v === 'object');
+  return [];
+}
+
+export function upgradeStopIds() {
+  const raw = readSaved(VISITS_KEY, null);
+  if (raw == null) return 0;
+  const visits = visitList(raw);
+  const taggedIds = new Set(visits.filter((v) => v && v.id).map((v) => String(v.id)));
+  const renames = []; // { date, from, to }
+  const next = visits.map((v, i) => {
+    if (!v || typeof v !== 'object' || v.id) return v;
+    const id = newStopId();
+    // "m-<position>" is only safe to move if no tagged stop uses that same text as its tag
+    if (!taggedIds.has(String(i))) renames.push({ date: v.date, from: `m-${i}`, to: `m-${id}` });
+    return { ...v, id };
+  });
+  if (next.every((v, i) => v === visits[i])) return 0; // every stop already tagged: nothing saved
+
+  // Work out every change first, then save them together.
+  const writes = [[VISITS_KEY, next]];
+  STOP_LIST_MAPS.forEach((key) => {
+    const m = readSaved(key, null);
+    if (!m || typeof m !== 'object') return;
+    let changed = false;
+    renames.forEach(({ date, from, to }) => {
+      if (Array.isArray(m[date]) && m[date].includes(from)) {
+        m[date] = m[date].map((k) => (k === from ? to : k));
+        changed = true;
+      }
+    });
+    if (changed) writes.push([key, m]);
+  });
+  STOP_VALUE_MAPS.forEach((key) => {
+    const m = readSaved(key, null);
+    if (!m || typeof m !== 'object') return;
+    let changed = false;
+    renames.forEach(({ date, from, to }) => {
+      const day = m[date];
+      if (day && typeof day === 'object' && from in day) {
+        const { [from]: value, ...rest } = day;
+        m[date] = { ...rest, [to]: value };
+        changed = true;
+      }
+    });
+    if (changed) writes.push([key, m]);
+  });
+
+  // All or nothing: if any save fails, put back what was there.
+  const before = writes.map(([key]) => [key, localStorage.getItem(key)]);
+  try {
+    writes.forEach(([key, value]) => localStorage.setItem(key, JSON.stringify(value)));
+  } catch {
+    before.forEach(([key, value]) => {
+      try {
+        if (value == null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+      } catch {
+        /* the previous data fit before */
+      }
+    });
+    return 0;
+  }
+  return visits.filter((v) => v && typeof v === 'object' && !v.id).length; // how many stops got a tag
+}

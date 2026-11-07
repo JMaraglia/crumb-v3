@@ -16,7 +16,7 @@ import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 import { syncReminders, startReminderRefresh } from './notify';
-import { readSaved, writeSaved, withNoteIds, changeNote, dropNote, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
+import { readSaved, writeSaved, withNoteIds, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
 function usePersistedState(key, initialValue) {
@@ -156,6 +156,9 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
 }
 
 export default function App() {
+  // One-time: very old hand-added Itinerary stops get a permanent ID tag. Runs before any screen
+  // reads the stops (so nothing on screen holds an untagged copy). Saves nothing when all are tagged.
+  React.useState(() => upgradeStopIds());
   // Persisted contacts, prospects, and itinerary
   const [contacts, setContactsRaw] = usePersistedState(CUSTOMERS_KEY, [
     {
