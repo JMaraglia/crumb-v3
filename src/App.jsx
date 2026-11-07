@@ -16,7 +16,7 @@ import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 import { syncReminders, startReminderRefresh } from './notify';
-import { readSaved, writeSaved, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
+import { readSaved, writeSaved, withNoteIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
 function usePersistedState(key, initialValue) {
@@ -124,7 +124,8 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
       prev.map(x => {
         if (x.id === itemId) {
           const notes = [...x.notes];
-          if (index !== null) notes[index] = note;
+          // Editing keeps the note's permanent ID tag
+          if (index !== null) notes[index] = notes[index] && notes[index].id && !note.id ? { ...note, id: notes[index].id } : note;
           else notes.push(note);
           return { ...x, notes };
         }
@@ -160,7 +161,7 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
 
 export default function App() {
   // Persisted contacts, prospects, and itinerary
-  const [contacts, setContacts] = usePersistedState(CUSTOMERS_KEY, [
+  const [contacts, setContactsRaw] = usePersistedState(CUSTOMERS_KEY, [
     {
       id: 1,
       accountNumber: '100123456',
@@ -182,9 +183,20 @@ export default function App() {
   // Every prospect stage change is quietly logged on the prospect (stageHistory: [{ from, to, at }])
   // for a future Scoreboard. Nothing on screen changes.
   const setProspects = React.useCallback(
-    (update) => setProspectsRaw((prev) => withStageHistory(prev, typeof update === 'function' ? update(prev) : update)),
+    (update) => setProspectsRaw((prev) => withNoteIds(withStageHistory(prev, typeof update === 'function' ? update(prev) : update))),
     [setProspectsRaw]
   );
+  // Every note gets a permanent ID tag when saved (store.js → withNoteIds). Nothing on screen changes.
+  const setContacts = React.useCallback(
+    (update) => setContactsRaw((prev) => withNoteIds(typeof update === 'function' ? update(prev) : update)),
+    [setContactsRaw]
+  );
+  // One-time upgrade: notes saved before Nov 6 get their tag. Does nothing (and saves nothing) once
+  // every note has one, or when nothing has been saved yet.
+  React.useEffect(() => {
+    if (readSaved(CUSTOMERS_KEY, null)) setContactsRaw((prev) => withNoteIds(prev));
+    if (readSaved(PROSPECTS_KEY, null)) setProspectsRaw((prev) => withNoteIds(prev));
+  }, [setContactsRaw, setProspectsRaw]);
   const [itinerary, setItinerary] = usePersistedState('visitData', {});
 
   // Notifications: keep the server's reminder list fresh — when Crumb opens, when your

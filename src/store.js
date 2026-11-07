@@ -53,3 +53,29 @@ const asList = (v) => (Array.isArray(v) ? v : []);
 export const loadCustomers = () => asList(readSaved(CUSTOMERS_KEY, []));
 export const loadProspects = () => asList(readSaved(PROSPECTS_KEY, []));
 export const loadAccounts = (type) => (type === 'customer' ? loadCustomers() : loadProspects());
+
+/* ---------- Permanent ID tags for notes (Nov 6 2026) ----------
+   Every note gets an `id` like "n-3f9a…" once, and keeps it forever (editing never changes it).
+   Needed so that, once Crumb syncs between devices, a change can say exactly which note it's for.
+   Nothing else about a note changes. */
+export function newNoteId() {
+  try {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return `n-${window.crypto.randomUUID()}`;
+  } catch {
+    /* fall through */
+  }
+  return `n-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// Same list back if every note already has a tag (so nothing is re-saved); otherwise a copy where
+// only the accounts with untagged notes — and only those notes — are changed.
+export function withNoteIds(accounts) {
+  if (!Array.isArray(accounts)) return accounts;
+  let changed = false;
+  const out = accounts.map((a) => {
+    if (!a || !Array.isArray(a.notes) || a.notes.every((n) => !n || typeof n !== 'object' || n.id)) return a;
+    changed = true;
+    return { ...a, notes: a.notes.map((n) => (n && typeof n === 'object' && !n.id ? { ...n, id: newNoteId() } : n)) };
+  });
+  return changed ? out : accounts;
+}
