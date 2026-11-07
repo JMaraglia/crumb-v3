@@ -195,9 +195,19 @@ async function pullOnce(sb, { force = false } = {}) {
   if (!Number.isNaN(t)) writeText(PULLED_KEY, new Date(t - 120000).toISOString());
   const keys = Object.keys(plan.writes);
   if (keys.length) window.dispatchEvent(new CustomEvent('crumb-pulled', { detail: { keys } }));
+  // S8: now that this device has the latest changes, it may update the account's reminder list
+  import('./notify')
+    .then((m) => {
+      const first = !firstPullDone;
+      firstPullDone = true;
+      m.markPulled();
+      if (first || keys.length) m.syncReminders(true);
+    })
+    .catch(() => {});
   return { changed: keys.length, skipped: plan.skipped };
 }
 
+let firstPullDone = false;
 let pulling = null;
 export function pullNow({ quiet = false } = {}) {
   if (pulling) return pulling;

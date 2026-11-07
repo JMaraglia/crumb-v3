@@ -19,7 +19,34 @@ import { staleAccounts, staleDays } from './lastContact';
 import { loadObject, saveQuiet, readText, writeText, NOTIFY_KEY, PUSH_DEVICE_KEY } from './store';
 import { loadCustomers, loadProspects, loadEvents, loadTodos, loadStops, loadDayMap, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
 
+import { isRealSynced, projectRef } from './syncMode';
+
 // Saved through store.js: NOTIFY_KEY (settings), PUSH_DEVICE_KEY (this phone's ID, never backed up)
+
+// Sync step S8: a device that syncs your data files its reminders under your ACCOUNT (with your sign-in),
+// so your iPhone and iPad never both send the same reminder twice.
+//   undefined = this device isn't syncing: its own reminders, as always
+//   null      = syncing but not signed in right now: leave the account's reminders as they are
+//   '…'       = the sign-in to send with
+function accountToken() {
+  if (!isRealSynced()) return undefined;
+  try {
+    const v = JSON.parse(localStorage.getItem(`sb-${projectRef()}-auth-token`) || 'null');
+    return (v && v.access_token) || null;
+  } catch {
+    return null;
+  }
+}
+const withAccount = (body) => {
+  const token = accountToken();
+  return token ? { ...body, token } : body;
+};
+// A syncing device waits until it has brought down the latest changes before updating the reminder list,
+// so a phone that's been in a drawer can't send out-of-date reminders.
+let pulledThisSession = false;
+export function markPulled() {
+  pulledThisSession = true;
+}
 const DAYS_AHEAD = 7;
 
 export const DEFAULT_NOTIFY = {
@@ -275,7 +302,8 @@ export async function enableNotifications() {
     (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(keyRes.publicKey) }));
   const settings = { ...loadNotifySettings(), enabled: true };
   saveNotifySettings(settings);
-  await post('/api/push-sync', { deviceId: deviceId(), subscription: subscription.toJSON(), notifications: buildReminders(settings) });
+  if (accountToken() === null) throw new Error('Sign in first (Settings → Account), then turn notifications on.');
+  await post('/api/push-sync', withAccount({ deviceId: deviceId(), subscription: subscription.toJSON(), notifications: buildReminders(settings) }));
   return settings;
 }
 
@@ -289,12 +317,12 @@ export async function disableNotifications() {
   } catch {
     /* ignore */
   }
-  await post('/api/push-sync', { deviceId: deviceId(), off: true }).catch(() => {});
+  await post('/api/push-sync', withAccount({ deviceId: deviceId(), off: true })).catch(() => {});
   return settings;
 }
 
 export async function sendTestNotification() {
-  return post('/api/push-test', { deviceId: deviceId() });
+  return post('/api/push-test', withAccount({ deviceId: deviceId() }));
 }
 
 // Quietly keep the server's reminder list up to date (on open, and when leaving the app).
@@ -303,6 +331,9 @@ let lastSent = ''; // the list last sent successfully (skip sending the same thi
 export async function syncReminders(force = false) {
   const settings = loadNotifySettings();
   if (!settings.enabled || !pushSupport().supported || Notification.permission !== 'granted') return;
+  const token = accountToken();
+  if (token === null) return; // syncing device, nobody signed in: leave the account's reminders alone
+  if (token && !pulledThisSession) return; // wait for the latest changes first (then this runs again)
   if (!force && Date.now() - lastSync < 60 * 1000) return;
   const notifications = buildReminders(settings);
   const sig = JSON.stringify(notifications);
@@ -312,7 +343,7 @@ export async function syncReminders(force = false) {
     const reg = await navigator.serviceWorker.getRegistration('/');
     const sub = reg && (await reg.pushManager.getSubscription());
     if (!sub) return;
-    await post('/api/push-sync', { deviceId: deviceId(), subscription: sub.toJSON(), notifications });
+    await post('/api/push-sync', withAccount({ deviceId: deviceId(), subscription: sub.toJSON(), notifications }));
     lastSent = sig;
   } catch {
     lastSync = 0; // didn't go through: try again on the next chance

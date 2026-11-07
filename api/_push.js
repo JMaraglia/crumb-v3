@@ -112,3 +112,44 @@ export function readJsonBody(req) {
     return {};
   }
 }
+
+/* ---------- Sync step S8 (Nov 7 2026): reminders filed under YOUR ACCOUNT, not the phone ----------
+   A signed-in device that syncs your data sends its reminder list with your sign-in. The server keeps
+   ONE list per account (the newest one sent) and every device you switched notifications on for.
+   Each reminder is CLAIMED per device before sending (Redis SET NX), so it goes out once per device:
+   never twice, even if two timers overlap or two devices send the same list. */
+
+// Who is this? Asks Supabase to check the sign-in (no secret key needed: the user's own token).
+export async function verifyUser(token) {
+  const base = String(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+  const key = String(process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  if (!base || !key || !token || typeof token !== 'string') return null;
+  const res = await fetch(`${base}/auth/v1/user`, { headers: { apikey: key, Authorization: `Bearer ${token}` } });
+  if (!res.ok) return null;
+  const user = await res.json().catch(() => null);
+  return user && typeof user.id === 'string' && /^[0-9a-f-]{36}$/.test(user.id) ? user.id : null;
+}
+
+const userKey = (uid) => `crumb:user:${uid}`;
+export async function loadUser(uid) {
+  const raw = await store()('GET', userKey(uid));
+  return raw ? JSON.parse(raw) : null;
+}
+export async function saveUser(uid, data) {
+  const run = store();
+  await run('SET', userKey(uid), JSON.stringify(data));
+  await run('SADD', 'crumb:users', uid);
+}
+export async function allUsers() {
+  return (await store()('SMEMBERS', 'crumb:users')) || [];
+}
+// Claim one reminder for one device. true = this call won it and should send; false = already sent/sending.
+export async function claimReminder(uid, reminderId, deviceId) {
+  const k = `crumb:sent:${uid}:${deviceId}:${reminderId}`.slice(0, 400);
+  const r = await store()('SET', k, '1', 'NX', 'EX', String(9 * 24 * 3600));
+  return r === 'OK';
+}
+// If a send failed (not "gone"), let the next tick try again.
+export async function releaseReminder(uid, reminderId, deviceId) {
+  await store()('DEL', `crumb:sent:${uid}:${deviceId}:${reminderId}`.slice(0, 400));
+}
