@@ -16,12 +16,20 @@ const KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.
 export const cloudReady = Boolean(URL && KEY);
 
 let client = null;
+// If the address or key in Vercel is wrong, the cloud library refuses to start. Then Crumb shows what's
+// wrong (cloudProblem) instead of breaking the screen, and nothing syncs.
+export let cloudProblem = '';
 export function cloud() {
   if (!cloudReady) return null;
-  if (!client) {
-    client = createClient(URL, KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-    });
+  if (!client && !cloudProblem) {
+    try {
+      client = createClient(URL, KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      });
+    } catch (err) {
+      cloudProblem = String((err && err.message) || err || 'The cloud settings in this version look wrong.');
+      client = null;
+    }
   }
   return client;
 }

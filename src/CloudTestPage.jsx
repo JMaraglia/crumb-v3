@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
-import { cloud, cloudReady, cloudProjectRef } from './cloud';
+import { cloud, cloudReady, cloudProjectRef, cloudProblem } from './cloud';
 import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox, stuckChanges } from './outbox';
 import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt, lastCheckedAt, lastPullNote, pullNow, joinFromCloud } from './syncSend';
 import { syncBlockReason, isTestProject, isRealSynced, setPaused, BLOCK_TEXT } from './syncMode';
@@ -242,9 +242,14 @@ export default function CloudTestPage() {
           </div>
         )}
 
+        {cloudReady && cloudProblem && (
+          <div className="cl-card cl-err">
+            The cloud address or key in this version looks wrong, so nothing can sync: {cloudProblem}
+          </div>
+        )}
         {cloudReady && loading && <div className="cl-card cl-text">Checking sign-in…</div>}
 
-        {cloudReady && !loading && !session && (
+        {cloudReady && !cloudProblem && !loading && !session && (
           <div className="cl-card">
             <div className="cl-status">
               <IoCloudOutline className="cl-status-icon" /> Not signed in
@@ -280,7 +285,7 @@ export default function CloudTestPage() {
           </div>
         )}
 
-        {cloudReady && !loading && session && (
+        {cloudReady && !cloudProblem && !loading && session && (
           <div className="cl-card">
             <div className="cl-status is-on">
               <IoCloudDoneOutline className="cl-status-icon" /> Signed in
@@ -307,7 +312,7 @@ export default function CloudTestPage() {
           </div>
         )}
 
-        {cloudReady && !testProject && (
+        {cloudReady && !cloudProblem && !testProject && (
           <>
             <div className="cl-section">Your Data</div>
             {testCopy && <div className="cl-card cl-err">{BLOCK_TEXT['test-copy-locked']}</div>}
