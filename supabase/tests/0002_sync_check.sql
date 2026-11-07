@@ -1,4 +1,6 @@
 -- Crumb sync check (step S1). Paste into Supabase → SQL Editor → Run, on crumb-test, after 0002.
+-- NOTE (Nov 7, migration 0003): "latest change wins" replaced Needs Review, so the Needs Review checks here (4 onward) now fail ON PURPOSE.
+-- After 0003, use supabase/tests/0003_latest_wins_check.sql instead.
 -- Pretends to be two people and two devices, tries every sync situation, then UNDOES EVERYTHING.
 -- The result always shows as an error box ON PURPOSE:
 --     "ALL 20 SYNC CHECKS PASSED (everything undone)"   ← good
