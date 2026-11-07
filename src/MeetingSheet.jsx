@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { TIME_OPTIONS, timeLabel } from './AccountViews';
 import { keyOf, addDaysToKey, fromKey, MEETING_COLOR } from './schedule';
-import { loadEvents, saveEvents, loadCalendarSettings } from './store';
+import { loadEvents, saveEvents, loadCalendarSettings, stampOf } from './store';
 import './MeetingSheet.css';
 
 const LENGTHS = [
@@ -66,7 +66,7 @@ export default function MeetingSheet({ account, presetNotes = '', existing = nul
     const note = {
       text: notes.trim() || `Meeting ${niceMeeting(day, start)}`,
       category: 'Meeting',
-      timestamp: new Date().toLocaleString(),
+      timestamp: stampOf(),
       meeting: { date: day, start, eventId: event.id },
     };
     onSaved(`Meeting added to Calendar and Itinerary: ${niceMeeting(day, start)}`, note);

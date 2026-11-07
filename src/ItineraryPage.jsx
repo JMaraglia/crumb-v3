@@ -53,6 +53,7 @@ import { planRoute, timeRoute } from './routePlan';
 import { collectTodoItems } from './todoItems';
 import {
   changeNote,
+  stampOf,
   readText,
   writeText,
   MAPS_APP_KEY,
@@ -511,7 +512,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const saveQuickNote = (stop) => {
     const text = noteText.trim();
     if (!text || !stop.accountId) return;
-    const note = { text, category: 'Visit', timestamp: new Date().toLocaleString() };
+    const note = { text, category: 'Visit', timestamp: stampOf() };
     const add = (list) =>
       list.map((a) => (String(a.id) === String(stop.accountId) ? { ...a, notes: [...(a.notes || []), note] } : a));
     if (stop.accountType === 'prospect' && setProspects) setProspects(add);

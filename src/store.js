@@ -298,3 +298,56 @@ export const loadArray = (key) => asList(readSaved(key, []));
 
 // Save a preference quietly (if the phone is full, it just isn't remembered — no banner).
 export const saveQuiet = (key, value) => writeText(key, JSON.stringify(value));
+
+/* ---------- Standard dates (Nov 6 2026) ----------
+   Note times used to be saved as phone text ("11/6/2026, 8:15:00 PM"). Now they're saved in the
+   standard format with the local time zone ("2026-11-06T20:15:00-05:00"), which every computer and
+   database reads the same way. Screens show them exactly as before. */
+const pad2 = (n) => String(n).padStart(2, '0');
+export function stampOf(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const off = -d.getTimezoneOffset(); // minutes east of UTC
+  const sign = off >= 0 ? '+' : '-';
+  const a = Math.abs(off);
+  return (
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` +
+    `T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}` +
+    `${sign}${pad2(Math.floor(a / 60))}:${pad2(a % 60)}`
+  );
+}
+const isStandard = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s);
+
+// Old phone-text time → standard, only if it reads back as exactly the same moment. Else null (leave it).
+function standardFrom(text) {
+  if (typeof text !== 'string' || !text.trim() || isStandard(text)) return null;
+  const t = Date.parse(text);
+  if (!t) return null;
+  const iso = stampOf(new Date(t));
+  return Date.parse(iso) === t ? iso : null;
+}
+
+// One-time conversion of old note times (and "converted on" dates). The original text is kept
+// alongside (timestampText / convertedAtText). Same list back if there's nothing to convert.
+export function withStandardDates(accounts) {
+  if (!Array.isArray(accounts)) return accounts;
+  let changed = false;
+  const out = accounts.map((a) => {
+    if (!a || typeof a !== 'object') return a;
+    let acct = a;
+    const conv = standardFrom(a.convertedAt);
+    if (conv) acct = { ...acct, convertedAt: conv, convertedAtText: a.convertedAt };
+    if (Array.isArray(a.notes)) {
+      let notesChanged = false;
+      const notes = a.notes.map((n) => {
+        const iso = n && typeof n === 'object' ? standardFrom(n.timestamp) : null;
+        if (!iso) return n;
+        notesChanged = true;
+        return { ...n, timestamp: iso, timestampText: n.timestamp };
+      });
+      if (notesChanged) acct = { ...acct, notes };
+    }
+    if (acct !== a) changed = true;
+    return acct;
+  });
+  return changed ? out : accounts;
+}

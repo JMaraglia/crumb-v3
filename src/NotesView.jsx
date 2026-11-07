@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { isCheckable, isNoteDone } from './noteStatus';
 import MeetingSheet, { niceMeeting } from './MeetingSheet';
 import SwipeRow from './SwipeRow';
+import { stampOf } from './store';
 import './NotesView.css';
 
 export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Contacted', 'Background', 'Meeting'];
@@ -163,7 +164,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
 
   const add = () => {
     if (!text.trim()) return;
-    const note = { text: text.trim(), category, timestamp: new Date().toLocaleString() };
+    const note = { text: text.trim(), category, timestamp: stampOf() };
     if (isCheckable(category)) {
       note.done = false; // Follow-ups and Samples get a checkbox
       if (due) note.due = due; // shows on the To-Do list with this date
@@ -186,7 +187,10 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     // Changed the date/time (e.g. a note from yesterday typed in today)
     if (editing.when && editing.when !== editing.when0) {
       const t = new Date(editing.when);
-      if (!Number.isNaN(t.getTime())) updated.timestamp = t.toLocaleString();
+      if (!Number.isNaN(t.getTime())) {
+        updated.timestamp = stampOf(t);
+        delete updated.timestampText; // the old text no longer matches
+      }
     }
     if (isCheckable(editing.category)) {
       if (editing.due) updated.due = editing.due;

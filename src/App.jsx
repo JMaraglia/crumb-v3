@@ -16,7 +16,7 @@ import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 import { syncReminders, startReminderRefresh } from './notify';
-import { readSaved, writeSaved, withNoteIds, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
+import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
 function usePersistedState(key, initialValue) {
@@ -193,8 +193,9 @@ export default function App() {
   // One-time upgrade: notes saved before Nov 6 get their tag. Does nothing (and saves nothing) once
   // every note has one, or when nothing has been saved yet.
   React.useEffect(() => {
-    if (readSaved(CUSTOMERS_KEY, null)) setContactsRaw((prev) => withNoteIds(prev));
-    if (readSaved(PROSPECTS_KEY, null)) setProspectsRaw((prev) => withNoteIds(prev));
+    // (and old note times are converted to the standard format, original text kept — store.js)
+    if (readSaved(CUSTOMERS_KEY, null)) setContactsRaw((prev) => withNoteIds(withStandardDates(prev)));
+    if (readSaved(PROSPECTS_KEY, null)) setProspectsRaw((prev) => withNoteIds(withStandardDates(prev)));
   }, [setContactsRaw, setProspectsRaw]);
 
   // Notifications: keep the server's reminder list fresh — when Crumb opens, when your

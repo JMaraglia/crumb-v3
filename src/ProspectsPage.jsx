@@ -5,6 +5,7 @@ import React from 'react';
 import { AccountList, AccountDetail, AccountEdit } from './AccountViews';
 import { movePhotos, photoKey } from './photos';
 import {
+  stampOf,
   loadEvents,
   saveEvents,
   loadTodos,
@@ -51,7 +52,7 @@ function convertProspect(prospect, accountNumber, contacts, setContacts, setPros
     visitDays: deliveryDays || [], // prospects kept visit days in deliveryDays
     deliveryDays: [],              // real delivery days: set these on the customer
     convertedFromProspect: true,
-    convertedAt: new Date().toLocaleString(),
+    convertedAt: stampOf(),
   };
   setContacts((prev) => [...prev, customer]);
   setProspects((prev) => prev.filter((p) => p.id !== prospect.id));
