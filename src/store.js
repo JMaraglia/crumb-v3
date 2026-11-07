@@ -36,15 +36,40 @@ export function readSaved(key, fallback, { keepUnreadable = false, keepNull = fa
   }
 }
 
+/* ---------- "Something was saved" listeners (sync step S2, Nov 7 2026) ----------
+   After a save has FINISHED, listeners are told what the item looked like before and after. Used by the
+   sync outbox (outbox.js) to note what changed. A listener can never affect or undo the save: it runs
+   afterwards, and any error inside it is ignored. With no listener (the normal case), nothing extra happens. */
+const saveListeners = new Set();
+export function onSaved(fn) {
+  saveListeners.add(fn);
+  return () => saveListeners.delete(fn);
+}
+const beforeOf = (key) => (saveListeners.size ? readText(key) : null);
+function tellSaved(key, before, after) {
+  if (!saveListeners.size || before === after) return;
+  saveListeners.forEach((fn) => {
+    try {
+      fn(key, before, after);
+    } catch {
+      /* never let a listener disturb saving */
+    }
+  });
+}
+
 // Save a value. Returns true if saved; on failure tells the app (banner) and returns false.
 export function writeSaved(key, value) {
+  const before = beforeOf(key);
+  let text;
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
+    text = JSON.stringify(value);
+    localStorage.setItem(key, text);
   } catch {
     window.dispatchEvent(new Event('crumb-save-failed')); // shows the "couldn't save" banner
     return false;
   }
+  tellSaved(key, before, text);
+  return true;
 }
 
 const asList = (v) => (Array.isArray(v) ? v : []);
@@ -179,6 +204,7 @@ export function upgradeStopIds() {
   const before = writes.map(([key]) => [key, localStorage.getItem(key)]);
   try {
     writes.forEach(([key, value]) => localStorage.setItem(key, JSON.stringify(value)));
+    before.forEach(([key, old]) => tellSaved(key, old, localStorage.getItem(key)));
   } catch {
     before.forEach(([key, value]) => {
       try {
@@ -245,12 +271,15 @@ export function snapshotSaved(keys) {
 }
 export function restoreSaved(snap) {
   Object.entries(snap).forEach(([k, v]) => {
+    const before = beforeOf(k);
     try {
       if (v == null) localStorage.removeItem(k);
       else localStorage.setItem(k, v);
     } catch {
       window.dispatchEvent(new Event('crumb-save-failed'));
+      return;
     }
+    tellSaved(k, before, v);
   });
 }
 
@@ -281,12 +310,14 @@ export function readText(key) {
   }
 }
 export function writeText(key, value) {
+  const before = beforeOf(key);
   try {
     localStorage.setItem(key, String(value));
-    return true;
   } catch {
     return false;
   }
+  tellSaved(key, before, String(value));
+  return true;
 }
 
 // A saved object (always an object) / list (always a list).

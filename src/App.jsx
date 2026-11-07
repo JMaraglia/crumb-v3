@@ -17,7 +17,10 @@ import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 // Loaded only when Cloud Test is opened, so the cloud library never slows down the rest of Crumb.
 const CloudTestPage = React.lazy(() => import('./CloudTestPage'));
+// Sync step S2: if "Record changes on this device" is switched on (Cloud Test), start noting changes.
+startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
+import { startRecordingIfOn } from './outbox';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).

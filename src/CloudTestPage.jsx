@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
 import { cloud, cloudReady, cloudProjectRef } from './cloud';
+import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox } from './outbox';
 import './CloudTestPage.css';
 
 const plainError = (err) => {
@@ -20,6 +21,19 @@ const plainError = (err) => {
   return m || 'Something went wrong.';
 };
 
+// One waiting change in plain words: "Customer changed", "Note added", "Stop removed"…
+const WHAT = { accounts: 'Account', notes: 'Note', events: 'Calendar event', stops: 'Itinerary stop', todos: 'To-do', day_marks: 'Itinerary/Call Sheet marks', settings: 'Setting' };
+function describe(c) {
+  const what = c.table === 'accounts' && c.cols && c.cols.kind ? (c.cols.kind === 'customer' ? 'Customer' : 'Prospect') : WHAT[c.table] || c.table;
+  const name = (c.next && (c.next.name || c.next.title || c.next.text)) || (c.base && (c.base.name || c.base.title || c.base.text)) || '';
+  const short = String(name).slice(0, 40);
+  const verb = c.type === 'delete' ? 'removed' : c.type === 'convert' ? 'converted to customer' : c.base == null ? 'added' : 'changed';
+  const dk = String(c.id).split('|')[1] || '';
+  const dd = /^\d{4}-\d{2}-\d{2}$/.test(dk) ? new Date(`${dk}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : dk;
+  const day = c.table === 'day_marks' ? ` (${dd})` : c.table === 'settings' ? ` (${c.id})` : '';
+  return `${what} ${verb}${short ? `: ${short}` : ''}${day}`;
+}
+
 export default function CloudTestPage() {
   const navigate = useNavigate();
   const sb = cloud();
@@ -31,6 +45,28 @@ export default function CloudTestPage() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [check, setCheck] = useState(null); // { ok, lines: [] }
+  const [recording, setRec] = useState(isRecording);
+  const [waiting, setWaiting] = useState(null);
+  const [recent, setRecent] = useState([]);
+
+  // Sync step S2: changes noted on this device (nothing is sent yet)
+  useEffect(() => {
+    const refresh = () => {
+      pendingCount().then(setWaiting);
+      pendingChanges().then((rows) =>
+        setRecent(rows.sort((x, y) => String(y.at).localeCompare(String(x.at))).slice(0, 8))
+      );
+    };
+    refresh();
+    window.addEventListener('crumb-outbox-changed', refresh);
+    return () => window.removeEventListener('crumb-outbox-changed', refresh);
+  }, []);
+  const toggleRecording = () => {
+    const on = !recording;
+    setRecording(on);
+    setRec(on);
+    if (!on) clearOutbox();
+  };
 
   useEffect(() => {
     if (!sb) return undefined;
@@ -198,6 +234,36 @@ export default function CloudTestPage() {
             )}
           </div>
         )}
+
+        <div className="cl-section">Sync Test</div>
+        <div className="cl-card">
+          <button className="cl-switch-row" onClick={toggleRecording} aria-pressed={recording}>
+            <span className="cl-switch-text">
+              <span className="cl-switch-label">Record changes on this device</span>
+              <span className="cl-switch-sub">Test only. Notes what you change; nothing is sent anywhere yet.</span>
+            </span>
+            <span className={`cl-switch ${recording ? 'is-on' : ''}`}>
+              <span className="cl-switch-knob" />
+            </span>
+          </button>
+          {recording && (
+            <div className="cl-outbox">
+              <div className="cl-outbox-count">
+                Changes waiting: <strong>{waiting == null ? '…' : waiting}</strong>
+              </div>
+              {recent.length > 0 && (
+                <ul className="cl-outbox-list">
+                  {recent.map((c) => (
+                    <li key={c.key}>
+                      <span className="cl-outbox-what">{describe(c)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="cl-hint">Turning this off clears the list.</div>
+            </div>
+          )}
+        </div>
 
         {busy && <div className="cl-busy">{busy}</div>}
         {msg && <div className="cl-msg">{msg}</div>}
