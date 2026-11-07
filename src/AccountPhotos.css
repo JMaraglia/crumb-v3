@@ -216,3 +216,15 @@
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* A photo whose saved copy can't be read */
+.ap-thumb-broken {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #8e8e93;
+  background: #f2f2f7;
+}

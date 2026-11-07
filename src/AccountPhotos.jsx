@@ -7,6 +7,28 @@ import { listPhotos, addPhotos, deletePhoto, photoKey, movePhotos } from './phot
 import { shareFile, safeFileName } from './share';
 import './AccountPhotos.css';
 
+// iPhone sometimes won't show a photo straight from its storage (a blue "?" instead of the picture).
+// So each photo is copied into memory first, and the copy is what's shown, opened and shared.
+// Nothing about the saved photo changes.
+function readBytes(blob) {
+  if (blob && typeof blob.arrayBuffer === 'function') return blob.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsArrayBuffer(blob);
+  });
+}
+async function inMemory(photo) {
+  try {
+    const bytes = await readBytes(photo.blob);
+    if (!bytes || !bytes.byteLength) throw new Error('empty');
+    return { ...photo, blob: new Blob([bytes], { type: 'image/jpeg' }) };
+  } catch {
+    return { ...photo, broken: true };
+  }
+}
+
 const niceDate = (iso) => {
   const d = new Date(iso);
   return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -43,6 +65,7 @@ function Thumb({ photo, onOpen, onHold }) {
     if (hold.current && !hold.current.fired) clearTimeout(hold.current.timer);
   };
   useEffect(() => {
+    if (photo.broken) return undefined;
     const u = URL.createObjectURL(photo.blob);
     setUrl(u);
     return () => URL.revokeObjectURL(u);
@@ -64,6 +87,7 @@ function Thumb({ photo, onOpen, onHold }) {
       onContextMenu={(e) => e.preventDefault()}
     >
       {url && <img src={url} alt="" />}
+      {photo.broken && <span className="ap-thumb-broken">Can't open</span>}
       <span className="ap-thumb-date">{niceDate(photo.takenAt)}</span>
     </button>
   );
@@ -95,6 +119,7 @@ export default function AccountPhotos({ type, id, name }) {
   const load = () =>
     rescue()
       .then(() => listPhotos(key))
+      .then((rows) => Promise.all(rows.map(inMemory)))
       .then(setPhotos)
       .catch(() => setMsg("Photos aren't available in this browser."));
   useEffect(() => {
@@ -106,7 +131,7 @@ export default function AccountPhotos({ type, id, name }) {
   }, [key]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || open.broken) return undefined;
     const u = URL.createObjectURL(open.blob);
     setOpenUrl(u);
     return () => URL.revokeObjectURL(u);
