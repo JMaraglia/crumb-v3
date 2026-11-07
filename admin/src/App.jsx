@@ -127,9 +127,75 @@ function Overview({ data, onSignOut, email }) {
   );
 }
 
+// ---------- delete account (guardrails: counts first, type the email, server re-checks everything) ----------
+function DeleteSheet({ email, onClose, onDeleted }) {
+  const [fp, setFp] = useState(null);
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    let live = true;
+    cloud().rpc('admin_user_footprint', { p_email: email }).then(({ data, error }) => {
+      if (!live) return;
+      if (error) setMsg(plainError(error)); else setFp(data);
+    });
+    return () => { live = false; };
+  }, [email]);
+
+  const matches = typed.trim().toLowerCase() === String(email).toLowerCase();
+  const blocked = fp && (fp.is_self || fp.is_admin || !fp.found);
+  const items = fp ? [
+    ['accounts', 'customer or prospect', 'customers & prospects'], ['notes', 'note', 'notes'],
+    ['events', 'calendar event', 'calendar events'], ['stops', 'itinerary stop', 'itinerary stops'],
+    ['todos', 'to-do', 'to-dos'], ['photos', 'photo', 'photos'],
+  ].filter(([k]) => fp[k] > 0).map(([k, one, many]) => `${fp[k]} ${fp[k] === 1 ? one : many}`) : [];
+
+  const del = async () => {
+    if (!matches || busy) return;
+    setBusy(true); setMsg('');
+    const { data, error } = await cloud().rpc('admin_delete_user', { p_email: email, p_confirm: typed });
+    setBusy(false);
+    if (error) { setMsg(plainError(error)); return; }
+    onDeleted(data);
+  };
+
+  return (
+    <div className="ad-sheet-back" onClick={busy ? undefined : onClose}>
+      <div className="ad-sheet" role="dialog" aria-modal="true" aria-labelledby="ad-del-title" onClick={(e) => e.stopPropagation()}>
+        <h2 id="ad-del-title" className="ad-sheet-title">Delete Account?</h2>
+        <p className="ad-sheet-email">{email}</p>
+        {!fp && !msg && <p className="ad-muted">Checking what this account has…</p>}
+        {fp && blocked && <p className="ad-error">{!fp.found ? 'This account no longer exists.' : fp.is_self ? "You can't delete your own account here." : "Admins can't be deleted here."}</p>}
+        {fp && !blocked && (
+          <>
+            <div className={`ad-sheet-box ${items.length ? 'is-warn' : ''}`}>
+              {items.length
+                ? <><b>This also deletes their cloud data:</b><ul>{items.map((t) => <li key={t}>{t}</li>)}</ul></>
+                : <b>This account has no data in the cloud.</b>}
+            </div>
+            <p className="ad-muted ad-small">This can't be undone. Any phone they use keeps its own copy until the app is removed.</p>
+            <label className="ad-field">
+              <span>Type the email to confirm</span>
+              <input type="email" autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={email} />
+            </label>
+            <button className="ad-btn ad-btn-danger" type="button" disabled={!matches || busy} onClick={del}>{busy ? 'Deleting…' : 'Delete Account'}</button>
+          </>
+        )}
+        {msg && <p className="ad-error" role="alert">{msg}</p>}
+        <button className="ad-link-btn ad-sheet-cancel" type="button" onClick={onClose} disabled={busy}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+const ACTION_WORDS = { delete_account: 'Deleted' };
+
 // ---------- users ----------
-function Users({ users }) {
+function Users({ users, log, onChanged }) {
   const [q, setQ] = useState('');
+  const [deleting, setDeleting] = useState('');
+  const [done, setDone] = useState('');
   const [filter, setFilter] = useState('all');
   const active = (u) => u.last_change_at && Date.now() - new Date(u.last_change_at).getTime() < 7 * DAY;
   const shown = users
@@ -139,6 +205,7 @@ function Users({ users }) {
   return (
     <>
       <h1 className="ad-h1">Users</h1>
+      {done && <p className="ad-done" role="status">{done}</p>}
       <label className="ad-search">
         {Icon.search}
         <input type="search" placeholder="Search by email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search by email" />
@@ -164,11 +231,34 @@ function Users({ users }) {
               <div><span>Last change</span><b>{ago(u.last_change_at)}</b></div>
               <div><span>Devices</span><b>{u.devices_30d}</b></div>
             </div>
+            {!u.is_admin && <button type="button" className="ad-del-btn" onClick={() => { setDone(''); setDeleting(u.email); }}>Delete Account</button>}
           </div>
         ))}
         {shown.length === 0 && <p className="ad-muted">No one matches.</p>}
       </div>
       <p className="ad-muted ad-small ad-note">Counts and dates only. Admin never shows reps' customers, notes or photos.</p>
+
+      {log.length > 0 && (
+        <>
+          <h2 className="ad-h2">Recent admin actions</h2>
+          <div className="ad-card ad-rows">
+            {log.map((l, i) => (
+              <div className="ad-row ad-log" key={`${l.at}-${i}`}>
+                <span className="ad-row-label">{ACTION_WORDS[l.action] || l.action} {l.target_email}</span>
+                <span className="ad-row-value">{ago(l.at)}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {deleting && (
+        <DeleteSheet
+          email={deleting}
+          onClose={() => setDeleting('')}
+          onDeleted={(r) => { setDeleting(''); setDone(`Deleted ${r.email}.`); onChanged(); }}
+        />
+      )}
     </>
   );
 }
@@ -192,6 +282,7 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
+  const [log, setLog] = useState([]);
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -206,11 +297,12 @@ export default function App() {
       const { data: isAdmin, error: adminErr } = await sb.rpc('is_admin');
       if (adminErr) throw adminErr;
       if (!isAdmin) { setStage('notAdmin'); return; }
-      const [ov, us] = await Promise.all([sb.rpc('admin_overview'), sb.rpc('admin_users')]);
+      const [ov, us, lg] = await Promise.all([sb.rpc('admin_overview'), sb.rpc('admin_users'), sb.rpc('admin_log_recent', { p_limit: 10 })]);
       if (ov.error) throw ov.error;
       if (us.error) throw us.error;
       setOverview(ov.data);
       setUsers(us.data || []);
+      setLog(lg.error ? [] : (lg.data || [])); // before step 2's SQL is run, there is simply no log yet
       setMsg('');
       setStage('ready');
     } catch (err) {
@@ -276,7 +368,7 @@ export default function App() {
         </div>
         {msg && <p className="ad-error">{msg}</p>}
         {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} />}
-        {tab === 'users' && <Users users={users} />}
+        {tab === 'users' && <Users users={users} log={log} onChanged={load} />}
         {tab === 'health' && <ComingNext title="Platform Health" lines={['Database and last backup', 'Sync errors and stuck changes', 'Reminders and email service', 'Cost vs plan']} />}
         {tab === 'inbox' && <ComingNext title="Inbox" lines={['Tickets from Report A Problem', 'Suggestions from Make A Suggestion', 'Push alert to your phone for urgent tickets']} />}
       </main>
