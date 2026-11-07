@@ -237,3 +237,98 @@
   background: #ff3b30;
   color: #fff;
 }
+
+.bk-page .bk-sheet-go.is-blue,
+.bk-page .bk-sheet-go.is-blue:hover {
+  background: #0077cc;
+}
+
+.bk-sheet-title.is-ok,
+.bk-result.is-ok .bk-result-title {
+  color: #1e8e3e;
+}
+
+.bk-sheet-title.is-bad,
+.bk-result.is-bad .bk-result-title {
+  color: #b3261e;
+}
+
+/* Result of the last restore / undo */
+.bk-result {
+  margin-bottom: 14px;
+}
+
+.bk-result-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.bk-result .bk-counts {
+  margin-bottom: 14px;
+}
+
+.bk-problems {
+  margin: 4px 0 12px;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #b3261e;
+}
+
+/* Counts table */
+.bk-counts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 4px 0 6px;
+}
+
+.bk-counts th {
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #8e8e93;
+  padding: 4px 0 6px 8px;
+}
+
+.bk-counts td {
+  padding: 6px 0;
+  border-top: 1px solid #ececf0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-counts td:first-child {
+  text-align: left;
+  color: #3a3a3c;
+}
+
+.bk-counts td.is-diff {
+  color: #c26a00;
+  font-weight: 700;
+}
+
+.bk-sheet {
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+/* "Checking backup…" while working */
+.bk-busy {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bk-busy-box {
+  padding: 16px 22px;
+  border-radius: 14px;
+  background: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}

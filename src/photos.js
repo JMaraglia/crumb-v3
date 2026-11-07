@@ -126,19 +126,90 @@ async function dataUrlToBlob(dataUrl) {
   const res = await fetch(dataUrl);
   return res.blob();
 }
+// Every photo as text for the backup file. Photos that can't be read are NOT silently dropped:
+// they come back in `failed` (with the account key) so the backup screen can say so.
+// If the photo storage can't be opened at all, this throws.
 export async function photosForBackup() {
-  try {
-    const rows = await allPhotos();
-    return Promise.all(rows.map(async (p) => ({ ...p, blob: undefined, data: await blobToDataUrl(p.blob) })));
-  } catch {
-    return [];
+  const rows = await allPhotos();
+  const photos = [];
+  const failed = [];
+  for (const p of rows) {
+    try {
+      if (!(p.blob instanceof Blob) || !p.blob.size) throw new Error('empty');
+      photos.push({ ...p, blob: undefined, data: await blobToDataUrl(p.blob) });
+    } catch {
+      failed.push({ id: p.id, key: p.key });
+    }
   }
+  return { photos, failed };
 }
-// Adds the backup's photos (same id = replaced). Photos already on the phone are kept.
-export async function restorePhotos(list) {
-  for (const p of list || []) {
-    if (!p || !p.id || !p.data) continue;
-    const blob = await dataUrlToBlob(p.data);
-    await putPhoto({ id: p.id, key: p.key, takenAt: p.takenAt, w: p.w, h: p.h, blob });
-  }
+
+// Turn a backup photo back into a picture file AND make sure it actually opens as an image.
+// Rejects if the photo is damaged.
+export async function decodeBackupPhoto(p) {
+  if (!p || !p.id || typeof p.data !== 'string' || !p.data.startsWith('data:image')) throw new Error('bad photo');
+  const blob = await dataUrlToBlob(p.data);
+  if (!blob.size) throw new Error('empty photo');
+  await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      img.naturalWidth > 0 ? resolve() : reject(new Error('bad photo'));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('bad photo'));
+    };
+    img.src = url;
+  });
+  return { id: p.id, key: p.key, takenAt: p.takenAt, w: p.w, h: p.h, blob };
 }
+
+// Save many photos in ONE step: either all are saved or none are.
+export function putPhotosAll(records) {
+  if (!records.length) return Promise.resolve();
+  return tx('readwrite', (st) => records.forEach((r) => st.put(r)));
+}
+
+// Put the photo storage back the way it was before a restore (used if a restore fails part-way):
+// photos the restore added are removed; photos it replaced get their old version back.
+export function rollbackPhotos(addedIds, replacedRecords) {
+  return tx('readwrite', (st) => {
+    addedIds.forEach((id) => st.delete(id));
+    replacedRecords.forEach((r) => st.put(r));
+  });
+}
+
+export async function photoIds() {
+  return ((await tx('readonly', (st) => st.getAllKeys())) || []).map(String);
+}
+
+/* ---------- Safety copy (phone's data from just before a restore) ----------
+   Kept in its own small IndexedDB database — much more room than localStorage, and separate
+   from the photos so it can never get in their way. */
+const SAFETY_DB = 'crumb-safety';
+function safetyDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(SAFETY_DB, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains('copies')) req.result.createObjectStore('copies');
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function safetyTx(mode, fn) {
+  return safetyDb().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const t = db.transaction('copies', mode);
+        const out = fn(t.objectStore('copies'));
+        t.oncomplete = () => resolve(out && 'result' in out ? out.result : undefined);
+        t.onerror = () => reject(t.error);
+        t.onabort = () => reject(t.error);
+      })
+  );
+}
+export const saveSafetyCopy = (copy) => safetyTx('readwrite', (st) => st.put(copy, 'last'));
+export const loadSafetyCopy = () => safetyTx('readonly', (st) => st.get('last')).then((v) => v || null);
