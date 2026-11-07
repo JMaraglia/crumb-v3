@@ -239,6 +239,19 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
     return addDays(d, wd === 6 ? 2 : wd === 0 ? 1 : 1 - wd);
   };
   const weekStart = viewMode === 'Week' && weekDays === 5 ? mondayFor(viewStart) : viewStart;
+  // 5-day week: Saturday/Sunday aren't drawn, so a weekend with something on it gets a small tag
+  // ("Sat · 1 event"); tapping it opens that day.
+  const weekendTags =
+    viewMode === 'Week' && weekDays === 5
+      ? [5, 6]
+          .map((off) => {
+            const day = addDays(weekStart, off);
+            const key = dateKey(day);
+            const n = allEvents.filter((e) => e && e.date === key).length;
+            return n ? { day, key, n, name: off === 5 ? 'Sat' : 'Sun' } : null;
+          })
+          .filter(Boolean)
+      : [];
   const monthLabel =
     viewMode === 'Week'
       ? visibleRangeLabel(weekStart, weekDays)
@@ -273,6 +286,23 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
       {/* Month label */}
       <div className="cal-month-row">
         <div className="cal-month-label">{monthLabel}</div>
+        {weekendTags.length > 0 && (
+          <div className="cal-weekend-tags">
+            {weekendTags.map((t) => (
+              <button
+                key={t.key}
+                className="cal-weekend-tag"
+                aria-label={`${t.name === 'Sat' ? 'Saturday' : 'Sunday'}: ${t.n} event${t.n === 1 ? '' : 's'}`}
+                onClick={() => {
+                  setViewStart(t.day);
+                  setViewMode('Day');
+                }}
+              >
+                {t.name} · {t.n}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Calendar body */}

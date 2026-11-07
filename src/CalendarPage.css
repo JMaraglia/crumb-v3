@@ -90,9 +90,36 @@
 /* Month label */
 .calendar-page .cal-month-row {
   padding: 12px 16px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* 5-day week: weekend tags beside the month label */
+.calendar-page .cal-weekend-tags {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.calendar-page .cal-weekend-tag,
+.calendar-page .cal-weekend-tag:hover {
+  margin: 0;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #b35c00;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: none;
+  width: auto;
 }
 
 .calendar-page .cal-month-label {
+  white-space: nowrap;
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.02em;
