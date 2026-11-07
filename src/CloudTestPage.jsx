@@ -11,19 +11,9 @@ import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox, s
 import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt, lastCheckedAt, lastPullNote, pullNow, joinFromCloud } from './syncSend';
 import { syncBlockReason, isTestProject, isRealSynced, setPaused, maySync, BLOCK_TEXT } from './syncMode';
 import { checkMove, moveMyData, downloadMyData, COUNT_NAMES } from './syncMove';
+import { plainError } from './cloudErrors';
 import './CloudTestPage.css';
 
-const plainError = (err) => {
-  const m = String((err && (err.message || err.error_description)) || err || '');
-  if (/Invalid login credentials/i.test(m)) return 'That email and password don’t match. Check them, or tap Create Account if you’re new.';
-  if (/Email not confirmed/i.test(m)) return 'Check your email and tap the confirmation link first, then sign in.';
-  if (/already registered/i.test(m)) return 'That email already has an account. Tap Sign In instead.';
-  if (/Password should be/i.test(m)) return 'Use a longer password (at least 6 characters).';
-  if (/only request this after|security purposes/i.test(m)) return 'An email was just sent. Wait a minute before asking for another.';
-  if (/rate limit|too many/i.test(m)) return 'Too many tries for now. Wait a few minutes and try again.';
-  if (/fetch|network/i.test(m)) return 'Couldn’t reach the cloud. Check your signal and try again.';
-  return m || 'Something went wrong.';
-};
 
 // One waiting change in plain words: "Customer changed", "Note added", "Stop removed"…
 const WHAT = { accounts: 'Account', notes: 'Note', events: 'Calendar event', stops: 'Itinerary stop', todos: 'To-do', day_marks: 'Itinerary/Call Sheet marks', settings: 'Setting' };
@@ -50,8 +40,6 @@ export default function CloudTestPage() {
   const sb = cloud();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(Boolean(sb));
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -173,33 +161,6 @@ export default function CloudTestPage() {
     setBusy('');
   };
 
-  const signUp = () =>
-    run('Creating account…', async () => {
-      const { data, error } = await sb.auth.signUp({
-        email: email.trim(),
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/cloud-test` },
-      });
-      if (error) throw error;
-      if (data && data.session) setMsg('Account created and signed in.');
-      else setMsg('Account created. Check your email and tap the confirmation link — it brings you back here signed in.');
-    });
-
-  const signIn = () =>
-    run('Signing in…', async () => {
-      const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) throw error;
-      setPassword('');
-    });
-
-  // Forgot password: an email with a link that brings you back here to set a new one.
-  const forgot = () =>
-    run('Sending the email…', async () => {
-      if (!email.trim()) throw new Error('Type your email above first, then tap Forgot Password.');
-      const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/cloud-test` });
-      if (error) throw error;
-      setMsg(`Check your email (${email.trim()}) and tap the link. It brings you back here to set a new password.`);
-    });
   const saveNewPassword = () =>
     run('Saving your new password…', async () => {
       const { error } = await sb.auth.updateUser({ password: newPassword });
@@ -283,37 +244,12 @@ export default function CloudTestPage() {
             <div className="cl-status">
               <IoCloudOutline className="cl-status-icon" /> Not signed in
             </div>
-            <label className="cl-label" htmlFor="cl-email">Email</label>
-            <input
-              id="cl-email"
-              className="cl-input"
-              type="email"
-              autoComplete="email"
-              autoCapitalize="none"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <label className="cl-label" htmlFor="cl-pass">Password</label>
-            <input
-              id="cl-pass"
-              className="cl-input"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="cl-text">Sign in to keep your iPhone and iPad in sync.</div>
             <div className="cl-actions">
-              <button className="cl-btn" disabled={!email.trim() || !password || Boolean(busy)} onClick={signIn}>
+              <button className="cl-btn" onClick={() => navigate('/sign-in', { state: { from: '/cloud-test' } })}>
                 Sign In
               </button>
-              <button className="cl-btn cl-btn-plain" disabled={!email.trim() || password.length < 6 || Boolean(busy)} onClick={signUp}>
-                Create Account
-              </button>
             </div>
-            <div className="cl-hint">New here? Type an email and a password (6+ characters), then Create Account.</div>
-            <button className="cl-link" disabled={Boolean(busy)} onClick={forgot}>
-              Forgot Password?
-            </button>
           </div>
         )}
 

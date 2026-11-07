@@ -17,6 +17,7 @@ import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 // Loaded only when Cloud Test is opened, so the cloud library never slows down the rest of Crumb.
 const CloudTestPage = React.lazy(() => import('./CloudTestPage'));
+const SignInPage = React.lazy(() => import('./SignInPage'));
 // Sync step S2: if "Record changes on this device" is switched on (Cloud Test), start noting changes.
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
@@ -239,6 +240,7 @@ export default function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/cloud-test" element={<React.Suspense fallback={null}><CloudTestPage /></React.Suspense>} />
+        <Route path="/sign-in" element={<React.Suspense fallback={null}><SignInPage /></React.Suspense>} />
         <Route
           path="/todo"
           element={

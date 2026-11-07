@@ -1,0 +1,161 @@
+/* Sign In (si-). Looks like Home: same "Crumb." and tagline, same background and font, and the form sits
+   in a white card like Home's tiles. App.css styles every button/input, so they're reset here (including
+   :hover, which iPhones keep "on" after a tap). */
+.si-page {
+  position: relative;
+  padding-top: calc(2rem + env(safe-area-inset-top));
+}
+.si-page button,
+.si-page button:hover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  box-shadow: none;
+  cursor: pointer;
+  width: auto;
+  transform: none;
+}
+.si-page .si-back,
+.si-page .si-back:hover {
+  position: absolute;
+  top: calc(4px + env(safe-area-inset-top));
+  left: 4px;
+  padding: 8px;
+  font-size: 1.5rem;
+  line-height: 0;
+  color: #8e8e93;
+}
+
+/* The card: same look as a Home tile, as wide as the tile grid */
+.si-card {
+  width: 100%;
+  max-width: 500px;
+  box-sizing: border-box;
+  padding: 24px 20px 18px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.si-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.si-page .si-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 15px 14px;
+  border: 1px solid #dcdfe3;
+  border-radius: 12px;
+  background: #f4f6f8;
+  font-family: inherit;
+  font-size: 17px; /* 16px+ stops iPhone zooming in */
+  color: #222;
+  outline: none;
+}
+.si-page .si-input:focus {
+  border-color: #0077cc;
+  background: #fff;
+}
+.si-page .si-btn,
+.si-page .si-btn:hover {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #0077cc;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-align: center;
+}
+.si-page .si-btn:disabled {
+  opacity: 0.45;
+}
+.si-page .si-btn-plain,
+.si-page .si-btn-plain:hover {
+  background: #f4f6f8;
+  color: #0077cc;
+}
+.si-msg {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  text-align: left;
+}
+.si-err {
+  background: #fdecea;
+  color: #b3261e;
+}
+.si-ok {
+  background: #e8f5ec;
+  color: #1e7a3a;
+}
+.si-page .si-link,
+.si-page .si-link:hover {
+  align-self: center;
+  margin-top: 4px;
+  padding: 6px 4px;
+  color: #0077cc;
+  font-size: 1rem;
+  font-weight: bold;
+}
+.si-switch {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 1rem;
+  color: #555;
+}
+.si-page .si-link-inline,
+.si-page .si-link-inline:hover {
+  margin: 0;
+  padding: 4px 2px;
+}
+
+/* Forgot Password: its own panel from the bottom */
+.si-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+.si-sheet {
+  width: 100%;
+  max-width: 520px;
+  box-sizing: border-box;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.si-sheet-grab {
+  align-self: center;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: #d1d1d6;
+}
+.si-sheet-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #222;
+}
+.si-sheet-text {
+  margin: -6px 0 0;
+  font-size: 0.95rem;
+  color: #555;
+}
