@@ -168,3 +168,26 @@ input { font: inherit; }
 .ad-meter-bar { height: 8px; border-radius: 4px; background: var(--ad-bg); overflow: hidden; }
 .ad-meter-fill { height: 8px; border-radius: 4px; background: var(--ad-blue); }
 .ad-meter-fill.is-high { background: var(--ad-warn); }
+
+/* Inbox (step 4) */
+.ad-seg { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 12px; background: var(--ad-card); }
+.ad-seg-btn { padding: 9px; border: 0; border-radius: 9px; background: transparent; color: var(--ad-muted); font-size: 15px; font-weight: 700; }
+.ad-seg-btn.is-on { background: var(--ad-blue); color: #fff; }
+.ad-ticket {
+  width: 100%; text-align: left; border: 0; color: var(--ad-text);
+  background: var(--ad-card); border-radius: 16px; padding: 14px 16px; border-left: 4px solid var(--ad-warn);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.ad-ticket.is-new { border-left-color: #ff6b5c; }
+.ad-ticket.is-done { border-left-color: var(--ad-line); opacity: 0.7; }
+.ad-ticket-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ad-ticket-msg { font-size: 16px; font-weight: 700; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+.ad-pill-new { background: #3a1d1a; color: var(--ad-bad); }
+.ad-pill-work { background: #2a2116; color: var(--ad-warn); }
+.ad-sheet-quote { margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--ad-card); font-size: 16px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.ad-status-list { display: flex; flex-direction: column; gap: 8px; }
+.ad-status-btn { padding: 13px 16px; border-radius: 12px; border: 0; background: var(--ad-card); color: var(--ad-text); font-size: 16px; font-weight: 700; text-align: left; }
+.ad-status-btn.is-on { background: var(--ad-blue); color: #fff; }
+.ad-row-btn { width: 100%; border: 0; text-align: left; font: inherit; color: inherit; }
+.ad-tab-icon { position: relative; display: inline-flex; }
+.ad-badge { position: absolute; top: -2px; right: -6px; width: 10px; height: 10px; border-radius: 5px; background: #ff5d4d; border: 2px solid #0a1420; }

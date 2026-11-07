@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
-import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline, IoBugOutline, IoBulbOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
@@ -137,6 +137,22 @@ export default function SettingsPage() {
               <span className="st-row-text">
                 <span className="st-row-label">{r.label}</span>
                 <span className={`st-row-sub ${r.due ? 'is-due' : ''}`}>{r.due ? `${r.sub} · time to back up` : r.sub}</span>
+              </span>
+              <FaChevronRight className="st-row-chev" />
+            </button>
+          ))}
+        </div>
+        <div className="st-group-label">Help</div>
+        <div className="st-group">
+          {[
+            { icon: <IoBugOutline />, label: 'Report A Problem', sub: 'Something not working? Tell us', kind: 'problem' },
+            { icon: <IoBulbOutline />, label: 'Make A Suggestion', sub: 'An idea to make Crumb better', kind: 'suggestion' },
+          ].map((r) => (
+            <button key={r.kind} className="st-row" onClick={() => navigate(`/feedback?kind=${r.kind}`)}>
+              <span className="st-row-icon">{r.icon}</span>
+              <span className="st-row-text">
+                <span className="st-row-label">{r.label}</span>
+                <span className="st-row-sub">{r.sub}</span>
               </span>
               <FaChevronRight className="st-row-chev" />
             </button>

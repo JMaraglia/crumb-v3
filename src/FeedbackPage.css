@@ -1,0 +1,53 @@
+/* Report A Problem / Make A Suggestion (fb-). App.css styles every button and pads the body, so reset here. */
+.fb-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1c1e;
+  text-align: left;
+}
+.fb-header { padding: calc(10px + env(safe-area-inset-top)) 12px 4px; }
+
+.fb-page button,
+.fb-page button:hover {
+  margin: 0; padding: 0; border: none; border-radius: 0; background: none;
+  color: inherit; font: inherit; box-shadow: none; cursor: pointer; width: auto;
+}
+.fb-page .fb-icon-btn,
+.fb-page .fb-icon-btn:hover { padding: 8px; color: #0077cc; font-size: 1.3rem; }
+
+.fb-content { padding: 0 16px 40px; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.fb-title { font-size: 2rem; font-weight: 800; margin: 6px 0 4px; color: #1c1c1e; text-align: left; }
+.fb-label { font-size: 0.95rem; font-weight: 700; color: #3c3c43; margin-top: 4px; }
+
+.fb-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fb-page .fb-chip,
+.fb-page .fb-chip:hover {
+  padding: 9px 14px; border-radius: 999px; background: #fff; color: #1c1c1e;
+  font-size: 0.95rem; font-weight: 600; border: 1px solid #e0e0e6;
+}
+.fb-page .fb-chip.is-on,
+.fb-page .fb-chip.is-on:hover { background: #0077cc; border-color: #0077cc; color: #fff; }
+
+.fb-input {
+  width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid #e0e0e6; background: #fff; color: #1c1c1e;
+  font: inherit; font-size: 17px; line-height: 1.4; resize: vertical; outline: none;
+}
+.fb-input:focus { border-color: #0077cc; }
+
+.fb-page .fb-btn,
+.fb-page .fb-btn:hover {
+  display: block; width: 100%; padding: 16px; border-radius: 12px;
+  background: #0077cc; color: #fff; font-size: 1.1rem; font-weight: bold; text-align: center;
+}
+.fb-page .fb-btn:disabled { opacity: 0.45; }
+
+.fb-card { background: #fff; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.fb-text { margin: 0; font-size: 1rem; line-height: 1.45; }
+.fb-done { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1b7f3b; line-height: 1.4; }
+.fb-error { margin: 0; padding: 12px 14px; border-radius: 12px; background: #fdecea; color: #b3261e; font-size: 0.95rem; line-height: 1.4; }
+.fb-note { margin: 0; font-size: 0.85rem; color: #8a8a8e; line-height: 1.4; }

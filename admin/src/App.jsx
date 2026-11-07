@@ -99,8 +99,10 @@ function Tile({ label, value, sub }) {
   );
 }
 
-function Overview({ data, onSignOut, email }) {
+function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, onOpenInbox }) {
   const attention = [];
+  if (newTickets > 0) attention.push(`${newTickets} new ${newTickets === 1 ? 'ticket' : 'tickets'} in the Inbox`);
+  if (newSuggestions > 0) attention.push(`${newSuggestions} new ${newSuggestions === 1 ? 'suggestion' : 'suggestions'} in the Inbox`);
   if (data.needs_review > 0) attention.push(`${data.needs_review} sync ${data.needs_review === 1 ? 'change needs' : 'changes need'} review`);
   return (
     <>
@@ -114,7 +116,11 @@ function Overview({ data, onSignOut, email }) {
 
       <h2 className={`ad-h2 ${attention.length ? 'ad-h2-warn' : ''}`}>{attention.length ? 'Needs your attention' : 'Sync'}</h2>
       <div className="ad-card ad-rows">
-        {attention.map((a) => <div key={a} className="ad-row ad-row-warn"><span className="ad-dot ad-dot-warn" /><span className="ad-row-label">{a}</span></div>)}
+        {attention.map((a) => (
+          <button key={a} type="button" className="ad-row ad-row-warn ad-row-btn" onClick={/Inbox/.test(a) ? onOpenInbox : undefined}>
+            <span className="ad-dot ad-dot-warn" /><span className="ad-row-label">{a}</span>
+          </button>
+        ))}
         <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Last change synced</span><span className="ad-row-value">{ago(data.last_change_at)}</span></div>
         <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Overwritten values kept (7 days)</span><span className="ad-row-value">{data.overwrites_7d}</span></div>
       </div>
@@ -189,7 +195,12 @@ function DeleteSheet({ email, onClose, onDeleted }) {
   );
 }
 
-const ACTION_WORDS = { delete_account: 'Deleted' };
+function logText(l) {
+  const d = l.details || {};
+  if (l.action === 'delete_account') return `Deleted ${l.target_email}`;
+  if (l.action === 'feedback_status') return `${d.kind === 'suggestion' ? 'Suggestion' : 'Ticket'} #${d.id} → ${statusWord(d.kind === 'suggestion' ? 'suggestion' : 'problem', d.to)}`;
+  return `${l.action} ${l.target_email || ''}`;
+}
 
 // ---------- users ----------
 function Users({ users, log, onChanged }) {
@@ -244,7 +255,7 @@ function Users({ users, log, onChanged }) {
           <div className="ad-card ad-rows">
             {log.map((l, i) => (
               <div className="ad-row ad-log" key={`${l.at}-${i}`}>
-                <span className="ad-row-label">{ACTION_WORDS[l.action] || l.action} {l.target_email}</span>
+                <span className="ad-row-label">{logText(l)}</span>
                 <span className="ad-row-value">{ago(l.at)}</span>
               </div>
             ))}
@@ -349,6 +360,83 @@ function Health({ db, dbMs, dbErr, rem, remErr }) {
   );
 }
 
+// ---------- inbox: tickets + suggestions ----------
+const STATUSES = {
+  problem: [['new', 'New'], ['investigating', 'Investigating'], ['in_progress', 'In Progress'], ['resolved', 'Resolved'], ['closed', 'Closed']],
+  suggestion: [['new', 'New'], ['exploring', 'Exploring'], ['approved', 'Approved'], ['postponed', 'Postponed'], ['declined', 'Declined']],
+};
+const DONE = new Set(['resolved', 'closed', 'approved', 'postponed', 'declined']);
+const statusWord = (kind, st) => (STATUSES[kind].find(([v]) => v === st) || [st, st])[1];
+const pillTone = (st) => (st === 'new' ? 'ad-pill-new' : DONE.has(st) ? 'ad-pill-quiet' : 'ad-pill-work');
+
+function StatusSheet({ item, onClose, onSaved }) {
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const pick = async (st) => {
+    if (busy) return;
+    setBusy(st); setMsg('');
+    const { error } = await cloud().rpc('admin_feedback_set_status', { p_id: item.id, p_status: st });
+    setBusy('');
+    if (error) { setMsg(plainError(error)); return; }
+    onSaved();
+  };
+  return (
+    <div className="ad-sheet-back" onClick={busy ? undefined : onClose}>
+      <div className="ad-sheet" role="dialog" aria-modal="true" aria-labelledby="ad-st-title" onClick={(e) => e.stopPropagation()}>
+        <h2 id="ad-st-title" className="ad-sheet-title">{item.kind === 'problem' ? `Ticket #${item.id}` : `Suggestion #${item.id}`}</h2>
+        <p className="ad-sheet-quote">{item.message}</p>
+        <p className="ad-muted ad-small">{[item.area, item.email, item.device, item.app_version && `v ${item.app_version}`, shortDate(item.created_at)].filter(Boolean).join(' · ')}</p>
+        <div className="ad-status-list" role="group" aria-label="Status">
+          {STATUSES[item.kind].map(([v, label]) => (
+            <button key={v} type="button" className={`ad-status-btn ${item.status === v ? 'is-on' : ''}`} disabled={Boolean(busy)} onClick={() => pick(v)}>
+              {busy === v ? 'Saving…' : label}{item.status === v ? ' ✓' : ''}
+            </button>
+          ))}
+        </div>
+        {msg && <p className="ad-error" role="alert">{msg}</p>}
+        <button className="ad-link-btn ad-sheet-cancel" type="button" onClick={onClose} disabled={Boolean(busy)}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+function Inbox({ items, err, onChanged }) {
+  const [kind, setKind] = useState('problem');
+  const [open, setOpen] = useState(null);
+  const list = items.filter((i) => i.kind === kind);
+  const openCount = (k) => items.filter((i) => i.kind === k && !DONE.has(i.status)).length;
+  const sorted = [...list].sort((a, b) => (DONE.has(a.status) - DONE.has(b.status)) || (new Date(b.created_at) - new Date(a.created_at)));
+  return (
+    <>
+      <h1 className="ad-h1">Inbox</h1>
+      <div className="ad-seg" role="tablist">
+        {[['problem', 'Tickets'], ['suggestion', 'Suggestions']].map(([k, label]) => (
+          <button key={k} type="button" role="tab" aria-selected={kind === k} className={`ad-seg-btn ${kind === k ? 'is-on' : ''}`} onClick={() => setKind(k)}>
+            {label}{openCount(k) ? ` · ${openCount(k)}` : ''}
+          </button>
+        ))}
+      </div>
+      {err && <p className="ad-error">{err}</p>}
+      <div className="ad-list">
+        {sorted.map((i) => (
+          <button key={i.id} type="button" className={`ad-ticket ${DONE.has(i.status) ? 'is-done' : ''} ${i.status === 'new' ? 'is-new' : ''}`} onClick={() => setOpen(i)}>
+            <span className="ad-ticket-top">
+              <span className="ad-muted ad-small">#{i.id}{i.area ? ` · ${i.area}` : ''}</span>
+              <span className={`ad-pill ${pillTone(i.status)}`}>{statusWord(i.kind, i.status).toUpperCase()}</span>
+            </span>
+            <span className="ad-ticket-msg">{i.message}</span>
+            <span className="ad-muted ad-small">{[i.email, i.device && i.device.split(' · ')[0], ago(i.created_at)].filter(Boolean).join(' · ')}</span>
+          </button>
+        ))}
+        {!err && sorted.length === 0 && (
+          <div className="ad-card ad-coming"><p>{kind === 'problem' ? 'No tickets yet. Reps send them from Settings → Report A Problem.' : 'No suggestions yet. Reps send them from Settings → Make A Suggestion.'}</p></div>
+        )}
+      </div>
+      {open && <StatusSheet item={open} onClose={() => setOpen(null)} onSaved={() => { setOpen(null); onChanged(); }} />}
+    </>
+  );
+}
+
 // ---------- app ----------
 export default function App() {
   const [stage, setStage] = useState('loading'); // loading | signedOut | notAdmin | ready | error
@@ -357,6 +445,7 @@ export default function App() {
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
   const [log, setLog] = useState([]);
+  const [inbox, setInbox] = useState({ items: [], err: '' });
   const [health, setHealth] = useState({ db: null, dbMs: null, dbErr: '', rem: null, remErr: '' });
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -391,6 +480,8 @@ export default function App() {
         next.remErr = plainError(err);
       }
       setHealth(next);
+      const fb = await sb.rpc('admin_feedback_list');
+      setInbox({ items: fb.error ? [] : (fb.data || []), err: fb.error ? plainError(fb.error) : '' });
       setMsg('');
       setStage('ready');
     } catch (err) {
@@ -455,16 +546,16 @@ export default function App() {
           <button className="ad-refresh" type="button" onClick={load} disabled={refreshing}>{refreshing ? 'Updating…' : todayLabel()}</button>
         </div>
         {msg && <p className="ad-error">{msg}</p>}
-        {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} />}
+        {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} onOpenInbox={() => pick('inbox')} />}
         {tab === 'users' && <Users users={users} log={log} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
-        {tab === 'inbox' && <ComingNext title="Inbox" lines={['Tickets from Report A Problem', 'Suggestions from Make A Suggestion', 'Push alert to your phone for urgent tickets']} />}
+        {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} onChanged={load} />}
       </main>
 
       <nav className="ad-tabs" aria-label="Admin sections">
         {[['overview', 'Overview'], ['users', 'Users'], ['health', 'Health'], ['inbox', 'Inbox']].map(([id, label]) => (
           <button key={id} type="button" className={`ad-tab ${tab === id ? 'is-on' : ''}`} onClick={() => pick(id)} aria-current={tab === id ? 'page' : undefined}>
-            {Icon[id]}<span>{label}</span>
+            <span className="ad-tab-icon">{Icon[id]}{id === 'inbox' && inbox.items.some((i) => i.status === 'new') && <span className="ad-badge" aria-label="New items" />}</span><span>{label}</span>
           </button>
         ))}
       </nav>
