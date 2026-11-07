@@ -1,6 +1,6 @@
 // GET /api/push-tick?key=CRON_SECRET
 // Called every few minutes by cron-job.org (free). Sends any reminders that are now due.
-import { allDevices, loadDevice, saveDevice, forgetDevice, sendPush, allUsers, loadUser, saveUser, claimReminder, releaseReminder } from './_push.js';
+import { allDevices, loadDevice, saveDevice, forgetDevice, sendPush, allUsers, loadUser, saveUser, claimReminder, releaseReminder, recordTick } from './_push.js';
 
 const LATE_LIMIT = 3 * 3600 * 1000; // skip reminders more than 3 hours late (e.g. after an outage)
 
@@ -41,8 +41,10 @@ export default async function handler(req, res) {
       }
     }
     sent += await tickAccounts(now);
+    await recordTick({ ok: true, sent });
     res.status(200).json({ ok: true, sent });
   } catch (err) {
+    await recordTick({ ok: false, sent, error: err.message });
     res.status(500).json({ error: err.message, sent });
   }
 }

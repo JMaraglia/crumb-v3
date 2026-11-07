@@ -152,3 +152,19 @@ input { font: inherit; }
 .ad-sheet-box ul { margin: 6px 0 0; padding-left: 20px; }
 .ad-btn-danger { background: #d93a2b; }
 .ad-sheet-cancel { align-self: center; }
+
+/* Platform Health (step 3) */
+.ad-dot-bad { background: #ff5d4d; }
+.ad-dot-info { background: var(--ad-blue); }
+.ad-health-row { align-items: flex-start; }
+.ad-health-row .ad-dot { margin-top: 5px; }
+.ad-health-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ad-health-sub { font-size: 13px; color: var(--ad-muted); line-height: 1.35; }
+.ad-row-link { text-decoration: none; color: inherit; }
+.ad-row-link .ad-row-value { color: #7cc2ff; font-weight: 700; }
+.ad-meters { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.ad-meter-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 15px; font-weight: 700; margin-bottom: 7px; }
+.ad-meter-top .ad-small { font-weight: 400; text-align: right; }
+.ad-meter-bar { height: 8px; border-radius: 4px; background: var(--ad-bg); overflow: hidden; }
+.ad-meter-fill { height: 8px; border-radius: 4px; background: var(--ad-blue); }
+.ad-meter-fill.is-high { background: var(--ad-warn); }

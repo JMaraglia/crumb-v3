@@ -143,6 +143,14 @@ export async function saveUser(uid, data) {
 export async function allUsers() {
   return (await store()('SMEMBERS', 'crumb:users')) || [];
 }
+// The reminder timer's last run (shown on Crumb Admin's Platform Health screen).
+export async function recordTick(info) {
+  try { await store()('SET', 'crumb:tick:last', JSON.stringify({ ...info, at: new Date().toISOString() })); } catch { /* never block reminders */ }
+}
+export async function lastTick() {
+  const raw = await store()('GET', 'crumb:tick:last');
+  return raw ? JSON.parse(raw) : {};
+}
 // Claim one reminder for one device. true = this call won it and should send; false = already sent/sending.
 export async function claimReminder(uid, reminderId, deviceId) {
   const k = `crumb:sent:${uid}:${deviceId}:${reminderId}`.slice(0, 400);

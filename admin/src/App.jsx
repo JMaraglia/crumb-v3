@@ -275,6 +275,80 @@ function ComingNext({ title, lines }) {
   );
 }
 
+// ---------- platform health ----------
+const CRM_URL = String(import.meta.env.VITE_CRM_URL || 'https://crumb-v3.vercel.app').replace(/\/+$/, '');
+const GB = 1024 ** 3;
+const LIMITS = { db: 8 * GB, files: 100 * GB, users: 100000 }; // Supabase Pro plan quotas
+const EMAIL_STATUS = { level: 'warn', text: 'Test only', sub: "Supabase's built-in sender: 2 emails an hour, team members only. Needs a real email service before beta." };
+
+function size(bytes) {
+  if (bytes == null) return '—';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  if (bytes < GB) return `${(bytes / 1024 / 1024).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+  return `${(bytes / GB).toFixed(2)} GB`;
+}
+
+function HealthRow({ level, label, value, sub, href }) {
+  const inner = (
+    <>
+      <span className={`ad-dot ad-dot-${level}`} />
+      <span className="ad-health-text">
+        <span className="ad-row-label">{label}</span>
+        {sub && <span className="ad-health-sub">{sub}</span>}
+      </span>
+      <span className="ad-row-value">{value}</span>
+    </>
+  );
+  return href
+    ? <a className="ad-row ad-health-row ad-row-link" href={href} target="_blank" rel="noreferrer">{inner}</a>
+    : <div className="ad-row ad-health-row">{inner}</div>;
+}
+
+function Meter({ label, used, limit, text }) {
+  const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
+  return (
+    <div className="ad-meter">
+      <div className="ad-meter-top"><span>{label}</span><span className="ad-muted ad-small">{text}</span></div>
+      <div className="ad-meter-bar"><div className={`ad-meter-fill ${pct > 80 ? 'is-high' : ''}`} style={{ width: `${Math.max(pct, used > 0 ? 1.5 : 0)}%` }} /></div>
+    </div>
+  );
+}
+
+function Health({ db, dbMs, dbErr, rem, remErr }) {
+  const tickAge = rem && rem.last_tick_at ? Date.now() - new Date(rem.last_tick_at).getTime() : null;
+  const remLevel = remErr ? 'warn' : !rem || !rem.last_tick_at ? 'warn' : rem.last_tick_ok === false ? 'bad' : tickAge > 15 * MIN ? 'bad' : 'ok';
+  const remValue = remErr ? "Couldn't check" : !rem || !rem.last_tick_at ? 'No run yet' : rem.last_tick_ok === false ? 'Failed' : `Ran ${ago(rem.last_tick_at).toLowerCase()}`;
+  const remSub = remErr ? remErr
+    : rem && rem.last_tick_ok === false ? rem.last_error
+    : rem ? `${rem.devices} ${rem.devices === 1 ? 'device' : 'devices'} get reminders` : '';
+  const backupsHref = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/database/backups/scheduled` : undefined;
+
+  return (
+    <>
+      <h1 className="ad-h1">Platform Health</h1>
+      <div className="ad-card ad-rows">
+        <HealthRow level={dbErr ? 'bad' : 'ok'} label="Database" value={dbErr ? 'Problem' : 'Running'} sub={dbErr || (dbMs != null ? `Answered in ${dbMs} ms` : '')} />
+        <HealthRow level="info" label="Backups" value="Check ›" sub="Daily on Supabase Pro. Opens Supabase." href={backupsHref} />
+        <HealthRow level={remLevel} label="Reminders" value={remValue} sub={remSub} />
+        <HealthRow level={EMAIL_STATUS.level} label="Email service" value={EMAIL_STATUS.text} sub={EMAIL_STATUS.sub} />
+        {db && <HealthRow level={db.needs_review > 0 ? 'warn' : 'ok'} label="Sync" value={db.needs_review > 0 ? `${db.needs_review} to review` : 'No problems'} sub={`${db.changes_24h} changes today · last ${ago(db.last_change_at).toLowerCase()}`} />}
+      </div>
+
+      {db && (
+        <>
+          <h2 className="ad-h2">Usage vs plan</h2>
+          <div className="ad-card ad-meters">
+            <Meter label="Database" used={db.db_size_bytes} limit={LIMITS.db} text={`${size(db.db_size_bytes)} of 8 GB`} />
+            <Meter label="Photo storage" used={db.storage_bytes} limit={LIMITS.files} text={`${size(db.storage_bytes)} of 100 GB · ${db.storage_files} ${db.storage_files === 1 ? 'photo' : 'photos'}`} />
+            <Meter label="Users signed in (30 days)" used={db.users_signed_in_30d} limit={LIMITS.users} text={`${db.users_signed_in_30d} of 100,000`} />
+          </div>
+          <p className="ad-muted ad-small ad-note">Supabase Pro, $25 a month, spend cap on. Going over a limit can make Crumb slow or read-only, but never adds charges while the spend cap is on.</p>
+        </>
+      )}
+    </>
+  );
+}
+
 // ---------- app ----------
 export default function App() {
   const [stage, setStage] = useState('loading'); // loading | signedOut | notAdmin | ready | error
@@ -283,6 +357,7 @@ export default function App() {
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
   const [log, setLog] = useState([]);
+  const [health, setHealth] = useState({ db: null, dbMs: null, dbErr: '', rem: null, remErr: '' });
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -303,6 +378,19 @@ export default function App() {
       setOverview(ov.data);
       setUsers(us.data || []);
       setLog(lg.error ? [] : (lg.data || [])); // before step 2's SQL is run, there is simply no log yet
+      // Platform Health: the database's own numbers, then the reminder system (the CRM's server).
+      const t0 = performance.now();
+      const hd = await sb.rpc('admin_health');
+      const next = { db: hd.error ? null : hd.data, dbMs: Math.round(performance.now() - t0), dbErr: hd.error ? plainError(hd.error) : '', rem: null, remErr: '' };
+      try {
+        const r = await fetch(`${CRM_URL}/api/admin-health`, { headers: { Authorization: `Bearer ${session.access_token}` }, cache: 'no-store' });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(body.error || `Error ${r.status}`);
+        next.rem = body.reminders;
+      } catch (err) {
+        next.remErr = plainError(err);
+      }
+      setHealth(next);
       setMsg('');
       setStage('ready');
     } catch (err) {
@@ -369,7 +457,7 @@ export default function App() {
         {msg && <p className="ad-error">{msg}</p>}
         {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} />}
         {tab === 'users' && <Users users={users} log={log} onChanged={load} />}
-        {tab === 'health' && <ComingNext title="Platform Health" lines={['Database and last backup', 'Sync errors and stuck changes', 'Reminders and email service', 'Cost vs plan']} />}
+        {tab === 'health' && <Health {...health} />}
         {tab === 'inbox' && <ComingNext title="Inbox" lines={['Tickets from Report A Problem', 'Suggestions from Make A Suggestion', 'Push alert to your phone for urgent tickets']} />}
       </main>
 
