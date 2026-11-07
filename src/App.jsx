@@ -16,7 +16,7 @@ import TodoPage from './TodoPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 import { syncReminders, startReminderRefresh } from './notify';
-import { readSaved, writeSaved, withNoteIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
+import { readSaved, writeSaved, withNoteIds, changeNote, dropNote, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
 function usePersistedState(key, initialValue) {
@@ -119,14 +119,14 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
   const navigate = useNavigate();
   const item = items.find(x => String(x.id) === id);
 
-  const handleAddNote = (itemId, note, index = null) => {
+  // ref = { id, index } of the note being changed (found by its ID tag); none = a new note.
+  const handleAddNote = (itemId, note, ref = null) => {
     setItems(prev =>
       prev.map(x => {
         if (x.id === itemId) {
-          const notes = [...x.notes];
-          // Editing keeps the note's permanent ID tag
-          if (index !== null) notes[index] = notes[index] && notes[index].id && !note.id ? { ...note, id: notes[index].id } : note;
-          else notes.push(note);
+          const notes = [...(x.notes || [])];
+          if (ref !== null) return { ...x, notes: changeNote(notes, ref, () => note) }; // keeps its ID tag
+          notes.push(note);
           return { ...x, notes };
         }
         return x;
@@ -134,14 +134,10 @@ function NotesWrapper({ items, setItems, pagePath, PageComponent }) {
     );
   };
 
-  const handleDeleteNote = (noteIndex) => {
+  const handleDeleteNote = (ref) => {
     setItems(prev =>
       prev.map(x => {
-        if (String(x.id) === id) {
-          const notes = [...x.notes];
-          notes.splice(noteIndex, 1);
-          return { ...x, notes };
-        }
+        if (String(x.id) === id) return { ...x, notes: dropNote(x.notes || [], ref) };
         return x;
       })
     );

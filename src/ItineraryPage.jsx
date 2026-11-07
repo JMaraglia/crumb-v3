@@ -53,6 +53,7 @@ import MeetingSheet from './MeetingSheet';
 import { staleAccounts } from './lastContact';
 import { planRoute, timeRoute } from './routePlan';
 import { collectTodoItems } from './todoItems';
+import { changeNote } from './store';
 import './ItineraryPage.css';
 
 const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
@@ -919,9 +920,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       const apply = (list) =>
         list.map((a) => {
           if (a.id !== item.accountId) return a;
-          const notes = [...(a.notes || [])];
-          notes[item.index] = { ...notes[item.index], ...patch };
-          return { ...a, notes };
+          return { ...a, notes: changeNote(a.notes || [], { id: item.noteId, index: item.index }, patch) };
         });
       if (item.accountType === 'prospect' && setProspects) setProspects(apply);
       if (item.accountType === 'customer' && setContacts) setContacts(apply);

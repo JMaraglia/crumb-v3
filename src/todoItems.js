@@ -32,6 +32,7 @@ export function collectTodoItems(todos = [], contacts = [], prospects = []) {
           kind: 'followup',
           label: cat,
           index,
+          noteId: n.id || null, // the note's permanent ID tag (used to find it when changing it)
           text: n.text,
           due: n.due || null,
           done: isNoteDone(n),

@@ -79,3 +79,34 @@ export function withNoteIds(accounts) {
   });
   return changed ? out : accounts;
 }
+
+/* ---------- Changing one note, found by its ID tag ----------
+   ref = { id, index }. The note is found by its tag; the position (index) is only used for a note
+   without a tag. If a tagged note isn't there any more, nothing is changed — never the wrong note.
+   A plain number still works as a position (older callers). */
+export function findNoteIndex(notes, ref) {
+  if (!Array.isArray(notes)) return -1;
+  if (ref && typeof ref === 'object') {
+    if (ref.id) return notes.findIndex((n) => n && n.id === ref.id);
+    return typeof ref.index === 'number' && ref.index >= 0 && ref.index < notes.length ? ref.index : -1;
+  }
+  return typeof ref === 'number' && ref >= 0 && ref < notes.length ? ref : -1;
+}
+
+// change = an object (fields to update) or a function (old note → new note). The note keeps its tag.
+export function changeNote(notes, ref, change) {
+  const i = findNoteIndex(notes, ref);
+  if (i < 0) return notes;
+  const old = notes[i];
+  let next = typeof change === 'function' ? change(old) : { ...old, ...change };
+  if (old && old.id && next && !next.id) next = { ...next, id: old.id };
+  const out = [...notes];
+  out[i] = next;
+  return out;
+}
+
+export function dropNote(notes, ref) {
+  const i = findNoteIndex(notes, ref);
+  if (i < 0) return notes;
+  return notes.filter((_, j) => j !== i);
+}

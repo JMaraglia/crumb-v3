@@ -11,6 +11,7 @@ import { buildNotesPdf } from './notesPdf';
 import NotesRangeSheet from './NotesRangeSheet';
 import { isCheckable, isNoteDone } from './noteStatus';
 import SwipeRow from './SwipeRow';
+import { changeNote, dropNote } from './store';
 import './MasterNotesPage.css';
 
 const GROUPINGS = ['Day', 'Month', 'Year'];
@@ -185,9 +186,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
     const update = (list) =>
       list.map((a) => {
         if (a.id !== n.accountId) return a;
-        const notes = [...(a.notes || [])];
-        notes[n.index] = { ...notes[n.index], done: !isNoteDone(notes[n.index]) };
-        return { ...a, notes };
+        return { ...a, notes: changeNote(a.notes || [], { id: n.id, index: n.index }, (old) => ({ ...old, done: !isNoteDone(old) })) };
       });
     if (n.kind === 'prospect' && setProspects) setProspects(update);
     if (n.kind === 'customer' && setContacts) setContacts(update);
@@ -197,7 +196,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   const deleteNote = (n) => {
     if (!window.confirm(`Delete this note permanently?\n\n${n.accountName}: "${n.text.length > 80 ? n.text.slice(0, 80) + '…' : n.text}"\n\nIt can't be undone.`)) return;
     const update = (list) =>
-      list.map((a) => (a.id === n.accountId ? { ...a, notes: (a.notes || []).filter((_, i) => i !== n.index) } : a));
+      list.map((a) => (a.id === n.accountId ? { ...a, notes: dropNote(a.notes || [], { id: n.id, index: n.index }) } : a));
     if (n.kind === 'prospect' && setProspects) setProspects(update);
     if (n.kind === 'customer' && setContacts) setContacts(update);
   };

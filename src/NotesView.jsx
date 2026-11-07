@@ -132,6 +132,8 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const [changingMeeting, setChangingMeeting] = useState(null); // index of a Meeting note whose time is being changed
 
   const notes = (account.notes || []).map((n, index) => ({ ...n, index, cat: normalizeCategory(n.category) }));
+  // Which saved note a change is for: found by its permanent ID tag (position only if it has none).
+  const refAt = (index) => ({ id: ((account.notes || [])[index] || {}).id, index });
   const byNewest = (a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0) || b.index - a.index;
   const background = notes.filter((n) => n.cat === 'Background').sort(byNewest);
   const others = notes.filter((n) => n.cat !== 'Background').sort(byNewest);
@@ -174,7 +176,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
 
   const toggleDone = (n) => {
     const { index, cat, ...saved } = n;
-    onAddNote(account.id, { ...saved, done: !isNoteDone(n) }, index);
+    onAddNote(account.id, { ...saved, done: !isNoteDone(n) }, refAt(index));
   };
 
   const saveEdit = () => {
@@ -192,7 +194,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
     }
     // Switched to Follow-up / Sample: starts unchecked (an existing old Sample keeps its state)
     if (isCheckable(editing.category) && normalizeCategory(original.category) !== editing.category) updated.done = false;
-    onAddNote(account.id, updated, editing.index);
+    onAddNote(account.id, updated, refAt(editing.index));
     setEditing(null);
   };
 
@@ -235,14 +237,14 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
 
   const remove = (index) => {
     if (!window.confirm('Delete this note?')) return;
-    onDeleteNote(index);
+    onDeleteNote(refAt(index));
     setEditing(null);
   };
 
   // Swipe a note left → asks, then deletes it for good.
   const swipeDelete = (index) => {
     if (!window.confirm("Delete this note permanently?\n\nIt can't be undone.")) return;
-    onDeleteNote(index);
+    onDeleteNote(refAt(index));
     if (editing && editing.index === index) setEditing(null);
   };
 
@@ -444,7 +446,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           onCancel={() => setChangingMeeting(null)}
           onSaved={(msg, _note, meetingInfo) => {
             const original = account.notes[changingMeeting];
-            onAddNote(account.id, { ...original, meeting: meetingInfo }, changingMeeting);
+            onAddNote(account.id, { ...original, meeting: meetingInfo }, refAt(changingMeeting));
             setChangingMeeting(null);
             setShareMsg(msg);
           }}

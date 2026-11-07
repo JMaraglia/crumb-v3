@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
 import { shareText } from './share';
+import { changeNote, dropNote } from './store';
 import './TodoPage.css';
 
 const TODOS_KEY = 'crumb_todos';
@@ -76,9 +77,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
     const apply = (list) =>
       list.map((a) => {
         if (a.id !== item.accountId) return a;
-        const notes = [...(a.notes || [])];
-        notes[item.index] = { ...notes[item.index], ...patch };
-        return { ...a, notes };
+        return { ...a, notes: changeNote(a.notes || [], { id: item.noteId, index: item.index }, patch) };
       });
     if (item.accountType === 'prospect' && setProspects) setProspects(apply);
     if (item.accountType === 'customer' && setContacts) setContacts(apply);
@@ -130,7 +129,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
     }
     if (!window.confirm(`Delete "${item.text}"?\nThis deletes the note from ${item.accountName}'s notes.`)) return false;
     const drop = (list) =>
-      list.map((a) => (a.id === item.accountId ? { ...a, notes: (a.notes || []).filter((_, i) => i !== item.index) } : a));
+      list.map((a) => (a.id === item.accountId ? { ...a, notes: dropNote(a.notes || [], { id: item.noteId, index: item.index }) } : a));
     if (item.accountType === 'prospect' && setProspects) setProspects(drop);
     if (item.accountType === 'customer' && setContacts) setContacts(drop);
     return true;
