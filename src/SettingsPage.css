@@ -28,7 +28,10 @@
   width: auto;
 }
 
-.st-page .st-icon-btn {
+/* :hover too: iPhones keep a tapped button "hovered", and the general hover rule above would turn the
+   arrow black, shrink it and shift it (so the next taps miss) */
+.st-page .st-icon-btn,
+.st-page .st-icon-btn:hover {
   padding: 8px;
   color: #0077cc;
   font-size: 1.3rem;
