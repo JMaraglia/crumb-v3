@@ -41,7 +41,7 @@ export default function HomePage() {
       <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem', marginBottom: '10px' }}>
         Crumb.
       </h1>
-      <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
+      <h2 style={{ textAlign: 'center', marginTop: 0, marginBottom: '30px' }}>
         Taking every last Crumb.
       </h2>
       <div className="tile-grid">
