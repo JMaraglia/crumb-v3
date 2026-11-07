@@ -16,11 +16,11 @@ import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
 import CompetitorPicker from './CompetitorPicker';
-import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos } from './store';
+import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
-import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed } from './schedule';
+import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, keyOf, fromKey, addDaysToKey, onItinerary } from './schedule';
 
 /* ---------- Groups: one business, several locations ----------
    Each location is its own customer or prospect. Locations share a `group` name
@@ -666,6 +666,45 @@ export function snoozeSheet(account, save, daysField) {
   return { title: `Snooze visits to ${account.name || 'this account'}`, actions };
 }
 
+// Quick-Add To Itinerary (Nov 7): pick a day (today + the next 6) and the account goes on that day's
+// Itinerary as a stop with no set time (set the time / order on the Itinerary later). Days it's already
+// on are marked and do nothing.
+export function itinerarySheet(account, type, daysField, onAdded) {
+  const today = keyOf(new Date());
+  const stops = loadStops();
+  const isOn = (day) =>
+    (!account.inactive && onItinerary(account, day, daysField)) ||
+    stops.some((v) => v && v.date === day && String(v.accountId) === String(account.id) && (v.accountType || '') === type);
+  const label = (day, i) =>
+    i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : fromKey(day).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const actions = Array.from({ length: 7 }, (_, i) => {
+    const day = addDaysToKey(today, i);
+    const on = isOn(day);
+    return {
+      label: on ? `${label(day, i)} · already on ✓` : label(day, i),
+      onClick: () => {
+        if (on) return;
+        saveStops([
+          ...loadStops(),
+          {
+            id: newStopId(),
+            name: account.name,
+            time: '',
+            date: day,
+            done: false,
+            recurrence: 'none',
+            type: type === 'customer' ? 'contact' : 'prospect',
+            accountType: type,
+            accountId: account.id,
+          },
+        ]);
+        onAdded(i === 0 ? "today's" : i === 1 ? "tomorrow's" : `${fromKey(day).toLocaleDateString('en-US', { weekday: 'long' })}'s`);
+      },
+    };
+  });
+  return { title: `Add ${account.name || 'this account'} to the Itinerary`, actions };
+}
+
 function niceShort(k) {
   const [y, m, d] = k.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -799,6 +838,14 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
   const contacts = a.contacts || [];
   // the owner first (if there is one), otherwise the first contact listed
   const mainContact = contacts.find((c) => /owner/i.test(c.title || '') && (c.name || c.phone)) || contacts.find((c) => c.name || c.title);
+  const [added, setAdded] = useState(''); // "Added to Tuesday's Itinerary"
+  const addToItinerary = () =>
+    onSheet(
+      itinerarySheet(a, typeOf(config), config.visitDaysField, (dayWord) => {
+        setAdded(`Added to ${dayWord} Itinerary ✓`);
+        setTimeout(() => setAdded(''), 3000);
+      })
+    );
   const reachable = contacts.some(canReach);
 
   const startHold = (e) => {
@@ -937,7 +984,13 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
             <button className="av-quick-btn" onClick={() => navigate(config.notesPath(a.id))}>
               + Note
             </button>
+            {!a.inactive && (
+              <button className="av-quick-btn" onClick={addToItinerary} aria-label="Add to the Itinerary">
+                + Stop
+              </button>
+            )}
           </div>
+          {added && <div className="av-added">{added}</div>}
         </div>
       )}
     </div>

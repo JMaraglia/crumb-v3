@@ -1492,3 +1492,14 @@
 }
 .av-page .av-qi-addr,
 .av-page .av-qi-addr:hover { font-weight: 500; white-space: normal; color: #3a3a3c; }
+
+/* Quick-Add To Itinerary: confirmation under the quick buttons */
+.av-added {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #e8f5ec;
+  color: #1e7a3a;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
