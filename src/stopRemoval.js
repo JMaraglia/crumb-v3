@@ -5,26 +5,24 @@
 // Keys match the Itinerary's: c-<customer id>, p-<prospect id>, m-<stop id>, e-<event id>.
 // "Both" really deletes hand-added stops and calendar events; scheduled visits just skip that day
 // (the regular schedule never changes).
-import { readJSON, toVisitList, addDaysToKey, todayKeyLocal } from './schedule';
-import { loadEvents, saveEvents } from './store';
+import { addDaysToKey, todayKeyLocal } from './schedule';
+import { loadEvents, saveEvents, loadStops, saveStops, loadDayMap, saveDayMap, snapshotSaved, restoreSaved, EVENTS_KEY, STOPS_KEY, REMOVED_KEY, HIDDEN_KEY } from './store';
 
-export const REMOVED_KEY = 'crumb_itinerary_removed';
-export const HIDDEN_KEY = 'crumb_calendar_hidden';
-const EVENTS_KEY = 'crumb_calendar_events';
-const VISITS_KEY = 'visitData';
+export { REMOVED_KEY, HIDDEN_KEY }; // (other screens import them from here)
+
 
 export function removedOn(storageKey, date) {
-  const m = readJSON(storageKey, {}) || {};
+  const m = loadDayMap(storageKey);
   return Array.isArray(m[date]) ? m[date] : [];
 }
 
 function addTo(storageKey, date, key) {
-  const m = readJSON(storageKey, {}) || {};
+  const m = loadDayMap(storageKey);
   const list = Array.isArray(m[date]) ? m[date] : [];
   if (!list.includes(key)) m[date] = [...list, key];
   const cutoff = addDaysToKey(todayKeyLocal(), -60); // forget old days
   Object.keys(m).forEach((k) => k < cutoff && delete m[k]);
-  localStorage.setItem(storageKey, JSON.stringify(m));
+  saveDayMap(storageKey, m);
 }
 
 // where: 'calendar' | 'itinerary' | 'both'
@@ -35,8 +33,7 @@ export function removeStop(where, key, date) {
       return;
     }
     if (key.startsWith('m-')) {
-      const visits = toVisitList(readJSON(VISITS_KEY, []));
-      localStorage.setItem(VISITS_KEY, JSON.stringify(visits.filter((v, i) => `m-${v.id || i}` !== key)));
+      saveStops(loadStops().filter((v, i) => `m-${v.id || i}` !== key));
       return;
     }
     addTo(REMOVED_KEY, date, key);
@@ -47,12 +44,10 @@ export function removeStop(where, key, date) {
 }
 
 // For Undo: copy of everything a removal can touch, and putting it back.
-const TOUCHED = [EVENTS_KEY, VISITS_KEY, REMOVED_KEY, HIDDEN_KEY];
+const TOUCHED = [EVENTS_KEY, STOPS_KEY, REMOVED_KEY, HIDDEN_KEY];
 export function snapshotStops() {
-  const snap = {};
-  TOUCHED.forEach((k) => (snap[k] = localStorage.getItem(k)));
-  return snap;
+  return snapshotSaved(TOUCHED);
 }
 export function restoreStops(snap) {
-  TOUCHED.forEach((k) => (snap[k] == null ? localStorage.removeItem(k) : localStorage.setItem(k, snap[k])));
+  restoreSaved(snap);
 }

@@ -208,3 +208,48 @@ export function loadCalendarSettings() {
   return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
 }
 export const saveCalendarSettings = (settings) => writeSaved(CAL_SETTINGS_KEY, settings);
+
+/* ---------- Itinerary (central data layer, slice 3, Nov 6 2026) ----------
+   Hand-added stops (visitData) and the per-day maps that go with stops. Same keys, same format.
+     done / removed / hidden: { date: [stopKey] }      locks / times / lengths: { date: { stopKey: minutes } } */
+export const STOPS_KEY = VISITS_KEY; // 'visitData'
+export const DONE_KEY = 'crumb_itinerary_done';
+export const LOCKS_KEY = 'crumb_itinerary_locks';
+export const TIMES_KEY = 'crumb_itinerary_times';
+export const LENGTHS_KEY = 'crumb_itinerary_lengths';
+export const REMOVED_KEY = 'crumb_itinerary_removed';
+export const HIDDEN_KEY = 'crumb_calendar_hidden';
+
+// Always a list. Unreadable saved stops are copied aside (never thrown away).
+export const loadStops = () => visitList(readSaved(STOPS_KEY, [], { keepUnreadable: true }));
+export const saveStops = (list) => writeSaved(STOPS_KEY, list);
+
+// One of the per-day maps, always an object. Unreadable ones are copied aside.
+export function loadDayMap(key) {
+  const v = readSaved(key, {}, { keepUnreadable: true });
+  return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+}
+export const saveDayMap = (key, map) => writeSaved(key, map);
+
+// For Undo: an exact copy of some saved items, and putting them back exactly.
+export function snapshotSaved(keys) {
+  const snap = {};
+  keys.forEach((k) => {
+    try {
+      snap[k] = localStorage.getItem(k);
+    } catch {
+      snap[k] = null;
+    }
+  });
+  return snap;
+}
+export function restoreSaved(snap) {
+  Object.entries(snap).forEach(([k, v]) => {
+    try {
+      if (v == null) localStorage.removeItem(k);
+      else localStorage.setItem(k, v);
+    } catch {
+      window.dispatchEvent(new Event('crumb-save-failed'));
+    }
+  });
+}

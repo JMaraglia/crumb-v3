@@ -7,7 +7,6 @@ import {
   addDaysToKey,
   fromKey,
   readJSON,
-  toVisitList,
   hhmmToMinutes,
   onItinerary,
   visitTimeOn,
@@ -18,7 +17,7 @@ import {
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
-import { loadCustomers, loadProspects, loadEvents } from './store';
+import { loadCustomers, loadProspects, loadEvents, loadStops, loadDayMap, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
 
 const SETTINGS_KEY = 'crumb_notify_settings';
 const DEVICE_KEY = 'crumb_push_device';
@@ -97,9 +96,9 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
   const contacts = loadCustomers();
   const prospects = loadProspects();
   const events = loadEvents();
-  const visits = toVisitList(readJSON('visitData', []));
-  const doneMap = readJSON('crumb_itinerary_done', {}) || {};
-  const lockMap = readJSON('crumb_itinerary_locks', {}) || {};
+  const visits = loadStops();
+  const doneMap = loadDayMap(DONE_KEY);
+  const lockMap = loadDayMap(LOCKS_KEY);
   const todos = readJSON('crumb_todos', []) || [];
   const nowMs = now.getTime();
   const today = keyOf(now);
@@ -136,7 +135,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
       }));
     appts.filter((a) => a.countsAsStop).forEach((a) => stops.push({ ...a, url: '/itinerary' }));
     // Events taken off the Calendar that day only remind you if they're still on the Itinerary
-    const offCal = (readJSON('crumb_calendar_hidden', {}) || {})[day] || [];
+    const offCal = loadDayMap(HIDDEN_KEY)[day] || [];
     for (let j = appts.length - 1; j >= 0; j--) if (offCal.includes(appts[j].key)) appts.splice(j, 1);
     visits.forEach((v, idx) => {
       if (!v || v.date !== day) return;
@@ -150,7 +149,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     });
 
     // Stops swiped off this day's Itinerary list don't get reminders or count in the summary
-    const gone = (readJSON('crumb_itinerary_removed', {}) || {})[day] || [];
+    const gone = loadDayMap(REMOVED_KEY)[day] || [];
     for (let j = stops.length - 1; j >= 0; j--) if (gone.includes(stops[j].key)) stops.splice(j, 1);
 
     // Reminders before visits and appointments (each one once, even if it's on both lists)

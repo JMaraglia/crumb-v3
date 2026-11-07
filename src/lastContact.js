@@ -3,8 +3,8 @@
 // Last contact = the newest of: a note on it (not Background), an Itinerary check-off of it,
 // or a calendar event linked to it (on or before today).
 // Accounts with no contact at all count from the day they were added (ids are creation times).
-import { readJSON, keyOf, todayKeyLocal } from './schedule';
-import { loadEvents } from './store';
+import { keyOf, todayKeyLocal } from './schedule';
+import { loadEvents, loadStops, loadDayMap, DONE_KEY } from './store';
 
 export const STALE_KEY = 'crumb_stale_days';
 export const STALE_CHOICES = [0, 21, 30, 45, 60, 90]; // 0 = off
@@ -26,10 +26,9 @@ function contactIndex() {
   const bump = (k, d) => {
     if (d && (!idx[k] || d > idx[k])) idx[k] = d;
   };
-  const done = readJSON('crumb_itinerary_done', {}) || {};
+  const done = loadDayMap(DONE_KEY);
   Object.keys(done).forEach((d) => (Array.isArray(done[d]) ? done[d] : []).forEach((k) => bump(k, d)));
-  const visits = readJSON('visitData', []);
-  (Array.isArray(visits) ? visits : []).forEach((v) => {
+  loadStops().forEach((v) => {
     if (v && v.done && v.accountId) bump(`${v.accountType === 'customer' || v.type === 'contact' ? 'c' : 'p'}-${v.accountId}`, v.date);
   });
   const today = todayKeyLocal();

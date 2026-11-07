@@ -1,8 +1,9 @@
 // file: src/schedule.js
 // Shared date + visit-schedule logic, used by both the Itinerary and the Calendar
 // so they always agree on which prospects are due on which day.
-// (No imports: other files import from here.)
+// (Only import: the saved per-day Itinerary maps from store.js.)
 
+import { loadDayMap, LOCKS_KEY, TIMES_KEY, HIDDEN_KEY } from './store';
 export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export const FREQUENCIES = [
@@ -199,16 +200,16 @@ export function hiddenByInactive(item, customers = [], prospects = []) {
 // A scheduled visit's time on one day: a time locked for that day, else a time moved on the Itinerary
 // that day (drag, Optimize, longer visit), else the usual time.
 export function dayTimeOf(key, day, usual) {
-  const locks = (readJSON('crumb_itinerary_locks', {}) || {})[day] || {};
+  const locks = loadDayMap(LOCKS_KEY)[day] || {};
   if (typeof locks[key] === 'number') return locks[key];
-  const times = (readJSON('crumb_itinerary_times', {}) || {})[day] || {};
+  const times = loadDayMap(TIMES_KEY)[day] || {};
   if (typeof times[key] === 'number') return times[key];
   return usual;
 }
 
 export function scheduledCalendarBlocks(prospects, visits, startKey, endKey, customers = []) {
   const blocks = [];
-  const hidden = readJSON('crumb_calendar_hidden', {}) || {}; // taken off the Calendar for one day
+  const hidden = loadDayMap(HIDDEN_KEY); // taken off the Calendar for one day
   for (let k = startKey; k <= endKey; k = addDaysToKey(k, 1)) {
     const gone = hidden[k] || [];
     customers.forEach((c) => {

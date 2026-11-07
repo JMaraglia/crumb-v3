@@ -30,7 +30,6 @@ import {
   fromKey,
   addDaysToKey,
   readJSON,
-  toVisitList,
   hhmmToMinutes,
   minutesToHhmm,
   onItinerary,
@@ -53,14 +52,25 @@ import MeetingSheet from './MeetingSheet';
 import { staleAccounts } from './lastContact';
 import { planRoute, timeRoute } from './routePlan';
 import { collectTodoItems } from './todoItems';
-import { changeNote, loadEvents, saveEvents, loadCalendarSettings } from './store';
+import {
+  changeNote,
+  loadEvents,
+  saveEvents,
+  loadCalendarSettings,
+  loadStops,
+  saveStops,
+  loadDayMap,
+  saveDayMap as storeDayMap,
+  DONE_KEY,
+  LOCKS_KEY,
+  TIMES_KEY,
+  LENGTHS_KEY,
+} from './store';
 import './ItineraryPage.css';
 
-const VISITS_KEY = 'visitData';                     // stops added by hand (existing key)
-const DONE_KEY = 'crumb_itinerary_done';            // checkmarks for scheduled/event stops
-const LOCKS_KEY = 'crumb_itinerary_locks';          // { date: { stopKey: minutes } } times locked for one day
-const TIMES_KEY = 'crumb_itinerary_times';          // { date: { stopKey: minutes } } scheduled visits re-timed for one day, NOT locked
-const LENGTHS_KEY = 'crumb_itinerary_lengths';      // { date: { stopKey: minutes } } how long a stop takes that day
+// Saved through store.js (the front door):
+//   visitData = stops added by hand · crumb_itinerary_done = checkmarks for scheduled/event stops
+//   crumb_itinerary_locks / _times / _lengths = { date: { stopKey: minutes } } locked time, re-timed (not locked), visit length
 
 function niceDate(k) {
   return fromKey(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -163,14 +173,14 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   });
   const [moving, setMoving] = useState(null); // { stop, acct } while the Move panel is open
 
-  const [visits, setVisits] = useState(() => toVisitList(readJSON(VISITS_KEY, [])));
-  const [doneMap, setDoneMap] = useState(() => readJSON(DONE_KEY, {}));
-  const [lockMap, setLockMap] = useState(() => readJSON(LOCKS_KEY, {}));
-  const [timesMap, setTimesMap] = useState(() => readJSON(TIMES_KEY, {}));
-  const [lengthsMap, setLengthsMap] = useState(() => readJSON(LENGTHS_KEY, {}));
+  const [visits, setVisits] = useState(loadStops);
+  const [doneMap, setDoneMap] = useState(() => loadDayMap(DONE_KEY));
+  const [lockMap, setLockMap] = useState(() => loadDayMap(LOCKS_KEY));
+  const [timesMap, setTimesMap] = useState(() => loadDayMap(TIMES_KEY));
+  const [lengthsMap, setLengthsMap] = useState(() => loadDayMap(LENGTHS_KEY));
   const [locking, setLocking] = useState(null); // stop whose time is being locked
   const [timing, setTiming] = useState(null);   // stop whose time is being changed (tapped the time)
-  const [removedMap, setRemovedMap] = useState(() => readJSON(REMOVED_KEY, {}) || {});
+  const [removedMap, setRemovedMap] = useState(() => loadDayMap(REMOVED_KEY));
   const [meetingFor, setMeetingFor] = useState(null); // account getting a meeting set
   const [visitFor, setVisitFor] = useState(null);     // { acct, type } whose visits are being changed
   const [staleOpen, setStaleOpen] = useState(false);
@@ -191,11 +201,11 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
   const saveVisits = (next) => {
     setVisits(next);
-    localStorage.setItem(VISITS_KEY, JSON.stringify(next));
+    saveStops(next);
   };
   const saveDone = (next) => {
     setDoneMap(next);
-    localStorage.setItem(DONE_KEY, JSON.stringify(next));
+    storeDayMap(DONE_KEY, next);
   };
 
   const findAccount = (type, id) =>
@@ -516,7 +526,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   // (see stopRemoval.js). Scheduled visits only ever skip that one day.
   // Is this stop also showing on the Calendar that day? (Then we ask about removing it there too.)
   const onCalendarToo = (stop) => {
-    if ((readJSON(HIDDEN_KEY, {}) || {})[date]?.includes(stop.key)) return false;
+    if (loadDayMap(HIDDEN_KEY)[date]?.includes(stop.key)) return false;
     if (stop.kind === 'event') return true;
     if (typeof stop.time !== 'number') return false; // no time = not on the calendar grid
     const cal = loadCalendarSettings();
@@ -542,8 +552,8 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setTimeClash({ other, time, after: Math.min(after, 23 * 60 + 55), go });
   };
   const reloadStops = () => {
-    setVisits(toVisitList(readJSON(VISITS_KEY, [])));
-    setRemovedMap(readJSON(REMOVED_KEY, {}) || {});
+    setVisits(loadStops());
+    setRemovedMap(loadDayMap(REMOVED_KEY));
   };
   // where: 'itinerary' | 'both'
   const doRemove = (stop, where) => {
@@ -687,7 +697,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     const cutoff = addDaysToKey(today, -60);
     Object.keys(next).forEach((k) => k < cutoff && delete next[k]);
     setLockMap(next);
-    localStorage.setItem(LOCKS_KEY, JSON.stringify(next));
+    storeDayMap(LOCKS_KEY, next);
     setLocking(null);
   };
 
@@ -706,7 +716,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     const cutoff = addDaysToKey(today, -60);
     Object.keys(next).forEach((k) => k < cutoff && delete next[k]);
     setMap(next);
-    localStorage.setItem(key, JSON.stringify(next));
+    storeDayMap(key, next);
   };
   const applyPlan = (timeChanges, lengthChanges = []) => {
     const manual = new Map(timeChanges.filter((c) => c.stop.kind === 'manual').map((c) => [c.stop.index, c.time]));
@@ -783,7 +793,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       restore: () => {
         saveVisits(before.visits);
         setTimesMap(before.times);
-        localStorage.setItem(TIMES_KEY, JSON.stringify(before.times));
+        storeDayMap(TIMES_KEY, before.times);
       },
       timer,
     });
@@ -1590,9 +1600,9 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                   restore: () => {
                     saveVisits(before.visits);
                     setTimesMap(before.times);
-                    localStorage.setItem(TIMES_KEY, JSON.stringify(before.times));
+                    storeDayMap(TIMES_KEY, before.times);
                     setLengthsMap(before.lengths);
-                    localStorage.setItem(LENGTHS_KEY, JSON.stringify(before.lengths));
+                    storeDayMap(LENGTHS_KEY, before.lengths);
                   },
                   timer,
                 });

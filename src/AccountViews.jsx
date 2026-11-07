@@ -16,7 +16,7 @@ import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
 import CompetitorPicker from './CompetitorPicker';
-import { loadCustomers, loadProspects, loadEvents, saveEvents } from './store';
+import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
@@ -172,7 +172,7 @@ export function deleteAccountExtras(type, id) {
     }
   };
   saveEvents(loadEvents().filter((ev) => !same(ev)));
-  clean('visitData', (v) => !same(v));
+  saveStops(loadStops().filter((v) => !same(v)));
   clean('crumb_todos', (t) => !same(t));
   deleteAccountPhotos(photoKey(type, id)).catch(() => {});
 }

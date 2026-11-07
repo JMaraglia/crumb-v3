@@ -7,10 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
 import EventSheet, { DEFAULT_EVENT_COLOR, EVENT_COLORS } from './EventSheet';
 import MonthView from './MonthView';
-import { scheduledCalendarBlocks, readJSON, toVisitList, addDaysToKey, MEETING_COLOR, hiddenByInactive } from './schedule';
+import { scheduledCalendarBlocks, addDaysToKey, MEETING_COLOR, hiddenByInactive } from './schedule';
 import { removeStop, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import AskSheet from './AskSheet';
-import { loadEvents, saveEvents, loadCalendarSettings, saveCalendarSettings } from './store';
+import { loadEvents, saveEvents, loadCalendarSettings, saveCalendarSettings, loadStops, loadDayMap } from './store';
 import './CalendarPage.css';
 
 // Calendar events are saved on the phone under this name (new; nothing else uses it).
@@ -106,7 +106,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   // from their schedules, never saved as events.
   const visitBlocks = scheduledCalendarBlocks(
     prospects,
-    toVisitList(readJSON('visitData', [])),
+    loadStops(),
     addDaysToKey(dateKey(viewStart), -45),
     addDaysToKey(dateKey(viewStart), 60),
     contacts
@@ -115,7 +115,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
     b.source === 'schedule' ? settings.showVisits : b.source === 'itinerary' ? settings.showStops : true
   );
   // Events taken off the Calendar for a day (they can stay on the Itinerary)
-  const hiddenMap = readJSON(HIDDEN_KEY, {}) || {};
+  const hiddenMap = loadDayMap(HIDDEN_KEY);
   // Meetings show orange (older ones were saved on the default blue)
   const meetingIds = new Set();
   [...prospects, ...contacts].forEach((a) =>
@@ -135,7 +135,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   const [asking, setAsking] = useState(null); // { ev, key, alsoOnItinerary }
   const [, setRemovalTick] = useState(0);    // re-draw after a removal
   const isOnItinerary = (ev, key) => {
-    const removed = readJSON(REMOVED_KEY, {}) || {};
+    const removed = loadDayMap(REMOVED_KEY);
     if ((removed[ev.date] || []).includes(key)) return false;
     if (!ev.virtual) return typeof ev.showInItinerary === 'boolean' ? ev.showInItinerary : Boolean(ev.accountId);
     if (ev.source === 'schedule') {

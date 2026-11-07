@@ -196,7 +196,6 @@ export default function App() {
     if (readSaved(CUSTOMERS_KEY, null)) setContactsRaw((prev) => withNoteIds(prev));
     if (readSaved(PROSPECTS_KEY, null)) setProspectsRaw((prev) => withNoteIds(prev));
   }, [setContactsRaw, setProspectsRaw]);
-  const [itinerary, setItinerary] = usePersistedState('visitData', {});
 
   // Notifications: keep the server's reminder list fresh — when Crumb opens, when your
   // customers/prospects change, and when you leave the app. (Does nothing if they're off.)
@@ -299,7 +298,6 @@ export default function App() {
               setContacts={setContacts}
               prospects={prospects}
               setProspects={setProspects}
-              itinerary={itinerary}
             />
           }
         />
@@ -311,7 +309,6 @@ export default function App() {
               setContacts={setContacts}
               prospects={prospects}
               setProspects={setProspects}
-              itinerary={itinerary}
             />
           }
         />
