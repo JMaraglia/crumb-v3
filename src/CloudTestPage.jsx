@@ -173,6 +173,10 @@ export default function CloudTestPage() {
   const signOut = () =>
     run('Signing out…', async () => {
       await sb.auth.signOut();
+      if (isRealSynced()) {
+        navigate('/sign-in', { replace: true, state: { from: '/', gate: true } }); // signed out: Sign In, like any app
+        return;
+      }
       setCheck(null);
     });
 

@@ -1,6 +1,6 @@
 // file: src/App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import HomePage from './HomePage';
 import MasterNotesPage from './MasterNotesPage';
@@ -22,6 +22,7 @@ const SignInPage = React.lazy(() => import('./SignInPage'));
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
+import { needsSignIn } from './syncMode';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
@@ -80,6 +81,19 @@ function NotificationTaps() {
     navigator.serviceWorker.addEventListener('message', on);
     return () => navigator.serviceWorker.removeEventListener('message', on);
   }, [navigate]);
+  return null;
+}
+
+// A device that syncs your data opens on Sign In when nobody is signed in (like a banking app).
+// Devices that don't sync open on Home as always. Email links (confirm / reset password) are let through.
+function SignInGate() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  React.useEffect(() => {
+    if (location.pathname === '/sign-in') return;
+    if (/access_token|error_description|type=recovery/.test(window.location.hash || '')) return;
+    if (needsSignIn()) navigate('/sign-in', { replace: true, state: { from: '/', gate: true } });
+  }, [location.pathname, navigate]);
   return null;
 }
 
@@ -233,6 +247,7 @@ export default function App() {
     <Router>
       <SaveFailedBanner />
       <NotificationTaps />
+      <SignInGate />
       <ErrorBoundary>
       <Routes>
         <Route path="/" element={<HomePage />} />

@@ -45,6 +45,17 @@ export function syncBlockReason(ref = projectRef(), read = readText, killed = KI
 }
 export const syncActive = () => syncBlockReason() === '';
 
+// A device that syncs your data, but nobody is signed in: Crumb opens on Sign In first (like a banking app).
+// Read straight from where the sign-in is remembered, so the cloud library doesn't have to load to know.
+export function hasSignIn(ref = projectRef()) {
+  try {
+    return Boolean(ref && localStorage.getItem(`sb-${ref}-auth-token`));
+  } catch {
+    return true; // can't tell: never lock anyone out
+  }
+}
+export const needsSignIn = () => isRealSynced() && !hasSignIn();
+
 export function setPaused(on) {
   writeText(PAUSED_KEY, on ? '1' : '0');
   window.dispatchEvent(new Event('crumb-sync-status'));

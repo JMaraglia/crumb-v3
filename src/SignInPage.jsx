@@ -7,12 +7,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { cloud, cloudProblem } from './cloud';
 import { plainError } from './cloudErrors';
+import { needsSignIn } from './syncMode';
 import './SignInPage.css';
 
 export default function SignInPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const backTo = (location.state && location.state.from) || '/cloud-test';
+  // Opened as the front door (a syncing device with nobody signed in): no back arrow, Home after signing in.
+  const [gate] = useState(() => Boolean(location.state && location.state.gate) || needsSignIn());
+  const backTo = (location.state && location.state.from) || (gate ? '/' : '/cloud-test');
   const sb = cloud();
   const [mode, setMode] = useState('signin'); // 'signin' | 'create'
   const [email, setEmail] = useState('');
@@ -94,9 +97,11 @@ export default function SignInPage() {
 
   return (
     <div className="home-container si-page">
-      <button className="si-back" onClick={() => navigate(backTo)} aria-label="Back">
-        <FaArrowLeft />
-      </button>
+      {!gate && (
+        <button className="si-back" onClick={() => navigate(backTo)} aria-label="Back">
+          <FaArrowLeft />
+        </button>
+      )}
       {/* Same top as Home */}
       <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem', marginBottom: '10px' }}>
         Crumb.
