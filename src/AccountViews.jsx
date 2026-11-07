@@ -16,7 +16,7 @@ import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
 import CompetitorPicker from './CompetitorPicker';
-import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId } from './store';
+import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadDayMap, saveDayMap, REMOVED_KEY } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
@@ -666,43 +666,69 @@ export function snoozeSheet(account, save, daysField) {
   return { title: `Snooze visits to ${account.name || 'this account'}`, actions };
 }
 
-// Quick-Add To Itinerary (Nov 7): pick a day (today + the next 6) and the account goes on that day's
-// Itinerary as a stop with no set time (set the time / order on the Itinerary later). Days it's already
-// on are marked and do nothing.
-export function itinerarySheet(account, type, daysField, onAdded) {
+// Quick-Add To Itinerary (Nov 7): pick a day (today + the next 6). A day it's not on: the account goes on that
+// day's Itinerary as a stop with no set time (set time / order on the Itinerary later). A day it's already on
+// (marked ✓): tapping it takes it off that day, without going to the Itinerary. Its regular visit schedule
+// never changes: a scheduled visit just skips that day (like swiping it off on the Itinerary).
+export function itinerarySheet(account, type, daysField, onDone) {
   const today = keyOf(new Date());
-  const stops = loadStops();
-  const isOn = (day) =>
-    (!account.inactive && onItinerary(account, day, daysField)) ||
-    stops.some((v) => v && v.date === day && String(v.accountId) === String(account.id) && (v.accountType || '') === type);
+  const visitKey = `${type === 'prospect' ? 'p' : 'c'}-${account.id}`;
+  const mine = (v, day) => v && v.date === day && String(v.accountId) === String(account.id) && (v.accountType || '') === type;
+  const removedThatDay = (day) => {
+    const m = loadDayMap(REMOVED_KEY);
+    return Array.isArray(m[day]) && m[day].includes(visitKey);
+  };
+  const scheduled = (day) => !account.inactive && onItinerary(account, day, daysField);
+  const isOn = (day) => (scheduled(day) && !removedThatDay(day)) || loadStops().some((v) => mine(v, day));
+  const dayWord = (day, i) =>
+    i === 0 ? "today's" : i === 1 ? "tomorrow's" : `${fromKey(day).toLocaleDateString('en-US', { weekday: 'long' })}'s`;
   const label = (day, i) =>
     i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : fromKey(day).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const setRemoved = (day, removed) => {
+    const m = loadDayMap(REMOVED_KEY);
+    const list = Array.isArray(m[day]) ? m[day] : [];
+    const next = removed ? (list.includes(visitKey) ? list : [...list, visitKey]) : list.filter((k) => k !== visitKey);
+    if (next.length) m[day] = next;
+    else delete m[day];
+    saveDayMap(REMOVED_KEY, m);
+  };
   const actions = Array.from({ length: 7 }, (_, i) => {
     const day = addDaysToKey(today, i);
     const on = isOn(day);
     return {
-      label: on ? `${label(day, i)} · already on ✓` : label(day, i),
+      label: on ? `${label(day, i)} · on ✓  (tap to remove)` : label(day, i),
       onClick: () => {
-        if (on) return;
-        saveStops([
-          ...loadStops(),
-          {
-            id: newStopId(),
-            name: account.name,
-            time: '',
-            date: day,
-            done: false,
-            recurrence: 'none',
-            type: type === 'customer' ? 'contact' : 'prospect',
-            accountType: type,
-            accountId: account.id,
-          },
-        ]);
-        onAdded(i === 0 ? "today's" : i === 1 ? "tomorrow's" : `${fromKey(day).toLocaleDateString('en-US', { weekday: 'long' })}'s`);
+        if (on) {
+          const stops = loadStops();
+          const kept = stops.filter((v) => !mine(v, day));
+          if (kept.length !== stops.length) saveStops(kept); // added by hand: taken off
+          if (scheduled(day)) setRemoved(day, true); // regular visit: skips that day only
+          onDone(`Removed from ${dayWord(day, i)} Itinerary`);
+          return;
+        }
+        if (scheduled(day) && removedThatDay(day)) {
+          setRemoved(day, false); // its regular visit, taken off earlier: back on
+        } else {
+          saveStops([
+            ...loadStops(),
+            {
+              id: newStopId(),
+              name: account.name,
+              time: '',
+              date: day,
+              done: false,
+              recurrence: 'none',
+              type: type === 'customer' ? 'contact' : 'prospect',
+              accountType: type,
+              accountId: account.id,
+            },
+          ]);
+        }
+        onDone(`Added to ${dayWord(day, i)} Itinerary ✓`);
       },
     };
   });
-  return { title: `Add ${account.name || 'this account'} to the Itinerary`, actions };
+  return { title: `${account.name || 'This account'} on the Itinerary`, actions };
 }
 
 function niceShort(k) {
@@ -841,8 +867,8 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
   const [added, setAdded] = useState(''); // "Added to Tuesday's Itinerary"
   const addToItinerary = () =>
     onSheet(
-      itinerarySheet(a, typeOf(config), config.visitDaysField, (dayWord) => {
-        setAdded(`Added to ${dayWord} Itinerary ✓`);
+      itinerarySheet(a, typeOf(config), config.visitDaysField, (message) => {
+        setAdded(message);
         setTimeout(() => setAdded(''), 3000);
       })
     );
