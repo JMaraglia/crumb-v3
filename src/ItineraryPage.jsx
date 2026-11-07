@@ -72,6 +72,7 @@ import {
   LENGTHS_KEY,
 } from './store';
 import './ItineraryPage.css';
+import { useCloudRefresh } from './useCloudRefresh';
 
 // Saved through store.js (the front door):
 //   visitData = stops added by hand · crumb_itinerary_done = checkmarks for scheduled/event stops
@@ -186,6 +187,15 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const [locking, setLocking] = useState(null); // stop whose time is being locked
   const [timing, setTiming] = useState(null);   // stop whose time is being changed (tapped the time)
   const [removedMap, setRemovedMap] = useState(() => loadDayMap(REMOVED_KEY));
+  // changes from your other device: re-read in place (open panels stay open)
+  useCloudRefresh(() => {
+    setVisits(loadStops());
+    setDoneMap(loadDayMap(DONE_KEY));
+    setLockMap(loadDayMap(LOCKS_KEY));
+    setTimesMap(loadDayMap(TIMES_KEY));
+    setLengthsMap(loadDayMap(LENGTHS_KEY));
+    setRemovedMap(loadDayMap(REMOVED_KEY));
+  });
   const [meetingFor, setMeetingFor] = useState(null); // account getting a meeting set
   const [visitFor, setVisitFor] = useState(null);     // { acct, type } whose visits are being changed
   const [staleOpen, setStaleOpen] = useState(false);

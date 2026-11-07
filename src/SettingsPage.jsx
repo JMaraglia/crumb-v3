@@ -10,11 +10,13 @@ import { staleDays, STALE_KEY } from './lastContact';
 import AskSheet from './AskSheet';
 import { writeText } from './store';
 import './SettingsPage.css';
+import { useCloudRefresh } from './useCloudRefresh';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const n = loadNotifySettings();
   const [stale, setStale] = useState(staleDays);
+  useCloudRefresh(() => setStale(staleDays())); // changes from your other device, re-read in place
   const [pickStale, setPickStale] = useState(false);
   const setStaleDays = (v) => {
     writeText(STALE_KEY, v); // not critical if it can't save

@@ -122,7 +122,11 @@ export default function AccountPhotos({ type, id, name }) {
     load();
     const again = () => load();
     window.addEventListener('crumb-photos-moved', again);
-    return () => window.removeEventListener('crumb-photos-moved', again);
+    window.addEventListener('crumb-pulled', again); // photos from your other device
+    return () => {
+      window.removeEventListener('crumb-photos-moved', again);
+      window.removeEventListener('crumb-pulled', again);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 

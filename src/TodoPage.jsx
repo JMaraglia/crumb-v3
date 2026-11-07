@@ -11,6 +11,7 @@ import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5
 import { shareText } from './share';
 import { changeNote, dropNote, loadTodos, saveTodos as storeTodos } from './store';
 import './TodoPage.css';
+import { useCloudRefresh } from './useCloudRefresh';
 
 // Saved through store.js (the front door).
 const readTodos = loadTodos;
@@ -37,6 +38,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
   const navigate = useNavigate();
   const today = keyOf(new Date());
   const [todos, setTodos] = useState(readTodos);
+  useCloudRefresh(() => setTodos(readTodos())); // changes from your other device, re-read in place
   const [text, setText] = useState('');
   const [due, setDue] = useState(null); // due date for the task being typed
   const [editing, setEditing] = useState(null); // item being edited

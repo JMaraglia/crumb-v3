@@ -204,13 +204,12 @@ export default function App() {
   }, [setContactsRaw, setProspectsRaw]);
 
   // Sync step S4 (test copy only): changes from your other devices just arrived from the cloud.
-  // Re-read customers and prospects, and redraw the screen so it shows the new data.
-  const [pulledTick, setPulledTick] = React.useState(0);
+  // Re-read customers and prospects in place (each screen re-reads its own data: useCloudRefresh.js),
+  // so nothing is redrawn from scratch and an open panel stays open.
   React.useEffect(() => {
     const onPulled = () => {
       setContactsRaw(readSaved(CUSTOMERS_KEY, [], { keepUnreadable: true, keepNull: true }));
       setProspectsRaw(readSaved(PROSPECTS_KEY, [], { keepUnreadable: true, keepNull: true }));
-      setPulledTick((n) => n + 1);
     };
     window.addEventListener('crumb-pulled', onPulled);
     return () => window.removeEventListener('crumb-pulled', onPulled);
@@ -234,7 +233,7 @@ export default function App() {
       <SaveFailedBanner />
       <NotificationTaps />
       <ErrorBoundary>
-      <Routes key={pulledTick}>
+      <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/backup" element={<BackupPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />

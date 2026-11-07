@@ -12,6 +12,7 @@ import { removeStop, REMOVED_KEY, HIDDEN_KEY } from './stopRemoval';
 import AskSheet from './AskSheet';
 import { loadEvents, saveEvents, loadCalendarSettings, saveCalendarSettings, loadStops, loadDayMap } from './store';
 import './CalendarPage.css';
+import { useCloudRefresh } from './useCloudRefresh';
 
 // Calendar events are saved on the phone under this name (new; nothing else uses it).
 
@@ -92,6 +93,11 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
   // Saved events. Only written to the phone when you add, edit, or delete,
   // so opening the calendar can never wipe what's stored.
   const [events, setEvents] = useState(loadEvents);
+  // changes from your other device: re-read in place (an open event panel stays open)
+  useCloudRefresh(() => {
+    setEvents(loadEvents());
+    setSettings(loadSettings());
+  });
   const updateEvents = (change) => {
     setEvents((prev) => {
       const next = change(prev);

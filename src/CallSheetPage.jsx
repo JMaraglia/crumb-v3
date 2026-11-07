@@ -11,6 +11,7 @@ import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel, formatPhone }
 import { makeXlsx } from './xlsx';
 import { loadObject, writeSaved, ORDERED_KEY } from './store';
 import './CallSheetPage.css';
+import { useCloudRefresh } from './useCloudRefresh';
 
 const FULL_DAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
 
@@ -140,6 +141,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
   const [day, setDay] = useState(todayShort());
   const [sheet, setSheet] = useState(null);
   const [orderedMap, setOrderedMap] = useState(readOrdered);
+  useCloudRefresh(() => setOrderedMap(readOrdered())); // changes from your other device, re-read in place
   const dateKeyForDay = keyOf(dateThisWeek(day));
   const dateText = dateThisWeek(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const orderedIds = orderedMap[dateKeyForDay] || [];

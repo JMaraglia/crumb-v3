@@ -16,6 +16,7 @@ import {
   END_OF_DAY_KINDS,
 } from './notify';
 import './NotificationsPage.css';
+import { useCloudRefresh } from './useCloudRefresh';
 
 const MORNING_TIMES = Array.from({ length: 13 }, (_, i) => 300 + i * 30); // 5:00 – 11:00 AM
 const AFTERNOON_TIMES = Array.from({ length: 17 }, (_, i) => 720 + i * 30); // 12:00 – 8:00 PM
@@ -32,6 +33,7 @@ const timeText = (m) => `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padSt
 export default function NotificationsPage() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(loadNotifySettings);
+  useCloudRefresh(() => setSettings(loadNotifySettings())); // changes from your other device, re-read in place
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
