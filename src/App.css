@@ -3,6 +3,11 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+/* iPhone: no dark tap-flash box over anything tapped, anywhere in Crumb (like a real app).
+   Buttons with their own pressed look keep it. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
 
 body {
   font-family: Arial, sans-serif;
