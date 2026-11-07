@@ -29,11 +29,15 @@ function addTo(storageKey, date, key) {
 export function removeStop(where, key, date) {
   if (where === 'both') {
     if (key.startsWith('e-')) {
-      saveEvents(loadEvents().filter((ev) => `e-${ev.id}` !== key));
+      const events = loadEvents();
+      const kept = events.filter((ev) => `e-${ev.id}` !== key);
+      if (kept.length !== events.length) saveEvents(kept);
       return;
     }
     if (key.startsWith('m-')) {
-      saveStops(loadStops().filter((v, i) => `m-${v.id || i}` !== key));
+      const stops = loadStops();
+      const kept = stops.filter((v, i) => `m-${v.id || i}` !== key);
+      if (kept.length !== stops.length) saveStops(kept);
       return;
     }
     addTo(REMOVED_KEY, date, key);

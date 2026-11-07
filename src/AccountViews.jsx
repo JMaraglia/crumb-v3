@@ -16,7 +16,7 @@ import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
 import CompetitorPicker from './CompetitorPicker';
-import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops } from './store';
+import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
@@ -163,17 +163,15 @@ export function deleteWarning(account, config) {
 }
 export function deleteAccountExtras(type, id) {
   const same = (x) => x && x.accountType === type && String(x.accountId) === String(id);
-  const clean = (k, keep) => {
-    try {
-      const list = JSON.parse(localStorage.getItem(k) || '[]');
-      if (Array.isArray(list)) localStorage.setItem(k, JSON.stringify(list.filter(keep)));
-    } catch {
-      /* leave it */
-    }
+  // Saved only when something was actually removed.
+  const drop = (load, save) => {
+    const list = load();
+    const kept = list.filter((x) => !same(x));
+    if (kept.length !== list.length) save(kept);
   };
-  saveEvents(loadEvents().filter((ev) => !same(ev)));
-  saveStops(loadStops().filter((v) => !same(v)));
-  clean('crumb_todos', (t) => !same(t));
+  drop(loadEvents, saveEvents);
+  drop(loadStops, saveStops);
+  drop(loadTodos, saveTodos);
   deleteAccountPhotos(photoKey(type, id)).catch(() => {});
 }
 

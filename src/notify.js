@@ -17,7 +17,7 @@ import {
 } from './schedule';
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
-import { loadCustomers, loadProspects, loadEvents, loadStops, loadDayMap, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
+import { loadCustomers, loadProspects, loadEvents, loadTodos, loadStops, loadDayMap, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
 
 const SETTINGS_KEY = 'crumb_notify_settings';
 const DEVICE_KEY = 'crumb_push_device';
@@ -99,7 +99,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
   const visits = loadStops();
   const doneMap = loadDayMap(DONE_KEY);
   const lockMap = loadDayMap(LOCKS_KEY);
-  const todos = readJSON('crumb_todos', []) || [];
+  const todos = loadTodos();
   const nowMs = now.getTime();
   const today = keyOf(now);
   const out = [];

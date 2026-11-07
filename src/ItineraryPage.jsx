@@ -29,7 +29,6 @@ import {
   keyOf,
   fromKey,
   addDaysToKey,
-  readJSON,
   hhmmToMinutes,
   minutesToHhmm,
   onItinerary,
@@ -54,6 +53,8 @@ import { planRoute, timeRoute } from './routePlan';
 import { collectTodoItems } from './todoItems';
 import {
   changeNote,
+  loadTodos,
+  saveTodos,
   loadEvents,
   saveEvents,
   loadCalendarSettings,
@@ -915,14 +916,13 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   /* ---- Wrap Up Today: what's still open today, in one place (opened by the 4 PM notification) ---- */
   if (wrapUp) {
     const leftover = buildStops(today).filter((st) => !st.done && st.kind !== 'event');
-    const todos = readJSON('crumb_todos', []) || [];
-    const dueItems = collectTodoItems(Array.isArray(todos) ? todos : [], contacts, prospects)
+    const todos = loadTodos();
+    const dueItems = collectTodoItems(todos, contacts, prospects)
       .filter((i) => !i.done && i.due && i.due <= today)
       .sort((a, b) => a.due.localeCompare(b.due) || a.text.localeCompare(b.text));
     const patchItem = (item, patch) => {
       if (item.kind === 'task') {
-        const list = readJSON('crumb_todos', []) || [];
-        localStorage.setItem('crumb_todos', JSON.stringify(list.map((t) => (t.id === item.id ? { ...t, ...patch } : t))));
+        saveTodos(loadTodos().map((t) => (t.id === item.id ? { ...t, ...patch } : t)));
         setWrapTick((n) => n + 1);
         return;
       }

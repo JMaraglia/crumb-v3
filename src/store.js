@@ -253,3 +253,10 @@ export function restoreSaved(snap) {
     }
   });
 }
+
+/* ---------- To-dos (central data layer, slice 4, Nov 6 2026) ----------
+   Your own tasks: [{ id, text, due, done, doneAt, accountType?, accountId?, accountName? }].
+   (Follow-up / Sample to-dos are notes, saved with their account.) */
+export const TODOS_KEY = 'crumb_todos';
+export const loadTodos = () => asList(readSaved(TODOS_KEY, [], { keepUnreadable: true }));
+export const saveTodos = (list) => writeSaved(TODOS_KEY, list);

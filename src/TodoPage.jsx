@@ -9,19 +9,11 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
 import { shareText } from './share';
-import { changeNote, dropNote } from './store';
+import { changeNote, dropNote, loadTodos, saveTodos as storeTodos } from './store';
 import './TodoPage.css';
 
-const TODOS_KEY = 'crumb_todos';
-
-function readTodos() {
-  try {
-    const v = JSON.parse(localStorage.getItem(TODOS_KEY));
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
-}
+// Saved through store.js (the front door).
+const readTodos = loadTodos;
 
 const keyOf = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -53,7 +45,7 @@ export default function TodoPage({ contacts = [], setContacts, prospects = [], s
 
   const saveTodos = (next) => {
     setTodos(next);
-    localStorage.setItem(TODOS_KEY, JSON.stringify(next));
+    storeTodos(next);
   };
 
   /* ---- everything on the list ---- */

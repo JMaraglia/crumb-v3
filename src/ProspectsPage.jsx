@@ -3,11 +3,12 @@
 // Same data as before (crumb_prospects): name, address, contacts, days, notes.
 import React from 'react';
 import { AccountList, AccountDetail, AccountEdit } from './AccountViews';
-import { readJSON } from './schedule';
 import { movePhotos, photoKey } from './photos';
 import {
   loadEvents,
   saveEvents,
+  loadTodos,
+  saveTodos,
   loadStops,
   saveStops,
   loadDayMap,
@@ -105,8 +106,8 @@ function convertProspect(prospect, accountNumber, contacts, setContacts, setPros
   });
 
   // To-dos linked to the prospect now belong to the customer
-  const todos = readJSON('crumb_todos', null);
-  if (Array.isArray(todos)) localStorage.setItem('crumb_todos', JSON.stringify(todos.map(relink)));
+  const todos = loadTodos();
+  if (todos.length) saveTodos(todos.map(relink));
 
   // Photos follow too (they're filed under prospect-<id> / customer-<id>)
   movePhotos(photoKey('prospect', prospect.id), photoKey('customer', newId))
