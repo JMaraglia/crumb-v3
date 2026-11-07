@@ -131,20 +131,23 @@ export async function verifyUser(token) {
 }
 
 // Is this signed-in person a Crumb admin? Asks the database's own is_admin() with THEIR token (no secret key).
+// true / false = the database answered; null = couldn't ask right now (callers treat null as "not allowed",
+// or keep what they knew before).
 export async function isAdminToken(token) {
   const base = String(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
   const key = String(process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
-  if (!base || !key || !token) return false;
+  if (!base || !key || !token) return null;
   try {
     const res = await fetch(`${base}/rest/v1/rpc/is_admin`, {
       method: 'POST',
       headers: { apikey: key, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: '{}',
     });
-    if (!res.ok) return false;
-    return (await res.json().catch(() => false)) === true;
+    if (!res.ok) return null;
+    const answer = await res.json().catch(() => null);
+    return answer === true ? true : answer === false ? false : null;
   } catch {
-    return false;
+    return null;
   }
 }
 

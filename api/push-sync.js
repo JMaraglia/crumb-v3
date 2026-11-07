@@ -87,7 +87,10 @@ async function accountSync(res, { deviceId, subscription, notifications, off, to
   user.notifications = [...recent, ...list];
   user.syncedAt = new Date().toISOString();
   user.from = deviceId;
-  user.isAdmin = await isAdminToken(token); // Crumb admins also get "new ticket" alerts on these devices
+  // Crumb admins also get "new ticket" alerts on these devices. If the database can't be asked right now,
+  // keep what we knew (a hiccup shouldn't silently stop the founder's alerts).
+  const admin = await isAdminToken(token);
+  if (admin !== null) user.isAdmin = admin;
   await saveUser(uid, user);
   return res.status(200).json({ ok: true, count: list.length, account: true });
 }

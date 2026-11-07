@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   const token = (req.headers.authorization || '').replace(/^Bearer /, '');
   try {
     const uid = await verifyUser(token);
-    if (!uid || !(await isAdminToken(token))) return res.status(401).json({ error: 'Not allowed' });
+    if (!uid || (await isAdminToken(token)) !== true) return res.status(401).json({ error: 'Not allowed' });
 
     const tick = await lastTick();
     const users = await allUsers();
