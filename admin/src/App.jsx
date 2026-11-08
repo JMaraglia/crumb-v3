@@ -99,10 +99,11 @@ function Tile({ label, value, sub }) {
   );
 }
 
-function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, onOpenInbox }) {
+function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, newBeta = 0, onOpenInbox }) {
   const attention = [];
   if (newTickets > 0) attention.push(`${newTickets} New ${newTickets === 1 ? 'Ticket' : 'Tickets'} In The Inbox`);
   if (newSuggestions > 0) attention.push(`${newSuggestions} New ${newSuggestions === 1 ? 'Suggestion' : 'Suggestions'} In The Inbox`);
+  if (newBeta > 0) attention.push(`${newBeta} New Beta ${newBeta === 1 ? 'Sign-Up' : 'Sign-Ups'} In The Inbox`);
   if (data.needs_review > 0) attention.push(`${data.needs_review} Sync ${data.needs_review === 1 ? 'Change Needs' : 'Changes Need'} Review`);
   return (
     <>
@@ -198,6 +199,7 @@ function DeleteSheet({ email, onClose, onDeleted }) {
 function logText(l) {
   const d = l.details || {};
   if (l.action === 'delete_account') return `Deleted ${l.target_email}`;
+  if (l.action === 'beta_status') return `Beta ${l.target_email} → ${betaWord(d.to)}`;
   if (l.action === 'feedback_status') return `${d.kind === 'suggestion' ? 'Suggestion' : 'Ticket'} #${d.id} → ${statusWord(d.kind === 'suggestion' ? 'suggestion' : 'problem', d.to)}`;
   return `${l.action} ${l.target_email || ''}`;
 }
@@ -401,22 +403,79 @@ function StatusSheet({ item, onClose, onSaved }) {
   );
 }
 
-function Inbox({ items, err, onChanged }) {
+// ---------- beta sign-ups (from crumbsales.com) ----------
+const BETA_STATUSES = [['new', 'New'], ['invited', 'Invited'], ['declined', 'Declined']];
+const betaWord = (st) => (BETA_STATUSES.find(([v]) => v === st) || [st, st])[1];
+
+function BetaSheet({ item, onClose, onSaved }) {
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const pick = async (st) => {
+    if (busy) return;
+    setBusy(st); setMsg('');
+    const { error } = await cloud().rpc('admin_beta_set_status', { p_id: item.id, p_status: st });
+    setBusy('');
+    if (error) { setMsg(plainError(error)); return; }
+    onSaved();
+  };
+  return (
+    <div className="ad-sheet-back" onClick={busy ? undefined : onClose}>
+      <div className="ad-sheet" role="dialog" aria-modal="true" aria-labelledby="ad-beta-title" onClick={(e) => e.stopPropagation()}>
+        <h2 id="ad-beta-title" className="ad-sheet-title">{item.name}</h2>
+        <p className="ad-sheet-email">{item.email}</p>
+        <p className="ad-muted ad-small">{[item.company, `Joined ${shortDate(item.created_at)}`].filter(Boolean).join(' · ')}</p>
+        <div className="ad-status-list" role="group" aria-label="Status">
+          {BETA_STATUSES.map(([v, label]) => (
+            <button key={v} type="button" className={`ad-status-btn ${item.status === v ? 'is-on' : ''}`} disabled={Boolean(busy)} onClick={() => pick(v)}>
+              {busy === v ? 'Saving…' : label}{item.status === v ? ' ✓' : ''}
+            </button>
+          ))}
+        </div>
+        <p className="ad-muted ad-small">Marking Invited only keeps track. Send the invite yourself for now.</p>
+        {msg && <p className="ad-error" role="alert">{msg}</p>}
+        <button className="ad-link-btn ad-sheet-cancel" type="button" onClick={onClose} disabled={Boolean(busy)}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+function Inbox({ items, err, beta = [], betaErr = '', onChanged }) {
   const [kind, setKind] = useState('problem');
   const [open, setOpen] = useState(null);
+  const [openBeta, setOpenBeta] = useState(null);
   const list = items.filter((i) => i.kind === kind);
-  const openCount = (k) => items.filter((i) => i.kind === k && !DONE.has(i.status)).length;
+  const openCount = (k) => (k === 'beta' ? beta.filter((b) => b.status === 'new').length : items.filter((i) => i.kind === k && !DONE.has(i.status)).length);
   const sorted = [...list].sort((a, b) => (DONE.has(a.status) - DONE.has(b.status)) || (new Date(b.created_at) - new Date(a.created_at)));
   return (
     <>
       <h1 className="ad-h1">Inbox</h1>
       <div className="ad-seg" role="tablist">
-        {[['problem', 'Tickets'], ['suggestion', 'Suggestions']].map(([k, label]) => (
+        {[['problem', 'Tickets'], ['suggestion', 'Suggestions'], ['beta', 'Beta']].map(([k, label]) => (
           <button key={k} type="button" role="tab" aria-selected={kind === k} className={`ad-seg-btn ${kind === k ? 'is-on' : ''}`} onClick={() => setKind(k)}>
             {label}{openCount(k) ? ` · ${openCount(k)}` : ''}
           </button>
         ))}
       </div>
+      {kind === 'beta' ? (
+        <>
+          {betaErr && <p className="ad-error">{betaErr}</p>}
+          <div className="ad-list">
+            {beta.map((b) => (
+              <button key={b.id} type="button" className={`ad-ticket ${b.status === 'new' ? 'is-new' : ''} ${b.status === 'declined' ? 'is-done' : ''} ${b.status === 'invited' ? 'is-invited' : ''}`} onClick={() => setOpenBeta(b)}>
+                <span className="ad-ticket-top">
+                  <span className="ad-muted ad-small">{b.company || 'No Company Given'}</span>
+                  <span className={`ad-pill ${b.status === 'new' ? 'ad-pill-new' : b.status === 'invited' ? 'ad-pill-ok' : 'ad-pill-quiet'}`}>{betaWord(b.status).toUpperCase()}</span>
+                </span>
+                <span className="ad-ticket-msg">{b.name}</span>
+                <span className="ad-muted ad-small">{b.email} · {ago(b.created_at)}</span>
+              </button>
+            ))}
+            {!betaErr && beta.length === 0 && <div className="ad-card ad-coming"><p>No beta sign-ups yet. They come from the Join The Beta form on crumbsales.com.</p></div>}
+          </div>
+          {openBeta && <BetaSheet item={openBeta} onClose={() => setOpenBeta(null)} onSaved={() => { setOpenBeta(null); onChanged(); }} />}
+        </>
+      ) : (
+      <>
       {err && <p className="ad-error">{err}</p>}
       <div className="ad-list">
         {sorted.map((i) => (
@@ -434,6 +493,8 @@ function Inbox({ items, err, onChanged }) {
         )}
       </div>
       {open && <StatusSheet item={open} onClose={() => setOpen(null)} onSaved={() => { setOpen(null); onChanged(); }} />}
+      </>
+      )}
     </>
   );
 }
@@ -446,7 +507,7 @@ export default function App() {
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
   const [log, setLog] = useState([]);
-  const [inbox, setInbox] = useState({ items: [], err: '' });
+  const [inbox, setInbox] = useState({ items: [], err: '', beta: [], betaErr: '' });
   const [health, setHealth] = useState({ db: null, dbMs: null, dbErr: '', rem: null, remErr: '' });
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -482,7 +543,8 @@ export default function App() {
       }
       setHealth(next);
       const fb = await sb.rpc('admin_feedback_list');
-      setInbox({ items: fb.error ? [] : (fb.data || []), err: fb.error ? plainError(fb.error) : '' });
+      const bt = await sb.rpc('admin_beta_list');
+      setInbox({ items: fb.error ? [] : (fb.data || []), err: fb.error ? plainError(fb.error) : '', beta: bt.error ? [] : (bt.data || []), betaErr: bt.error ? plainError(bt.error) : '' });
       setMsg('');
       setStage('ready');
     } catch (err) {
@@ -547,16 +609,16 @@ export default function App() {
           <button className="ad-refresh" type="button" onClick={load} disabled={refreshing}>{refreshing ? 'Updating…' : todayLabel()}</button>
         </div>
         {msg && <p className="ad-error">{msg}</p>}
-        {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} onOpenInbox={() => pick('inbox')} />}
+        {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} />}
         {tab === 'users' && <Users users={users} log={log} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
-        {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} onChanged={load} />}
+        {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} onChanged={load} />}
       </main>
 
       <nav className="ad-tabs" aria-label="Admin sections">
         {[['overview', 'Overview'], ['users', 'Users'], ['health', 'Health'], ['inbox', 'Inbox']].map(([id, label]) => (
           <button key={id} type="button" className={`ad-tab ${tab === id ? 'is-on' : ''}`} onClick={() => pick(id)} aria-current={tab === id ? 'page' : undefined}>
-            <span className="ad-tab-icon">{Icon[id]}{id === 'inbox' && inbox.items.some((i) => i.status === 'new') && <span className="ad-badge" aria-label="New items" />}</span><span>{label}</span>
+            <span className="ad-tab-icon">{Icon[id]}{id === 'inbox' && (inbox.items.some((i) => i.status === 'new') || inbox.beta.some((b) => b.status === 'new')) && <span className="ad-badge" aria-label="New items" />}</span><span>{label}</span>
           </button>
         ))}
       </nav>

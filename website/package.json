@@ -1,0 +1,7 @@
+{
+  "name": "crumb-website",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "crumbsales.com: Crumb's public website (static pages + one form endpoint). Separate Vercel project, Root Directory: website."
+}

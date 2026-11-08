@@ -191,3 +191,8 @@ input { font: inherit; }
 .ad-row-btn { width: 100%; border: 0; text-align: left; font: inherit; color: inherit; }
 .ad-tab-icon { position: relative; display: inline-flex; }
 .ad-badge { position: absolute; top: -2px; right: -6px; width: 10px; height: 10px; border-radius: 5px; background: #ff5d4d; border: 2px solid #0a1420; }
+
+/* Beta tab (crumbsales.com sign-ups) */
+.ad-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ad-seg-btn { font-size: 14px; padding: 9px 4px; white-space: nowrap; }
+.ad-ticket.is-invited { border-left-color: var(--ad-ok); }
