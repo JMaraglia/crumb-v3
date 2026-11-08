@@ -1332,6 +1332,16 @@ export function AccountList({ config, accounts, setAccounts }) {
 /* ------------------------------------------------------------------ */
 const INFO_FOLD_KEY = 'crumbUiAccountInfoFolded'; // screen preference only, not account data
 
+// Customer screen: smooth fold. Children stay mounted (nothing is removed), they just slide shut.
+function Fold({ open, animate, children }) {
+  if (!animate) return open ? children : null;
+  return (
+    <div className={`av-fold ${open ? '' : 'is-closed'}`} aria-hidden={!open} {...(open ? {} : { inert: '' })}>
+      <div className="av-fold-in">{children}</div>
+    </div>
+  );
+}
+
 export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const navigate = useNavigate();
   const goBack = useGoBack();
@@ -1361,6 +1371,8 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
       }
       return next;
     });
+  // Customers: Hide Details folds the whole screen down to the compact card. Opens expanded every time.
+  const [custCollapsed, setCustCollapsed] = useState(false);
   const account = accounts.find((a) => String(a.id) === id);
 
   if (!account) {
@@ -1384,6 +1396,11 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
     const sheetInfo = contactSheet(contacts);
     if (sheetInfo) setSheet(sheetInfo);
   };
+
+  const isCustomer = typeOf(config) === 'customer';
+  const folded = isCustomer ? custCollapsed : infoFolded; // prospects keep their Hide Info behavior
+  const onToggle = isCustomer ? () => setCustCollapsed((c) => !c) : toggleInfo;
+  const toggleLabel = isCustomer ? (folded ? 'Show Details' : 'Hide Details') : folded ? 'Show Info' : 'Hide Info';
 
   return (
     <div className="av-page">
@@ -1422,7 +1439,8 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
       />
       {shareMsg && <div className="av-share-msg">{shareMsg}</div>}
 
-      <div className="av-content">
+      <div className={`av-content ${isCustomer && folded ? 'is-compact' : ''}`}>
+        <Fold open={!(isCustomer && folded)} animate={isCustomer}>
         {account.inactive && (
           <div className="av-inactive-banner">
             <strong>Inactive · {inactiveLabel(account)}</strong>
@@ -1441,6 +1459,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             )}
           </div>
         )}
+        </Fold>
         {/* Summary card: who, last note, visit schedule, quick buttons */}
         <div className="av-group av-summary">
           <div className="av-summary-top">
@@ -1458,15 +1477,14 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             </div>
             <span className="av-summary-side">
               <span className="av-badge">{config.singular}</span>
-              <button className="av-info-toggle" onClick={toggleInfo} aria-expanded={!infoFolded}>
-                {infoFolded ? <FaChevronDown /> : <FaChevronUp />}
-                {infoFolded ? 'Show Info' : 'Hide Info'}
+              <button className="av-info-toggle" onClick={onToggle} aria-expanded={!folded}>
+                {folded ? <FaChevronDown /> : <FaChevronUp />}
+                {toggleLabel}
               </button>
             </span>
           </div>
 
-          {!infoFolded && (
-          <>
+          <Fold open={!folded} animate={isCustomer}>
           <BackgroundBox notes={backgroundNotes(account)} onClick={() => navigate(config.notesPath(account.id))} />
           {latest && (
             <button className="av-last-note" onClick={() => navigate(config.notesPath(account.id))}>
@@ -1496,8 +1514,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             )}
             <SnoozeChip account={account} daysField={config.visitDaysField} />
           </div>
-          </>
-          )}
+          </Fold>
 
           <div className="av-quick">
             <button className="av-quick-btn" disabled={reachableContacts.length === 0} onClick={openCallText}>
@@ -1533,6 +1550,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </div>
         </div>
 
+        <Fold open={!(isCustomer && folded)} animate={isCustomer}>
         {(account.address || account.website) && (
           <div className="av-group">
             {account.address && (
@@ -1744,6 +1762,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
         >
           Delete {config.singular}
         </button>
+        </Fold>
       </div>
 
       {revisitOpen && account && account.inactive && (

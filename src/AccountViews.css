@@ -1531,5 +1531,27 @@
   -webkit-tap-highlight-color: transparent;
 }
 .av-page .av-info-toggle:hover,
-.av-page .av-info-toggle:active { background: none; color: #0077cc; }
+.av-page .av-info-toggle:active { background: none; color: #0077cc; font-size: 0.8rem; font-weight: 600; padding: 4px 0; }
 .av-page .av-info-toggle svg { font-size: 0.7rem; }
+
+/* Customer screen: Hide Details / Show Details slides content shut (nothing is removed) */
+.av-fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 0.26s ease, opacity 0.2s ease;
+}
+.av-fold.is-closed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+.av-fold-in {
+  min-height: 0;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .av-fold { transition: none; }
+}
+.av-content.is-compact .av-summary { padding: 12px 14px; }
+.av-content.is-compact .av-quick { margin-top: 10px; }
