@@ -24,7 +24,7 @@ const FeedbackPage = React.lazy(() => import('./FeedbackPage'));
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
-import { needsSignIn, needsSetup } from './syncMode';
+import { needsSignIn, needsSetup, firstOpenSignIn } from './syncMode';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
@@ -96,6 +96,11 @@ function SignInGate() {
     if (/access_token|error_description|type=recovery/.test(window.location.hash || '')) return;
     if (needsSignIn()) {
       navigate('/sign-in', { replace: true, state: { from: '/setup', gate: true } });
+      return;
+    }
+    // A brand-new device opens on Sign In (Nov 8). Not for links from an email (setup, reset).
+    if (location.pathname === '/' && firstOpenSignIn()) {
+      navigate('/sign-in', { replace: true, state: { from: '/setup', fresh: true } });
       return;
     }
     // Signed in, invited, and nothing on this device yet (setup didn't finish last time): set it up now.

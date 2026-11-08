@@ -58,6 +58,14 @@ describe('Move My Data: verify (S7)', () => {
     cloud.notes.push({ id: 'n-orphan', account_id: '77', data: { text: 'left behind' } });
     expect(verifyMatch(r.changes, cloud).ok).toBe(true);
   });
+  it('after a download, a setting only this device has is fine; when moving up, it must be in the cloud', () => {
+    const r2 = inspectForMove(reader({ ...saved, crumb_stale_days: '45' }));
+    expect(r2.changes.some((c) => c.table === 'settings')).toBe(true);
+    const cloud = asCloud(r2.changes);
+    cloud.settings = [];
+    expect(verifyMatch(r2.changes, cloud, [], [], { download: true }).ok).toBe(true);
+    expect(verifyMatch(r2.changes, cloud).ok).toBe(false);
+  });
 });
 
 describe('which devices sync (S7)', () => {

@@ -100,7 +100,9 @@ export const COUNT_NAMES = [
 
 // ---------------------------------------------------------------- pure: does the cloud match, one by one?
 // expected: changes (table, id, next, cols); cloudAnswer: pull_changes(workspace, null); cloudPhotoIds: live photo ids
-export function verifyMatch(expected, cloudAnswer, expectedPhotoIds = [], cloudPhotoIds = []) {
+// download: true when the account was just downloaded to this device. Then a setting this device already had
+// (e.g. Due For A Check-In days) that the account never saved isn't a mismatch: it's just this device's choice.
+export function verifyMatch(expected, cloudAnswer, expectedPhotoIds = [], cloudPhotoIds = [], { download = false } = {}) {
   const problems = [];
   const label = { accounts: 'Customers & prospects', notes: 'Notes', events: 'Calendar events', stops: 'Itinerary stops', todos: 'To-dos', day_marks: 'Day marks', settings: 'Settings' };
   const want = {};
@@ -121,7 +123,8 @@ export function verifyMatch(expected, cloudAnswer, expectedPhotoIds = [], cloudP
     let ok = 0;
     w.forEach((c, id) => {
       const r = have.get(id);
-      if (!r) problems.push(`${label[t]}: one is missing in the cloud (${id})`);
+      if (!r && download && t === 'settings') ok += 1;
+      else if (!r) problems.push(`${label[t]}: one is missing in the cloud (${id})`);
       else if (!same(r.data, c.next)) problems.push(`${label[t]}: one doesn’t match (${id})`);
       else if (t === 'accounts' && c.cols && c.cols.kind && r.kind !== c.cols.kind) problems.push(`${label[t]}: ${id} is a ${r.kind} in the cloud`);
       else ok += 1;
@@ -245,7 +248,7 @@ export async function downloadMyData(onStep = () => {}) {
   await syncPhotos(sb, ws);
   onStep('Checking this device matches the cloud…');
   const mine = inspectForMove(readText, await allPhotos());
-  const v = verifyMatch(mine.changes, answer, photoIds, mine.photoIds);
+  const v = verifyMatch(mine.changes, answer, photoIds, mine.photoIds, { download: true });
   if (!v.ok) return { ...v, counts: mine.counts };
   turnOnSyncing(answer);
   return { ...v, counts: mine.counts, reload: true };

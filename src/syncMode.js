@@ -106,6 +106,13 @@ export function signedInEmail(ref = projectRef()) {
   }
 }
 
+// A brand-new device (nothing on it, nobody signed in, not syncing): Crumb opens on Sign In, like any app.
+// "Use Crumb Without An Account" turns this off for this device (SKIP_SIGNIN_KEY).
+export const SKIP_SIGNIN_KEY = 'crumb_signin_skipped';
+export const firstOpenSignIn = () =>
+  !KILL_SWITCH && Boolean(projectRef()) && !isTestProject() && !isTestCopy() && !isRealSynced() && !hasSignIn() &&
+  readText(SKIP_SIGNIN_KEY) !== '1' && readText('crumb_setup_separate') !== '1' && !deviceHasData();
+
 // Signed in, allowed to sync, not syncing yet, and nothing on this device: Crumb sets it up on its own.
 // (Not for the test cloud or test copies.)
 export const needsSetup = () =>
