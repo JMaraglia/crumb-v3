@@ -319,9 +319,7 @@ export function VisitChips({ account, config, onPick }) {
       <span className={`av-chip av-chip-blue ${tap}`} {...pick}>{visit}</span>
       <span className={`av-chip av-chip-gray ${tap}`} {...pick}>{shortFrequency(account.visitFrequency)}</span>
     </>
-  ) : (
-    <span className={`av-chip av-chip-orange ${tap}`} {...pick}>No visit set</span>
-  );
+  ) : null; // no visit set: show nothing (set visits from Edit)
 }
 
 // Quick visit panel: days, usual time, how often (+ start date). Same fields as the Edit screen,

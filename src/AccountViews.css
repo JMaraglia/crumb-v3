@@ -1555,3 +1555,7 @@
 }
 .av-content.is-compact .av-summary { padding: 12px 14px; }
 .av-content.is-compact .av-quick { margin-top: 10px; }
+
+/* A chip row with nothing in it (e.g. no visit set) takes no space */
+.av-chips:empty,
+.av-summary-chips:empty { display: none; }
