@@ -19,11 +19,13 @@ import SettingsPage from './SettingsPage';
 const CloudTestPage = React.lazy(() => import('./CloudTestPage'));
 const SignInPage = React.lazy(() => import('./SignInPage'));
 const FeedbackPage = React.lazy(() => import('./FeedbackPage'));
+const MfaPage = React.lazy(() => import('./MfaPage'));
 // Sync step S2: if "Record changes on this device" is switched on (Cloud Test), start noting changes.
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
 import { needsSignIn } from './syncMode';
+import { needsDailyCode } from './mfaCheck';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
@@ -95,6 +97,30 @@ function SignInGate() {
     if (/access_token|error_description|type=recovery/.test(window.location.hash || '')) return;
     if (needsSignIn()) navigate('/sign-in', { replace: true, state: { from: '/', gate: true } });
   }, [location.pathname, navigate]);
+  return null;
+}
+
+// Daily authenticator code (Nov 2026): a signed-in device that syncs with an account enters today's code
+// once per calendar day (see mfa.js). Checked on every screen change, when Crumb comes back on screen,
+// and at midnight. Only changes which screen shows: sync, reminders and data keep running underneath.
+function DailyCodeGate() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  React.useEffect(() => {
+    const check = () => {
+      const path = location.pathname;
+      if (path === '/sign-in' || path === '/verify') return;
+      if (/access_token|error_description|type=recovery/.test(window.location.hash || '')) return;
+      if (needsDailyCode()) navigate('/verify', { replace: true, state: { from: path + (location.search || '') } });
+    };
+    check();
+    const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', onVisible);
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+    const timer = setTimeout(check, midnight - now);
+    return () => { document.removeEventListener('visibilitychange', onVisible); clearTimeout(timer); };
+  }, [location.pathname, location.search, navigate]);
   return null;
 }
 
@@ -249,6 +275,7 @@ export default function App() {
       <SaveFailedBanner />
       <NotificationTaps />
       <SignInGate />
+      <DailyCodeGate />
       <ErrorBoundary>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -258,6 +285,7 @@ export default function App() {
         <Route path="/cloud-test" element={<React.Suspense fallback={null}><CloudTestPage /></React.Suspense>} />
         <Route path="/sign-in" element={<React.Suspense fallback={null}><SignInPage /></React.Suspense>} />
         <Route path="/feedback" element={<React.Suspense fallback={null}><FeedbackPage /></React.Suspense>} />
+        <Route path="/verify" element={<React.Suspense fallback={null}><MfaPage /></React.Suspense>} />
         <Route
           path="/todo"
           element={
