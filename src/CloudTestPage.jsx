@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoCloudOutline, IoCloudDoneOutline } from 'react-icons/io5';
-import { cloud, cloudReady, cloudProjectRef, cloudProblem } from './cloud';
+import { cloud, cloudReady, cloudProjectRef, cloudProblem, signOutThisDevice } from './cloud';
 import { isRecording, setRecording, pendingCount, pendingChanges, clearOutbox, stuckChanges } from './outbox';
 import { isTestDevice, hasRealAccounts, loadDemoData, uploadAll, sendNow, uploadedAt, lastSentAt, lastCheckedAt, lastPullNote, pullNow, joinFromCloud } from './syncSend';
 import { syncBlockReason, isTestProject, isRealSynced, setPaused, maySync, BLOCK_TEXT } from './syncMode';
@@ -172,12 +172,9 @@ export default function CloudTestPage() {
 
   const signOut = () =>
     run('Signing out…', async () => {
-      await sb.auth.signOut();
-      if (isRealSynced()) {
-        navigate('/sign-in', { replace: true, state: { from: '/', gate: true } }); // signed out: Sign In, like any app
-        return;
-      }
-      setCheck(null);
+      await signOutThisDevice(); // this device only; other devices stay signed in
+      // Restart so nothing of the old sign-in stays in memory (synced devices land on Sign In, like any app).
+      window.location.replace(isRealSynced() ? '/sign-in' : '/cloud-test');
     });
 
   // The connection check: everything here happens in the cloud only.

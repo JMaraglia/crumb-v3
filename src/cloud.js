@@ -41,3 +41,24 @@ export function cloudProjectRef() {
   const m = /^https:\/\/([a-z0-9]+)\.supabase\.co/i.exec(URL);
   return m ? m[1] : '';
 }
+
+// Sign out of THIS device only (Nov 2026). Other phones and iPads stay signed in.
+// Ends this device's sign-in on the server ("this device only"), then always clears it here too,
+// even with no signal, so the next sign-in needs the email, password (and later, the daily code) again.
+// Nothing else is touched: customers, notes, photos and unsent changes stay on the phone.
+export async function signOutThisDevice() {
+  const sb = cloud();
+  try {
+    if (sb) await sb.auth.signOut({ scope: 'local' });
+  } catch {
+    /* no signal: cleared on this device below */
+  }
+  const ref = cloudProjectRef();
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (ref && k.startsWith(`sb-${ref}-auth-token`)) localStorage.removeItem(k);
+    }
+  } catch {
+    /* storage unavailable: nothing to clear */
+  }
+}

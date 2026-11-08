@@ -1,7 +1,7 @@
 // Crumb Admin, step 1: sign-in (admins only), Overview and Users. Read-only.
 // Shows counts, dates, emails and device counts only, never reps' customers, notes or photos.
 import React, { useCallback, useEffect, useState } from 'react';
-import { cloud, cloudReady, cloudProblem, plainError, projectRef } from './cloud.js';
+import { cloud, cloudReady, cloudProblem, plainError, projectRef, signOutThisDevice } from './cloud.js';
 
 const TAB_KEY = 'crumb_admin_tab';
 const readTab = () => { try { return localStorage.getItem(TAB_KEY) || 'overview'; } catch { return 'overview'; } };
@@ -500,8 +500,8 @@ export default function App() {
   }, [load]);
 
   const signOut = async () => {
-    try { await cloud().auth.signOut(); } catch { /* signed out locally anyway */ }
-    setOverview(null); setUsers([]); setStage('signedOut');
+    await signOutThisDevice(); // this device only; other devices and the Crumb app stay signed in
+    window.location.replace('/'); // restart so nothing of the old sign-in stays in memory
   };
 
   const pick = (t) => { setTab(t); saveTab(t); window.scrollTo(0, 0); };

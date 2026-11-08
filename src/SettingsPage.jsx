@@ -44,14 +44,13 @@ export default function SettingsPage() {
     setAccountOpen(false);
     setSigningOut(true);
     try {
-      const { cloud } = await import('./cloud');
-      const sb = cloud();
-      if (sb) await sb.auth.signOut();
+      const { signOutThisDevice } = await import('./cloud');
+      await signOutThisDevice(); // this device only; other devices stay signed in
     } catch {
-      /* signed out on this device anyway below */
+      /* the app restarts below either way */
     }
-    if (isRealSynced()) navigate('/sign-in', { replace: true, state: { from: '/', gate: true } });
-    else window.location.reload();
+    // Restart Crumb so nothing of the old sign-in stays in memory (synced devices land on Sign In).
+    window.location.replace(isRealSynced() ? '/sign-in' : window.location.pathname);
   };
   useCloudRefresh(() => setStale(staleDays())); // changes from your other device, re-read in place
   const [pickStale, setPickStale] = useState(false);

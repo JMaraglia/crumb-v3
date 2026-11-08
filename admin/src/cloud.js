@@ -35,3 +35,21 @@ export function plainError(err) {
   if (/not allowed|permission denied|42501/i.test(msg)) return "This account isn't a Crumb admin.";
   return msg || 'Something went wrong.';
 }
+
+// Sign out of THIS device only. Other devices (and the Crumb app) stay signed in.
+// Ends this device's sign-in on the server, then always clears it here too, even with no signal.
+export async function signOutThisDevice() {
+  const sb = cloud();
+  try {
+    if (sb) await sb.auth.signOut({ scope: 'local' });
+  } catch {
+    /* no signal: cleared on this device below */
+  }
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (projectRef && k.startsWith(`sb-${projectRef}-auth-token`)) localStorage.removeItem(k);
+    }
+  } catch {
+    /* storage unavailable */
+  }
+}
