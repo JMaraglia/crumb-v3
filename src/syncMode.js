@@ -24,10 +24,33 @@ export const MODE_KEY = 'crumb_sync_mode';               // 'real' = this device
 export const PROJECT_KEY = 'crumb_sync_project';         // which cloud project it syncs with
 export const PAUSED_KEY = 'crumb_sync_paused';           // '1' = paused
 
-// Who may move or download real data for now (founder decision, Nov 7). Everyone else's Crumb stays
-// on their own phone ("coming soon"). To let someone in, add their email here.
+// Who may sync (invite-only beta). Since Nov 8 the real list lives in the cloud (Admin → Inbox → Beta →
+// Sync Access), and the cloud itself refuses anyone not on it. SYNC_EMAILS is only the fallback for a
+// cloud that doesn't have the invite list yet. INVITED_KEY remembers (on this device only) the email the
+// cloud last said yes to, so Crumb can tell on open without asking the cloud.
 export const SYNC_EMAILS = ['jmaraglia@gmail.com'];
-export const maySync = (email) => SYNC_EMAILS.includes(String(email || '').trim().toLowerCase());
+export const INVITED_KEY = 'crumb_sync_invited';
+const clean = (email) => String(email || '').trim().toLowerCase();
+export const maySync = (email) => {
+  const e = clean(email);
+  return Boolean(e) && (SYNC_EMAILS.includes(e) || readText(INVITED_KEY) === e);
+};
+
+// Ask the cloud: is the signed-in person invited? Remembers the answer on this device.
+// If the cloud doesn't have the invite list yet, falls back to SYNC_EMAILS. Other errors (no signal) throw.
+export async function checkInvited(sb, email) {
+  const e = clean(email);
+  if (!e) return false;
+  const { data, error } = await sb.rpc('can_sync');
+  if (error) {
+    const missing = error.code === 'PGRST202' || error.code === '42883' || /could not find the function/i.test(error.message || '');
+    if (missing) return SYNC_EMAILS.includes(e);
+    throw error;
+  }
+  if (data === true) writeText(INVITED_KEY, e);
+  else if (readText(INVITED_KEY)) writeText(INVITED_KEY, '');
+  return data === true;
+}
 
 export const isTestCopy = () => readText(TEST_DEVICE_KEY) === '1';
 export const isRealSynced = () => readText(MODE_KEY) === 'real';

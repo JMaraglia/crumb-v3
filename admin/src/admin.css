@@ -196,3 +196,17 @@ input { font: inherit; }
 .ad-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ad-seg-btn { font-size: 14px; padding: 9px 4px; white-space: nowrap; }
 .ad-ticket.is-invited { border-left-color: var(--ad-ok); }
+
+/* Sync Access (invite list) */
+.ad-invite-add { display: flex; gap: 8px; padding: 10px; }
+.ad-invite-add input {
+  flex: 1; min-width: 0; padding: 12px 13px; border-radius: 12px; border: 1px solid var(--ad-line);
+  background: var(--ad-bg); color: var(--ad-text); font-size: 16px; outline: none;
+}
+.ad-invite-add input:focus { border-color: var(--ad-blue); }
+.ad-invite-btn { flex: none; padding: 12px 14px; font-size: 15px; }
+.ad-invite-row { align-items: center; }
+.ad-invite-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ad-invite-email { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-invite-ask { display: flex; gap: 14px; flex: none; }
+.ad-invite-yes { color: var(--ad-bad); }

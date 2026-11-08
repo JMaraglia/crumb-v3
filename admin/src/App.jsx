@@ -203,6 +203,8 @@ function logText(l) {
   const d = l.details || {};
   if (l.action === 'delete_account') return `Deleted ${l.target_email}`;
   if (l.action === 'beta_status') return `Beta ${l.target_email} → ${betaWord(d.to)}`;
+  if (l.action === 'invite_add') return `Sync Access Added: ${l.target_email}`;
+  if (l.action === 'invite_remove') return `Sync Access Removed: ${l.target_email}`;
   if (l.action === 'feedback_status') return `${d.kind === 'suggestion' ? 'Suggestion' : 'Ticket'} #${d.id} → ${statusWord(d.kind === 'suggestion' ? 'suggestion' : 'problem', d.to)}`;
   return `${l.action} ${l.target_email || ''}`;
 }
@@ -434,7 +436,7 @@ function BetaSheet({ item, onClose, onSaved }) {
             </button>
           ))}
         </div>
-        <p className="ad-muted ad-small">Marking Invited only keeps track. Send the invite yourself for now.</p>
+        <p className="ad-muted ad-small">Invited lets this email sync with the cloud. New or Declined takes that away. Send the invite email yourself for now.</p>
         {msg && <p className="ad-error" role="alert">{msg}</p>}
         <button className="ad-link-btn ad-sheet-cancel" type="button" onClick={onClose} disabled={Boolean(busy)}>Close</button>
       </div>
@@ -442,7 +444,70 @@ function BetaSheet({ item, onClose, onSaved }) {
   );
 }
 
-function Inbox({ items, err, beta = [], betaErr = '', onChanged }) {
+// ---------- sync access (invite-only beta): who may sync with the cloud ----------
+const SOURCE_WORD = { founder: 'Owner', beta: 'From Beta', admin: 'Added By Hand' };
+
+function SyncAccess({ invites, err, onChanged }) {
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const [asking, setAsking] = useState('');
+  const add = async (e) => {
+    e.preventDefault();
+    if (busy || !email.trim()) return;
+    setBusy('add'); setMsg('');
+    const { error } = await cloud().rpc('admin_sync_invite_add', { p_email: email });
+    setBusy('');
+    if (error) { setMsg(plainError(error)); return; }
+    setEmail('');
+    onChanged();
+  };
+  const remove = async (em) => {
+    if (busy) return;
+    setBusy(em); setMsg('');
+    const { error } = await cloud().rpc('admin_sync_invite_remove', { p_email: em });
+    setBusy(''); setAsking('');
+    if (error) { setMsg(plainError(error)); return; }
+    onChanged();
+  };
+  return (
+    <>
+      <h2 className="ad-h2">Sync Access</h2>
+      <p className="ad-muted ad-small">Only these emails can sync with the cloud. Everyone else uses Crumb on their own device.</p>
+      {err ? (
+        <p className="ad-error">{err}</p>
+      ) : (
+        <>
+          <form className="ad-card ad-invite-add" onSubmit={add}>
+            <input type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" placeholder="Email Address" aria-label="Email address" value={email} onChange={(e) => setEmail(e.target.value)} disabled={Boolean(busy)} />
+            <button type="submit" className="ad-btn ad-invite-btn" disabled={Boolean(busy) || !email.trim()}>{busy === 'add' ? 'Adding…' : 'Add Email'}</button>
+          </form>
+          {msg && <p className="ad-error" role="alert">{msg}</p>}
+          <div className="ad-card ad-rows">
+            {invites.map((i) => (
+              <div key={i.email} className="ad-row ad-invite-row">
+                <span className="ad-invite-text">
+                  <span className="ad-invite-email">{i.email}</span>
+                  <span className="ad-muted ad-small">{SOURCE_WORD[i.source] || i.source} · {i.has_account ? 'Signed Up' : 'No Account Yet'}</span>
+                </span>
+                {i.source !== 'founder' && (asking === i.email ? (
+                  <span className="ad-invite-ask">
+                    <button type="button" className="ad-link-btn ad-invite-yes" onClick={() => remove(i.email)} disabled={Boolean(busy)}>{busy === i.email ? 'Removing…' : 'Remove'}</button>
+                    <button type="button" className="ad-link-btn" onClick={() => setAsking('')} disabled={Boolean(busy)}>Cancel</button>
+                  </span>
+                ) : (
+                  <button type="button" className="ad-link-btn" onClick={() => setAsking(i.email)} disabled={Boolean(busy)}>Remove</button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function Inbox({ items, err, beta = [], betaErr = '', invites = [], invitesErr = '', onChanged }) {
   const [kind, setKind] = useState('problem');
   const [open, setOpen] = useState(null);
   const [openBeta, setOpenBeta] = useState(null);
@@ -475,6 +540,7 @@ function Inbox({ items, err, beta = [], betaErr = '', onChanged }) {
             ))}
             {!betaErr && beta.length === 0 && <div className="ad-card ad-coming"><p>No beta sign-ups yet. They come from the Join The Beta form on crumbsales.com.</p></div>}
           </div>
+          <SyncAccess invites={invites} err={invitesErr} onChanged={onChanged} />
           {openBeta && <BetaSheet item={openBeta} onClose={() => setOpenBeta(null)} onSaved={() => { setOpenBeta(null); onChanged(); }} />}
         </>
       ) : (
@@ -510,7 +576,7 @@ export default function App() {
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
   const [log, setLog] = useState([]);
-  const [inbox, setInbox] = useState({ items: [], err: '', beta: [], betaErr: '' });
+  const [inbox, setInbox] = useState({ items: [], err: '', beta: [], betaErr: '', invites: [], invitesErr: '' });
   const [health, setHealth] = useState({ db: null, dbMs: null, dbErr: '', rem: null, remErr: '' });
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -547,7 +613,14 @@ export default function App() {
       setHealth(next);
       const fb = await sb.rpc('admin_feedback_list');
       const bt = await sb.rpc('admin_beta_list');
-      setInbox({ items: fb.error ? [] : (fb.data || []), err: fb.error ? plainError(fb.error) : '', beta: bt.error ? [] : (bt.data || []), betaErr: bt.error ? plainError(bt.error) : '' });
+      const si = await sb.rpc('admin_sync_invites_list');
+      const siMissing = si.error && (si.error.code === 'PGRST202' || /could not find the function/i.test(si.error.message || ''));
+      setInbox({
+        items: fb.error ? [] : (fb.data || []), err: fb.error ? plainError(fb.error) : '',
+        beta: bt.error ? [] : (bt.data || []), betaErr: bt.error ? plainError(bt.error) : '',
+        invites: si.error ? [] : (si.data || []),
+        invitesErr: siMissing ? 'Not turned on yet: the invite list SQL (0010) hasn’t been run in Supabase.' : si.error ? plainError(si.error) : '',
+      });
       setMsg('');
       setStage('ready');
     } catch (err) {
@@ -615,7 +688,7 @@ export default function App() {
         {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} />}
         {tab === 'users' && <Users users={users} log={log} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
-        {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} onChanged={load} />}
+        {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} onChanged={load} />}
       </main>
 
       <nav className="ad-tabs" aria-label="Admin sections">

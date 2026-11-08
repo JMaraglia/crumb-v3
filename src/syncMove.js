@@ -15,7 +15,7 @@ import { allPhotos, saveSafetyCopy, clearAllPhotos, putPhotosAll } from './photo
 import { isBackedUpKey, makeManifest } from './backupCheck';
 import { syncPhotos, splitKey, PHOTOS_SENT_KEY, PHOTOS_PULLED_KEY } from './syncPhotos';
 import { clearOutbox, setRecording, quietly } from './outbox';
-import { isTestProject, isTestCopy, isRealSynced, projectRef, maySync, deviceHasData, MODE_KEY, PROJECT_KEY, PAUSED_KEY, TEST_DEVICE_KEY } from './syncMode';
+import { isTestProject, isTestCopy, isRealSynced, projectRef, checkInvited, deviceHasData, MODE_KEY, PROJECT_KEY, PAUSED_KEY, TEST_DEVICE_KEY } from './syncMode';
 import { myWorkspace, sendBatch, opId, UPLOADED_KEY, LAST_SENT_KEY, PULLED_KEY, LAST_CHECK_KEY } from './syncSend';
 
 const BACKUP_KEY = 'crumb_last_backup';
@@ -143,7 +143,7 @@ async function ready() {
   if (isRealSynced()) throw new Error('This device is already syncing.');
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) throw new Error('Sign in first.');
-  if (!maySync(s.session.user && s.session.user.email)) throw new Error('Cloud sync is coming soon. Your data stays on this device.');
+  if (!(await checkInvited(sb, s.session.user && s.session.user.email))) throw new Error('Cloud sync is coming soon. Your data stays on this device.');
   return { sb, ws: await myWorkspace(sb) };
 }
 
@@ -272,7 +272,7 @@ export async function setUpAfterSignIn(onStep = () => {}) {
   if (!sb) throw new Error('Cloud isn’t set up in this version.');
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) return { status: 'signed-out' };
-  if (!maySync(s.session.user && s.session.user.email)) return { status: 'not-invited' };
+  if (!(await checkInvited(sb, s.session.user && s.session.user.email))) return { status: 'not-invited' };
   if (deviceHasData() || isTestCopy()) return askAbout(sb);
   onStep('Getting your account ready…');
   const { sb: sb2, ws } = await ready();
@@ -378,7 +378,7 @@ export async function useMyAccount(onStep = () => {}) {
   if (!sb) throw new Error('Cloud isn’t set up in this version.');
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) throw new Error('Sign in first.');
-  if (!maySync(s.session.user && s.session.user.email)) throw new Error('Cloud sync is coming soon. Your data stays on this device.');
+  if (!(await checkInvited(sb, s.session.user && s.session.user.email))) throw new Error('Cloud sync is coming soon. Your data stays on this device.');
   onStep('Saving this device’s copy…');
   let photos;
   try {
