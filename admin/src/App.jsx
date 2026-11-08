@@ -12,11 +12,11 @@ const MIN = 60 * 1000, HOUR = 60 * MIN, DAY = 24 * HOUR;
 function ago(iso) {
   if (!iso) return 'Never';
   const ms = Date.now() - new Date(iso).getTime();
-  if (ms < MIN) return 'Just now';
-  if (ms < HOUR) return `${Math.floor(ms / MIN)} min ago`;
-  if (ms < DAY) return `${Math.floor(ms / HOUR)} h ago`;
+  if (ms < MIN) return 'Just Now';
+  if (ms < HOUR) return `${Math.floor(ms / MIN)} Min Ago`;
+  if (ms < DAY) return `${Math.floor(ms / HOUR)} Hr Ago`;
   if (ms < 2 * DAY) return 'Yesterday';
-  if (ms < 7 * DAY) return `${Math.floor(ms / DAY)} days ago`;
+  if (ms < 7 * DAY) return `${Math.floor(ms / DAY)} Days Ago`;
   return shortDate(iso);
 }
 function shortDate(iso) {
@@ -70,7 +70,7 @@ function SignIn({ onSignedIn }) {
   return (
     <main className="ad-page ad-signin">
       <Brand />
-      <h1 className="ad-h1">Sign in</h1>
+      <h1 className="ad-h1">Sign In</h1>
       <p className="ad-muted">For Crumb admins only. Use your Crumb account.</p>
       <form className="ad-card ad-form" onSubmit={submit}>
         <label className="ad-field">
@@ -101,28 +101,28 @@ function Tile({ label, value, sub }) {
 
 function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, onOpenInbox }) {
   const attention = [];
-  if (newTickets > 0) attention.push(`${newTickets} new ${newTickets === 1 ? 'ticket' : 'tickets'} in the Inbox`);
-  if (newSuggestions > 0) attention.push(`${newSuggestions} new ${newSuggestions === 1 ? 'suggestion' : 'suggestions'} in the Inbox`);
-  if (data.needs_review > 0) attention.push(`${data.needs_review} sync ${data.needs_review === 1 ? 'change needs' : 'changes need'} review`);
+  if (newTickets > 0) attention.push(`${newTickets} New ${newTickets === 1 ? 'Ticket' : 'Tickets'} In The Inbox`);
+  if (newSuggestions > 0) attention.push(`${newSuggestions} New ${newSuggestions === 1 ? 'Suggestion' : 'Suggestions'} In The Inbox`);
+  if (data.needs_review > 0) attention.push(`${data.needs_review} Sync ${data.needs_review === 1 ? 'Change Needs' : 'Changes Need'} Review`);
   return (
     <>
-      <h1 className="ad-h1">How's the business?</h1>
+      <h1 className="ad-h1">How's The Business?</h1>
       <div className="ad-grid">
-        <Tile label="Registered users" value={data.users_total} sub={data.users_new_7d ? `${data.users_new_7d} new this week` : 'None new this week'} />
-        <Tile label="Active this week" value={data.users_active_7d} sub="Synced a change" />
-        <Tile label="Devices syncing" value={data.devices_30d} sub="Last 30 days" />
-        <Tile label="Changes today" value={data.changes_24h} sub={`${data.changes_7d} this week`} />
+        <Tile label="Registered Users" value={data.users_total} sub={data.users_new_7d ? `${data.users_new_7d} New This Week` : 'None New This Week'} />
+        <Tile label="Active This Week" value={data.users_active_7d} sub="Synced A Change" />
+        <Tile label="Devices Syncing" value={data.devices_30d} sub="Last 30 Days" />
+        <Tile label="Changes Today" value={data.changes_24h} sub={`${data.changes_7d} This Week`} />
       </div>
 
-      <h2 className={`ad-h2 ${attention.length ? 'ad-h2-warn' : ''}`}>{attention.length ? 'Needs your attention' : 'Sync'}</h2>
+      <h2 className={`ad-h2 ${attention.length ? 'ad-h2-warn' : ''}`}>{attention.length ? 'Needs Your Attention' : 'Sync'}</h2>
       <div className="ad-card ad-rows">
         {attention.map((a) => (
           <button key={a} type="button" className="ad-row ad-row-warn ad-row-btn" onClick={/Inbox/.test(a) ? onOpenInbox : undefined}>
             <span className="ad-dot ad-dot-warn" /><span className="ad-row-label">{a}</span>
           </button>
         ))}
-        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Last change synced</span><span className="ad-row-value">{ago(data.last_change_at)}</span></div>
-        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Overwritten values kept (7 days)</span><span className="ad-row-value">{data.overwrites_7d}</span></div>
+        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Last Change Synced</span><span className="ad-row-value">{ago(data.last_change_at)}</span></div>
+        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Overwritten Values Kept (7 Days)</span><span className="ad-row-value">{data.overwrites_7d}</span></div>
       </div>
 
       <div className="ad-account">
@@ -182,7 +182,7 @@ function DeleteSheet({ email, onClose, onDeleted }) {
             </div>
             <p className="ad-muted ad-small">This can't be undone. Any phone they use keeps its own copy until the app is removed.</p>
             <label className="ad-field">
-              <span>Type the email to confirm</span>
+              <span>Type The Email To Confirm</span>
               <input type="email" autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={email} />
             </label>
             <button className="ad-btn ad-btn-danger" type="button" disabled={!matches || busy} onClick={del}>{busy ? 'Deleting…' : 'Delete Account'}</button>
@@ -219,7 +219,7 @@ function Users({ users, log, onChanged }) {
       {done && <p className="ad-done" role="status">{done}</p>}
       <label className="ad-search">
         {Icon.search}
-        <input type="search" placeholder="Search by email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search by email" />
+        <input type="search" placeholder="Search By Email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search By Email" />
       </label>
       <div className="ad-chips" role="group" aria-label="Filter users">
         <button type="button" className={`ad-chip ${filter === 'all' ? 'is-on' : ''}`} onClick={() => setFilter('all')}>All · {users.length}</button>
@@ -238,8 +238,8 @@ function Users({ users, log, onChanged }) {
               <span className={`ad-pill ${active(u) ? 'ad-pill-ok' : 'ad-pill-quiet'}`}>{active(u) ? 'ACTIVE' : 'QUIET'}</span>
             </div>
             <div className="ad-user-stats">
-              <div><span>Last sign-in</span><b>{ago(u.last_sign_in_at)}</b></div>
-              <div><span>Last change</span><b>{ago(u.last_change_at)}</b></div>
+              <div><span>Last Sign-In</span><b>{ago(u.last_sign_in_at)}</b></div>
+              <div><span>Last Change</span><b>{ago(u.last_change_at)}</b></div>
               <div><span>Devices</span><b>{u.devices_30d}</b></div>
             </div>
             {!u.is_admin && <button type="button" className="ad-del-btn" onClick={() => { setDone(''); setDeleting(u.email); }}>Delete Account</button>}
@@ -251,7 +251,7 @@ function Users({ users, log, onChanged }) {
 
       {log.length > 0 && (
         <>
-          <h2 className="ad-h2">Recent admin actions</h2>
+          <h2 className="ad-h2">Recent Admin Actions</h2>
           <div className="ad-card ad-rows">
             {log.map((l, i) => (
               <div className="ad-row ad-log" key={`${l.at}-${i}`}>
@@ -291,7 +291,7 @@ const CRM_URL = String(import.meta.env.VITE_CRM_URL || 'https://crumb-v3.vercel.
 const GB = 1024 ** 3;
 const LIMITS = { db: 8 * GB, files: 100 * GB, users: 100000 }; // Supabase Pro plan quotas
 // Sign-in and password emails go out from Crumb's own domain (set up Nov 7 in Supabase).
-const EMAIL_STATUS = { level: 'ok', text: 'Working', sub: 'Sending From no-reply@crumbsales.com' };
+const EMAIL_STATUS = { level: 'ok', text: 'Working', sub: 'Sending From crumbsales.com' };
 
 function size(bytes) {
   if (bytes == null) return '—';
@@ -329,30 +329,30 @@ function Meter({ label, used, limit, text }) {
 function Health({ db, dbMs, dbErr, rem, remErr }) {
   const tickAge = rem && rem.last_tick_at ? Date.now() - new Date(rem.last_tick_at).getTime() : null;
   const remLevel = remErr ? 'warn' : !rem || !rem.last_tick_at ? 'warn' : rem.last_tick_ok === false ? 'bad' : tickAge > 15 * MIN ? 'bad' : 'ok';
-  const remValue = remErr ? "Couldn't check" : !rem || !rem.last_tick_at ? 'No run yet' : rem.last_tick_ok === false ? 'Failed' : `Ran ${ago(rem.last_tick_at).toLowerCase()}`;
+  const remValue = remErr ? "Couldn't check" : !rem || !rem.last_tick_at ? 'No Run Yet' : rem.last_tick_ok === false ? 'Failed' : `Ran ${ago(rem.last_tick_at)}`;
   const remSub = remErr ? remErr
     : rem && rem.last_tick_ok === false ? rem.last_error
-    : rem ? `${rem.devices} ${rem.devices === 1 ? 'device' : 'devices'} get reminders` : '';
+    : rem ? `${rem.devices} ${rem.devices === 1 ? 'Device Gets' : 'Devices Get'} Reminders` : '';
   const backupsHref = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/database/backups/scheduled` : undefined;
 
   return (
     <>
       <h1 className="ad-h1">Platform Health</h1>
       <div className="ad-card ad-rows">
-        <HealthRow level={dbErr ? 'bad' : 'ok'} label="Database" value={dbErr ? 'Problem' : 'Running'} sub={dbErr || (dbMs != null ? `Answered in ${dbMs} ms` : '')} />
-        <HealthRow level="info" label="Backups" value="Check ›" sub="Daily on Supabase Pro. Opens Supabase." href={backupsHref} />
+        <HealthRow level={dbErr ? 'bad' : 'ok'} label="Database" value={dbErr ? 'Problem' : 'Running'} sub={dbErr || (dbMs != null ? `Answered In ${dbMs} ms` : '')} />
+        <HealthRow level="info" label="Backups" value="Check ›" sub="Daily On Supabase Pro · Opens Supabase" href={backupsHref} />
         <HealthRow level={remLevel} label="Reminders" value={remValue} sub={remSub} />
         <HealthRow level={EMAIL_STATUS.level} label="Email Service" value={EMAIL_STATUS.text} sub={EMAIL_STATUS.sub} />
-        {db && <HealthRow level={db.needs_review > 0 ? 'warn' : 'ok'} label="Sync" value={db.needs_review > 0 ? `${db.needs_review} to review` : 'No problems'} sub={`${db.changes_24h} changes today · last ${ago(db.last_change_at).toLowerCase()}`} />}
+        {db && <HealthRow level={db.needs_review > 0 ? 'warn' : 'ok'} label="Sync" value={db.needs_review > 0 ? `${db.needs_review} To Review` : 'No Problems'} sub={`${db.changes_24h} Changes Today · Last ${ago(db.last_change_at)}`} />}
       </div>
 
       {db && (
         <>
-          <h2 className="ad-h2">Usage vs plan</h2>
+          <h2 className="ad-h2">Usage Vs Plan</h2>
           <div className="ad-card ad-meters">
-            <Meter label="Database" used={db.db_size_bytes} limit={LIMITS.db} text={`${size(db.db_size_bytes)} of 8 GB`} />
-            <Meter label="Photo storage" used={db.storage_bytes} limit={LIMITS.files} text={`${size(db.storage_bytes)} of 100 GB · ${db.storage_files} ${db.storage_files === 1 ? 'photo' : 'photos'}`} />
-            <Meter label="Users signed in (30 days)" used={db.users_signed_in_30d} limit={LIMITS.users} text={`${db.users_signed_in_30d} of 100,000`} />
+            <Meter label="Database" used={db.db_size_bytes} limit={LIMITS.db} text={`${size(db.db_size_bytes)} Of 8 GB`} />
+            <Meter label="Photo Storage" used={db.storage_bytes} limit={LIMITS.files} text={`${size(db.storage_bytes)} Of 100 GB · ${db.storage_files} ${db.storage_files === 1 ? 'Photo' : 'Photos'}`} />
+            <Meter label="Users Signed In (30 Days)" used={db.users_signed_in_30d} limit={LIMITS.users} text={`${db.users_signed_in_30d} Of 100,000`} />
           </div>
           <p className="ad-muted ad-small ad-note">Supabase Pro, $25 a month, spend cap on. Going over a limit can make Crumb slow or read-only, but never adds charges while the spend cap is on.</p>
         </>
@@ -521,7 +521,7 @@ export default function App() {
     return (
       <main className="ad-page">
         <Brand />
-        <h1 className="ad-h1">Not an admin</h1>
+        <h1 className="ad-h1">Not An Admin</h1>
         <p className="ad-muted">{email} isn't allowed into Crumb Admin.</p>
         <button className="ad-btn" type="button" onClick={signOut}>Sign Out</button>
       </main>
@@ -531,7 +531,7 @@ export default function App() {
     return (
       <main className="ad-page">
         <Brand />
-        <h1 className="ad-h1">Couldn't load</h1>
+        <h1 className="ad-h1">Couldn't Load</h1>
         <p className="ad-error">{msg}</p>
         <button className="ad-btn" type="button" onClick={load}>Try Again</button>
         <button className="ad-link-btn" type="button" onClick={signOut}>Sign Out</button>
