@@ -7,14 +7,14 @@
 //      every record in the cloud is compared with this device, one by one, by its ID tag. Only a clean
 //      match turns this device on (Synced). This device's data is never changed by any of it.
 // Download My Data (an EMPTY device): downloadMyData() brings everything down and verifies the same way.
-import { readText, writeText, loadCustomers, loadProspects } from './store';
+import { readText, writeText, loadCustomers, loadProspects, snapshotSaved, restoreSaved } from './store';
 import { cloud } from './cloud';
 import { fullUploadChanges, sendOrder, SETTING_KEYS } from './syncDiff';
 import { planPull } from './syncPull';
 import { allPhotos } from './photos';
 import { syncPhotos, splitKey, PHOTOS_SENT_KEY, PHOTOS_PULLED_KEY } from './syncPhotos';
 import { clearOutbox, setRecording, quietly } from './outbox';
-import { isTestProject, isTestCopy, isRealSynced, projectRef, maySync, MODE_KEY, PROJECT_KEY, PAUSED_KEY } from './syncMode';
+import { isTestProject, isTestCopy, isRealSynced, projectRef, maySync, deviceHasData, MODE_KEY, PROJECT_KEY, PAUSED_KEY } from './syncMode';
 import { myWorkspace, sendBatch, opId, UPLOADED_KEY, LAST_SENT_KEY, PULLED_KEY, LAST_CHECK_KEY } from './syncSend';
 
 const BACKUP_KEY = 'crumb_last_backup';
@@ -242,6 +242,12 @@ export async function downloadMyData(onStep = () => {}) {
   const mine = inspectForMove(readText, await allPhotos());
   const v = verifyMatch(mine.changes, answer, photoIds, mine.photoIds);
   if (!v.ok) return { ...v, counts: mine.counts };
+  turnOnSyncing(answer);
+  return { ...v, counts: mine.counts, reload: true };
+}
+
+// The last step of setting a device up: from now on it syncs (changes are noted and sent, the cloud's are pulled).
+function turnOnSyncing(answer) {
   const now = new Date().toISOString();
   writeText(PROJECT_KEY, projectRef());
   writeText(PAUSED_KEY, '0');
@@ -252,5 +258,63 @@ export async function downloadMyData(onStep = () => {}) {
   writeText(PULLED_KEY, new Date((Number.isNaN(t) ? Date.now() : t) - 120000).toISOString());
   setRecording(true);
   writeText(MODE_KEY, 'real');
-  return { ...v, counts: mine.counts, reload: true };
+}
+
+// Right after signing in (Nov 8 plan, step 1). An EMPTY device sets itself up with no buttons:
+//   account has data -> download it all (checked against the cloud) -> 'downloaded'
+//   account is empty -> a brand-new user: start syncing right away -> 'fresh'
+// Anything else is handed back untouched: 'ready' (already set up), 'not-invited', 'has-local' (this device
+// has its own data: asked about separately, never replaced here). Errors throw, and nothing on the device changes.
+export async function setUpAfterSignIn(onStep = () => {}) {
+  if (isRealSynced() || isTestCopy()) return { status: 'ready' };
+  const sb = cloud();
+  if (!sb) throw new Error('Cloud isn’t set up in this version.');
+  const { data: s } = await sb.auth.getSession();
+  if (!s || !s.session) return { status: 'signed-out' };
+  if (!maySync(s.session.user && s.session.user.email)) return { status: 'not-invited' };
+  if (deviceHasData()) return { status: 'has-local' };
+  onStep('Getting your account ready…');
+  const { sb: sb2, ws } = await ready();
+  const { answer } = await cloudNow(sb2, ws);
+  if (deviceHasData()) return { status: 'has-local' }; // something was added meanwhile: don't touch it
+  if (cloudIsEmpty(answer)) {
+    turnOnSyncing(answer);
+    return { status: 'fresh' };
+  }
+  // If the download doesn't finish cleanly, put this (empty) device back exactly as it was.
+  const before = allSavedKeys();
+  const snap = snapshotSaved(before);
+  const undo = () => {
+    const added = {};
+    allSavedKeys().filter((k) => !before.includes(k)).forEach((k) => (added[k] = null)); // null = remove
+    quietly(() => restoreSaved({ ...added, ...snap }));
+  };
+  let r;
+  try {
+    r = await downloadMyData(onStep);
+  } catch (e) {
+    if (!isRealSynced()) undo();
+    throw e;
+  }
+  if (!r.ok) {
+    undo();
+    const e = new Error('Your account didn’t come down cleanly, so this device wasn’t changed. Try again.');
+    e.detail = r;
+    throw e;
+  }
+  return { status: 'downloaded' };
+}
+
+// Every key Crumb saves on this device (for putting a failed setup back).
+function allSavedKeys() {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('crumb') || k === 'visitData')) out.push(k);
+    }
+  } catch {
+    // storage unreadable: nothing to list
+  }
+  return out;
 }

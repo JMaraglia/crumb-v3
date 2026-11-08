@@ -8,7 +8,7 @@
 //   Synced       your real data, with the project it was moved to / downloaded from (crumb-prod).
 //   Paused       synced, but nothing goes in or out; changes wait on the device until you resume.
 // Kill switch: the Vercel setting VITE_SYNC_OFF = 1 stops syncing on every device.
-import { readText, writeText } from './store';
+import { readText, writeText, loadCustomers, loadProspects, loadEvents, loadStops, loadTodos } from './store';
 
 export const TEST_PROJECT = 'ljmrvhlyrinptjukstyo'; // crumb-test (not a secret: it's part of its public address)
 const URL = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
@@ -68,3 +68,22 @@ export const BLOCK_TEXT = {
   paused: 'Paused. Crumb keeps working on this device, and your changes wait here until you resume.',
   off: '',
 };
+
+// Does this device hold anything of its own? (customers, prospects, calendar events, itinerary stops, to-dos)
+export const deviceHasData = () =>
+  loadCustomers().length > 0 || loadProspects().length > 0 || loadEvents().length > 0 || loadStops().length > 0 || loadTodos().length > 0;
+
+// Email of whoever is signed in on this device, read from where the sign-in is remembered ('' if nobody).
+export function signedInEmail(ref = projectRef()) {
+  try {
+    const s = JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) || 'null');
+    return String((s && s.user && s.user.email) || '');
+  } catch {
+    return '';
+  }
+}
+
+// Signed in, allowed to sync, not syncing yet, and nothing on this device: Crumb sets it up on its own.
+// (Not for the test cloud or test copies.)
+export const needsSetup = () =>
+  !KILL_SWITCH && !isTestProject() && !isTestCopy() && !isRealSynced() && hasSignIn() && maySync(signedInEmail()) && !deviceHasData();

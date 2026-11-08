@@ -15,7 +15,8 @@ export default function SignInPage() {
   const location = useLocation();
   // Opened as the front door (a syncing device with nobody signed in): no back arrow, Home after signing in.
   const [gate] = useState(() => Boolean(location.state && location.state.gate) || needsSignIn());
-  const backTo = (location.state && location.state.from) || (gate ? '/' : '/cloud-test');
+  // After signing in: the device sets itself up (download your account, or start fresh), then Home.
+  const backTo = (location.state && location.state.from) || '/setup';
   const sb = cloud();
   const [mode, setMode] = useState('signin'); // 'signin' | 'create'
   const [email, setEmail] = useState('');
@@ -51,7 +52,7 @@ export default function SignInPage() {
         const { data, error } = await sb.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: `${window.location.origin}/cloud-test` },
+          options: { emailRedirectTo: `${window.location.origin}/setup` },
         });
         if (error) throw error;
         if (data && data.session) {

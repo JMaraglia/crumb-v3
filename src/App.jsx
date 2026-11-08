@@ -18,12 +18,13 @@ import SettingsPage from './SettingsPage';
 // Loaded only when Cloud Test is opened, so the cloud library never slows down the rest of Crumb.
 const CloudTestPage = React.lazy(() => import('./CloudTestPage'));
 const SignInPage = React.lazy(() => import('./SignInPage'));
+const SetupPage = React.lazy(() => import('./SetupPage'));
 const FeedbackPage = React.lazy(() => import('./FeedbackPage'));
 // Sync step S2: if "Record changes on this device" is switched on (Cloud Test), start noting changes.
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
-import { needsSignIn } from './syncMode';
+import { needsSignIn, needsSetup } from './syncMode';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
@@ -93,7 +94,19 @@ function SignInGate() {
   React.useEffect(() => {
     if (location.pathname === '/sign-in') return;
     if (/access_token|error_description|type=recovery/.test(window.location.hash || '')) return;
-    if (needsSignIn()) navigate('/sign-in', { replace: true, state: { from: '/', gate: true } });
+    if (needsSignIn()) {
+      navigate('/sign-in', { replace: true, state: { from: '/setup', gate: true } });
+      return;
+    }
+    // Signed in, invited, and nothing on this device yet (setup didn't finish last time): set it up now.
+    if (['/setup', '/cloud-test'].includes(location.pathname)) return;
+    let skipped = false;
+    try {
+      skipped = sessionStorage.getItem('crumb_setup_not_now') === '1';
+    } catch {
+      skipped = false;
+    }
+    if (!skipped && needsSetup()) navigate('/setup', { replace: true });
   }, [location.pathname, navigate]);
   return null;
 }
@@ -257,6 +270,7 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/cloud-test" element={<React.Suspense fallback={null}><CloudTestPage /></React.Suspense>} />
         <Route path="/sign-in" element={<React.Suspense fallback={null}><SignInPage /></React.Suspense>} />
+        <Route path="/setup" element={<React.Suspense fallback={null}><SetupPage /></React.Suspense>} />
         <Route path="/feedback" element={<React.Suspense fallback={null}><FeedbackPage /></React.Suspense>} />
         <Route
           path="/todo"
