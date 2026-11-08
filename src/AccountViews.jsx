@@ -1398,6 +1398,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   };
 
   const isCustomer = typeOf(config) === 'customer';
+  const otherContacts = contacts.filter((c) => c !== mainContact && (c.name || c.title)); // listed under the main contact when folded
   const folded = isCustomer ? custCollapsed : infoFolded; // prospects keep their Hide Info behavior
   const onToggle = isCustomer ? () => setCustCollapsed((c) => !c) : toggleInfo;
   const toggleLabel = isCustomer ? (folded ? 'Show Details' : 'Hide Details') : folded ? 'Show Info' : 'Hide Info';
@@ -1474,6 +1475,14 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
                   : 'No contact yet'}
                 {config.hasAccountNumber && account.accountNumber ? ` · #${account.accountNumber}` : ''}
               </div>
+              {isCustomer && folded && otherContacts.length > 0 && (
+                <div className="av-summary-others">
+                  {otherContacts.slice(0, 2).map((c, i) => (
+                    <div key={i}>{[c.name, c.title].filter(Boolean).join(' · ')}</div>
+                  ))}
+                  {otherContacts.length > 2 && <div>+{otherContacts.length - 2} more</div>}
+                </div>
+              )}
             </div>
             <span className="av-summary-side">
               <span className="av-badge">{config.singular}</span>
