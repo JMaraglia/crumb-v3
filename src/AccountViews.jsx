@@ -7,7 +7,7 @@
 // (+ accountNumber and visitDays for customers; prospects keep visit days in deliveryDays).
 // (+ accountNumber for customers).
 import React, { useState } from 'react';
-import { FaArrowLeft, FaChevronRight, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope, FaGlobe } from 'react-icons/fa';
+import { FaArrowLeft, FaChevronRight, FaChevronDown, FaChevronUp, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope, FaGlobe } from 'react-icons/fa';
 import { IoShareOutline } from 'react-icons/io5';
 import { shareText, shareFile, contactCards, safeFileName } from './share';
 import { makeXlsx } from './xlsx';
@@ -15,7 +15,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
-import CompetitorPicker from './CompetitorPicker';
 import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadDayMap, saveDayMap, REMOVED_KEY } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
@@ -1331,6 +1330,8 @@ export function AccountList({ config, accounts, setAccounts }) {
 /* ------------------------------------------------------------------ */
 /* Detail                                                              */
 /* ------------------------------------------------------------------ */
+const INFO_FOLD_KEY = 'crumbUiAccountInfoFolded'; // screen preference only, not account data
+
 export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const navigate = useNavigate();
   const goBack = useGoBack();
@@ -1342,6 +1343,24 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const [askInactive, setAskInactive] = useState(false); // "Mark inactive" reason picker
   const [revisitOpen, setRevisitOpen] = useState(false); // revisit date panel (inactive accounts)
   const [shareMsg, setShareMsg] = useState('');
+  // Top card can fold to just the name + buttons; the choice is remembered on this device.
+  const [infoFolded, setInfoFolded] = useState(() => {
+    try {
+      return localStorage.getItem(INFO_FOLD_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleInfo = () =>
+    setInfoFolded((f) => {
+      const next = !f;
+      try {
+        localStorage.setItem(INFO_FOLD_KEY, next ? '1' : '0');
+      } catch {
+        // storage unavailable: the fold still works for this visit
+      }
+      return next;
+    });
   const account = accounts.find((a) => String(a.id) === id);
 
   if (!account) {
@@ -1437,9 +1456,17 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
                 {config.hasAccountNumber && account.accountNumber ? ` · #${account.accountNumber}` : ''}
               </div>
             </div>
-            <span className="av-badge">{config.singular}</span>
+            <span className="av-summary-side">
+              <span className="av-badge">{config.singular}</span>
+              <button className="av-info-toggle" onClick={toggleInfo} aria-expanded={!infoFolded}>
+                {infoFolded ? <FaChevronDown /> : <FaChevronUp />}
+                {infoFolded ? 'Show Info' : 'Hide Info'}
+              </button>
+            </span>
           </div>
 
+          {!infoFolded && (
+          <>
           <BackgroundBox notes={backgroundNotes(account)} onClick={() => navigate(config.notesPath(account.id))} />
           {latest && (
             <button className="av-last-note" onClick={() => navigate(config.notesPath(account.id))}>
@@ -1469,6 +1496,8 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             )}
             <SnoozeChip account={account} daysField={config.visitDaysField} />
           </div>
+          </>
+          )}
 
           <div className="av-quick">
             <button className="av-quick-btn" disabled={reachableContacts.length === 0} onClick={openCallText}>
@@ -1560,20 +1589,6 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             </>
           );
         })()}
-
-        {/* Competitors: on every customer and prospect, even before any are added */}
-        <div className="av-section-title">Competitors</div>
-        {Array.isArray(account.competitors) && account.competitors.length > 0 ? (
-          <div className="cp-view">
-            {account.competitors.map((n) => (
-              <span key={n} className="cp-chip" style={{ paddingRight: 11 }}>{n}</span>
-            ))}
-          </div>
-        ) : (
-          <button className="av-group av-muted-row cp-add-row" onClick={() => navigate(`${config.basePath}/${account.id}/edit`)}>
-            + Add competitors
-          </button>
-        )}
 
         <div className="av-section-title">Contacts</div>
         {contacts.length === 0 ? (
@@ -1830,7 +1845,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [addrState, setAddrState] = useState(startAddr.state);
   const [zip, setZip] = useState(startAddr.zip);
   const [website, setWebsite] = useState((existing && existing.website) || '');
-  const [competitors, setCompetitors] = useState(existing && Array.isArray(existing.competitors) ? existing.competitors : []);
+  // Competitors are no longer shown or edited, but any already saved stay on the account.
+  const [competitors] = useState(existing && Array.isArray(existing.competitors) ? existing.competitors : []);
   const [group, setGroup] = useState(existing ? groupOf(existing) : '');
   // Add another location: creates its own account right away, linked by the (hidden) group id.
   const [newLoc, setNewLoc] = useState(null); // { street, town, state, zip } while the form is open
@@ -2223,8 +2239,6 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           </>
         )}
 
-        <div className="av-section-title">Competitors</div>
-        <CompetitorPicker value={competitors} onChange={setCompetitors} />
 
         <div className="av-section-title">Contacts</div>
         {contacts.map((c, i) => (
