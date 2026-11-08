@@ -194,23 +194,8 @@ export default function App() {
   // reads the stops (so nothing on screen holds an untagged copy). Saves nothing when all are tagged.
   React.useState(() => upgradeStopIds());
   // Persisted contacts, prospects, and itinerary
-  const [contacts, setContactsRaw] = usePersistedState(CUSTOMERS_KEY, [
-    {
-      id: 1,
-      accountNumber: '100123456',
-      name: 'Charred Oak Tavern',
-      address: '123 Main St, Middleboro, MA',
-      contacts: [
-        { title: 'Chef', name: 'John Smith', phone: '555-1234', email: 'john@example.com' },
-        { title: 'Manager', name: 'Sarah Jones', phone: '555-5678', email: 'sarah@example.com' }
-      ],
-      deliveryDays: ['Mon', 'Wed'],
-      notes: [
-        { text: 'Sampled new shrimp app.', category: 'Sample', timestamp: '6/21/2025, 2:00 PM' },
-        { text: 'Manager said they want better pricing on wings.', category: 'Feedback', timestamp: '6/22/2025, 10:15 AM' }
-      ]
-    }
-  ]);
+  // A brand-new device starts with no customers (no built-in sample).
+  const [contacts, setContactsRaw] = usePersistedState(CUSTOMERS_KEY, []);
 
   const [prospects, setProspectsRaw] = usePersistedState(PROSPECTS_KEY, []);
   // Every prospect stage change is quietly logged on the prospect (stageHistory: [{ from, to, at }])
