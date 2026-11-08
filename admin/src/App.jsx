@@ -290,7 +290,8 @@ function ComingNext({ title, lines }) {
 const CRM_URL = String(import.meta.env.VITE_CRM_URL || 'https://crumb-v3.vercel.app').replace(/\/+$/, '');
 const GB = 1024 ** 3;
 const LIMITS = { db: 8 * GB, files: 100 * GB, users: 100000 }; // Supabase Pro plan quotas
-const EMAIL_STATUS = { level: 'warn', text: 'Test only', sub: "Supabase's built-in sender: 2 emails an hour, team members only. Needs a real email service before beta." };
+// Sign-in and password emails go out from Crumb's own domain (set up Nov 7 in Supabase).
+const EMAIL_STATUS = { level: 'ok', text: 'Working', sub: 'Sending From no-reply@crumbsales.com' };
 
 function size(bytes) {
   if (bytes == null) return '—';
@@ -341,7 +342,7 @@ function Health({ db, dbMs, dbErr, rem, remErr }) {
         <HealthRow level={dbErr ? 'bad' : 'ok'} label="Database" value={dbErr ? 'Problem' : 'Running'} sub={dbErr || (dbMs != null ? `Answered in ${dbMs} ms` : '')} />
         <HealthRow level="info" label="Backups" value="Check ›" sub="Daily on Supabase Pro. Opens Supabase." href={backupsHref} />
         <HealthRow level={remLevel} label="Reminders" value={remValue} sub={remSub} />
-        <HealthRow level={EMAIL_STATUS.level} label="Email service" value={EMAIL_STATUS.text} sub={EMAIL_STATUS.sub} />
+        <HealthRow level={EMAIL_STATUS.level} label="Email Service" value={EMAIL_STATUS.text} sub={EMAIL_STATUS.sub} />
         {db && <HealthRow level={db.needs_review > 0 ? 'warn' : 'ok'} label="Sync" value={db.needs_review > 0 ? `${db.needs_review} to review` : 'No problems'} sub={`${db.changes_24h} changes today · last ${ago(db.last_change_at).toLowerCase()}`} />}
       </div>
 
