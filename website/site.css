@@ -116,3 +116,12 @@ a { color: inherit; }
 .doc h2 { margin: 32px 0 8px; font-size: 22px; }
 .doc p, .doc li { font-size: 17px; line-height: 1.6; color: var(--muted); }
 .doc a { color: var(--blue); }
+
+/* Demo video */
+.btn-outline { gap: 10px; background: transparent; }
+.video-back { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+.video-back[hidden] { display: none; }
+.video-box { position: relative; height: min(88vh, 900px); aspect-ratio: 9 / 16; max-width: 100%; }
+.video-box video { width: 100%; height: 100%; border-radius: 18px; background: #000; object-fit: contain; }
+.video-close { position: absolute; top: -14px; right: -14px; width: 40px; height: 40px; border-radius: 20px; border: 0; background: #ffffff; color: #1c1c1e; font-size: 26px; line-height: 1; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); z-index: 1; }
+@media (max-width: 640px) { .video-close { top: 6px; right: 6px; } }

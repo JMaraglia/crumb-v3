@@ -36,7 +36,10 @@
         <p class="hero-lede">The CRM built for outside sales reps. Your customers, your route and your follow-ups, planned for you, on the phone in your pocket.</p>
         <div class="hero-ctas">
           <a href="#beta" class="btn btn-red btn-big">Join The Beta</a>
-          <a href="#features" class="btn btn-outline btn-big">See How It Works</a>
+          <button type="button" class="btn btn-outline btn-big" id="watch-demo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>
+            Watch The 2-Minute Demo
+          </button>
         </div>
       </div>
 
@@ -131,6 +134,13 @@
   </section>
 </main>
 
+<div class="video-back" id="video-back" hidden>
+  <div class="video-box" role="dialog" aria-modal="true" aria-label="Crumb 2-minute demo">
+    <button type="button" class="video-close" id="video-close" aria-label="Close">&times;</button>
+    <video id="demo-video" src="/crumb-demo.mp4" poster="/crumb-demo.jpg" controls playsinline preload="none"></video>
+  </div>
+</div>
+
 <footer class="foot">
   <div class="wrap foot-row">
     <div class="foot-brand"><span>Crumb.</span> Taking Every Last Crumb.</div>
@@ -139,6 +149,18 @@
 </footer>
 
 <script>
+(function () {
+  var back = document.getElementById('video-back');
+  var vid = document.getElementById('demo-video');
+  function close() { vid.pause(); back.hidden = true; document.body.style.overflow = ''; }
+  document.getElementById('watch-demo').addEventListener('click', function () {
+    back.hidden = false; document.body.style.overflow = 'hidden';
+    var p = vid.play(); if (p && p.catch) p.catch(function () {});
+  });
+  document.getElementById('video-close').addEventListener('click', close);
+  back.addEventListener('click', function (e) { if (e.target === back) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !back.hidden) close(); });
+})();
 (function () {
   var form = document.getElementById('beta-form');
   var btn = document.getElementById('f-send');
