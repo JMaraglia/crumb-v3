@@ -15,7 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
-import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadDayMap, saveDayMap, REMOVED_KEY } from './store';
+import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadDayMap, saveDayMap, REMOVED_KEY, HIDDEN_KEY } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
@@ -661,6 +661,25 @@ export function snoozeSheet(account, save, daysField) {
   ];
   if (isSnoozed(account)) actions.push({ label: 'End snooze', danger: true, onClick: () => save(null) });
   return { title: `Snooze visits to ${account.name || 'this account'}`, actions };
+}
+
+// Saving a visit schedule brings back regular visits that were taken off upcoming days
+// (swiped off the Itinerary / Calendar, or removed with the Itinerary button). Past days stay as history.
+export function clearUpcomingSkips(type, id) {
+  const key = `${type === 'prospect' ? 'p' : 'c'}-${id}`;
+  const today = keyOf(new Date());
+  [REMOVED_KEY, HIDDEN_KEY].forEach((store) => {
+    const m = loadDayMap(store);
+    let changed = false;
+    Object.keys(m).forEach((day) => {
+      if (day < today || !Array.isArray(m[day]) || !m[day].includes(key)) return;
+      const next = m[day].filter((k) => k !== key);
+      if (next.length) m[day] = next;
+      else delete m[day];
+      changed = true;
+    });
+    if (changed) saveDayMap(store, m);
+  });
 }
 
 // Quick-Add To Itinerary (Nov 7): pick a day (today + the next 6). A day it's not on: the account goes on that
@@ -1309,6 +1328,7 @@ export function AccountList({ config, accounts, setAccounts }) {
           config={config}
           onCancel={() => setVisitFor(null)}
           onSave={(fields) => {
+            clearUpcomingSkips(typeOf(config), visitFor.id);
             setAccounts((prev) => prev.map((x) => (x.id === visitFor.id ? { ...x, ...fields } : x)));
             setVisitFor(null);
           }}
@@ -1786,6 +1806,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           config={config}
           onCancel={() => setVisitOpen(false)}
           onSave={(fields) => {
+            clearUpcomingSkips(typeOf(config), account.id);
             setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, ...fields } : x)));
             setVisitOpen(false);
           }}
@@ -1948,6 +1969,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [stage, setStage] = useState((existing && existing.stage) || '');
   const [showInItinerary, setShowInItinerary] = useState(!(existing && existing.showInItinerary === false));
   const [showOnCalendar, setShowOnCalendar] = useState(!(existing && existing.showOnCalendar === false));
+  const scheduleTouched = React.useRef(false); // visit days / time / how often / start / Show on Itinerary changed
 
   if (!isNew && !existing) {
     return (
@@ -1963,8 +1985,10 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const changeContact = (index, field, value) =>
     setContacts((prev) => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
 
-  const toggleDay = (d) =>
+  const toggleDay = (d) => {
+    scheduleTouched.current = true;
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
 
   // Everything on the form, ready to save (also used by Convert, so unsaved edits carry over)
   const buildFields = () => {
@@ -2037,6 +2061,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       navigate(`${config.basePath}/${created.id}`, { replace: true });
     } else {
       // keep everything else on the record (notes, etc.)
+      if (scheduleTouched.current) clearUpcomingSkips(typeOf(config), existing.id);
       setAccounts((prev) => prev.map((a) => (a.id === existing.id ? { ...a, ...fields } : a)));
       goBack(`${config.basePath}/${id}`);
     }
@@ -2336,7 +2361,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
           <div className="av-group">
             <label className="av-row av-static-row">
               <span className="av-row-label-inline">Usual time</span>
-              <select className="av-select" value={visitTime} onChange={(e) => setVisitTime(e.target.value)}>
+              <select className="av-select" value={visitTime} onChange={(e) => { scheduleTouched.current = true; setVisitTime(e.target.value); }}>
                 <option value="">Not set</option>
                 {TIME_OPTIONS.map((t) => (
                   <option key={t} value={t}>{timeLabel(t)}</option>
@@ -2353,13 +2378,13 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
                   type="checkbox"
                   className="av-switch"
                   checked={fixedTime}
-                  onChange={(e) => setFixedTime(e.target.checked)}
+                  onChange={(e) => { scheduleTouched.current = true; setFixedTime(e.target.checked); }}
                 />
               </label>
             )}
             <label className="av-row av-static-row">
               <span className="av-row-label-inline">How often</span>
-              <select className="av-select" value={visitFrequency} onChange={(e) => setVisitFrequency(e.target.value)}>
+              <select className="av-select" value={visitFrequency} onChange={(e) => { scheduleTouched.current = true; setVisitFrequency(e.target.value); }}>
                 {FREQUENCIES.map((f) => (
                   <option key={f.key} value={f.key}>{f.label}</option>
                 ))}
@@ -2371,7 +2396,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
                 type="checkbox"
                 className="av-switch"
                 checked={showInItinerary}
-                onChange={(e) => setShowInItinerary(e.target.checked)}
+                onChange={(e) => { scheduleTouched.current = true; setShowInItinerary(e.target.checked); }}
               />
             </label>
             <label className="av-row av-static-row">
@@ -2390,7 +2415,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
                   type="date"
                   className="av-select"
                   value={visitStart}
-                  onChange={(e) => e.target.value && setVisitStart(e.target.value)}
+                  onChange={(e) => { scheduleTouched.current = true; e.target.value && setVisitStart(e.target.value); }}
                 />
               </label>
             )}

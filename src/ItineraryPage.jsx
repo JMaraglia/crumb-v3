@@ -24,6 +24,7 @@ import {
   stageSheet,
   findRepeats,
   groupOf,
+  clearUpcomingSkips,
 } from './AccountViews';
 import {
   keyOf,
@@ -1466,6 +1467,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           config={daysConfig(visitFor.type)}
           onCancel={() => setVisitFor(null)}
           onSave={(fields) => {
+            clearUpcomingSkips(visitFor.type, visitFor.acct.id);
             updateAccount(visitFor.type, visitFor.acct.id, fields);
             setVisitFor(null);
           }}
