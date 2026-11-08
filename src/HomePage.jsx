@@ -4,12 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt, FaCheckSquare } from 'react-icons/fa';
 import { IoSettingsOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
+import { readText } from './store';
+import { isRealSynced } from './syncMode';
 
 export default function HomePage() {
   const navigate = useNavigate();
   // Gear turns orange when it's time to back up (never, or a week or more ago)
   const lastBackup = Date.parse(readLastBackup());
   const backupDue = !lastBackup || Date.now() - lastBackup >= 7 * 86400000;
+
+  // "Keep Separate" was picked at sign-in: say so plainly until this device is set up with the account.
+  const separate = readText('crumb_setup_separate') === '1' && !isRealSynced();
 
   const iconStyle = { fontSize: '3rem', marginBottom: '10px', transition: 'transform 0.3s' };
 
@@ -44,6 +49,12 @@ export default function HomePage() {
       <h2 style={{ textAlign: 'center', marginTop: 0, marginBottom: '30px' }}>
         Taking every last Crumb.
       </h2>
+      {separate && (
+        <div className="home-separate" role="note">
+          <span>This device isn’t syncing with your account. Its information stays on this device.</span>
+          <button type="button" onClick={() => navigate('/setup')}>Set Up</button>
+        </div>
+      )}
       <div className="tile-grid">
         {tiles.map(tile => (
           <div

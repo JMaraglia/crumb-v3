@@ -71,3 +71,30 @@
   background: none;
   color: #0077cc;
 }
+.su-small {
+  font-size: 0.85rem;
+}
+.su-compare {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0;
+}
+.su-compare div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f2f2f7;
+  font-size: 0.9rem;
+  color: #1c1c1e;
+  text-align: right;
+}
+.su-compare span {
+  color: #6e6e73;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}

@@ -11,7 +11,7 @@ import { toVisitList } from './schedule';
 export const DEVICE_ONLY = ['crumb_push_device', 'crumb_last_backup', 'crumb_safety_copy', 'crumb_restore_result', 'crumb_sync_record',
   'crumb_sync_test_device', 'crumb_sync_uploaded', 'crumb_sync_last_sent', 'crumb_sync_pulled_at', 'crumb_sync_last_checked',
   'crumb_sync_photos', 'crumb_sync_photos_pulled_at', 'crumb_sync_mode', 'crumb_sync_project', 'crumb_sync_paused',
-  'crumb_sync_move_started'];
+  'crumb_sync_move_started', 'crumb_setup_separate'];
 
 export function isBackedUpKey(k) {
   return !!k && (k.startsWith('crumb_') || k === 'visitData') && !DEVICE_ONLY.includes(k);

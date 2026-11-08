@@ -223,3 +223,31 @@ button:hover {
 .app-error-title { font-size: 1.2rem; font-weight: 700; color: #1c1c1e; }
 .app-error-text { margin-top: 8px; color: #6e6e73; }
 .app-error .app-error-btn { margin-top: 20px; width: auto; padding: 12px 22px; }
+
+/* Home: "Keep Separate" note (this device isn't syncing with the account) */
+.home-separate {
+  max-width: 520px;
+  margin: -14px auto 22px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff4e5;
+  color: #6b4200;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.home-separate button,
+.home-separate button:hover {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #0077cc;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

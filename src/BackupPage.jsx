@@ -21,6 +21,7 @@ import {
   allPhotos,
   saveSafetyCopy,
   loadSafetyCopy,
+  clearAllPhotos,
 } from './photos';
 import { isBackedUpKey, makeManifest, compareToManifest, countData, COUNT_LABELS } from './backupCheck';
 import { loadAccounts } from './store';
@@ -380,6 +381,14 @@ export default function BackupPage() {
     setBusy('Undoing…');
     const now = readAll();
     const nowIds = await photoIds().catch(() => []);
+    // A safety copy made when this device was set up with your account also holds its photos.
+    const withPhotos = Array.isArray(safety.photos);
+    const nowPhotos = withPhotos ? await allPhotos().catch(() => null) : null;
+    if (withPhotos && !nowPhotos) {
+      setBusy('');
+      setError("Crumb couldn't read the photos on this phone, so nothing was changed.");
+      return;
+    }
     try {
       replaceSaved(safety.data, now);
     } catch {
@@ -387,7 +396,15 @@ export default function BackupPage() {
       setError("There isn't room on this phone to put the safety copy back, so nothing was changed.");
       return;
     }
-    await saveSafetyCopy({ app: 'crumb', createdAt: new Date().toISOString(), data: now, manifest: makeManifest(now, nowIds) }).catch(() => {});
+    if (withPhotos) {
+      try {
+        await clearAllPhotos();
+        await putPhotosAll(safety.photos);
+      } catch {
+        /* the check below reports any photo that didn't come back */
+      }
+    }
+    await saveSafetyCopy({ app: 'crumb', createdAt: new Date().toISOString(), data: now, manifest: makeManifest(now, nowIds), ...(withPhotos ? { photos: nowPhotos } : {}) }).catch(() => {});
     try {
       localStorage.removeItem(OLD_SAFETY_KEY);
     } catch {
@@ -516,7 +533,7 @@ export default function BackupPage() {
             <div className="bk-section">Undo</div>
             <div className="bk-card">
               <div className="bk-what">
-                Safety copy from before your last restore ({niceWhen(safety.createdAt)}): {summarize(safetyCounts)}
+                {safety.reason === 'setup' ? 'Safety copy from before this device was set up with your account' : 'Safety copy from before your last restore'} ({niceWhen(safety.createdAt)}): {summarize(safetyCounts)}
               </div>
               <button className="bk-btn bk-btn-plain" onClick={undoRestore}>
                 <IoArrowUndoOutline className="bk-btn-icon" />

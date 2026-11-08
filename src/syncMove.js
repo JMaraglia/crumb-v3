@@ -11,10 +11,11 @@ import { readText, writeText, loadCustomers, loadProspects, snapshotSaved, resto
 import { cloud } from './cloud';
 import { fullUploadChanges, sendOrder, SETTING_KEYS } from './syncDiff';
 import { planPull } from './syncPull';
-import { allPhotos } from './photos';
+import { allPhotos, saveSafetyCopy, clearAllPhotos, putPhotosAll } from './photos';
+import { isBackedUpKey, makeManifest } from './backupCheck';
 import { syncPhotos, splitKey, PHOTOS_SENT_KEY, PHOTOS_PULLED_KEY } from './syncPhotos';
 import { clearOutbox, setRecording, quietly } from './outbox';
-import { isTestProject, isTestCopy, isRealSynced, projectRef, maySync, deviceHasData, MODE_KEY, PROJECT_KEY, PAUSED_KEY } from './syncMode';
+import { isTestProject, isTestCopy, isRealSynced, projectRef, maySync, deviceHasData, MODE_KEY, PROJECT_KEY, PAUSED_KEY, TEST_DEVICE_KEY } from './syncMode';
 import { myWorkspace, sendBatch, opId, UPLOADED_KEY, LAST_SENT_KEY, PULLED_KEY, LAST_CHECK_KEY } from './syncSend';
 
 const BACKUP_KEY = 'crumb_last_backup';
@@ -162,13 +163,13 @@ export function backupAge() {
 }
 
 // 1. Dry run: nothing is sent.
-export async function checkMove() {
+export async function checkMove({ safetyCopied = false } = {}) {
   const { sb, ws } = await ready();
   if (!(loadCustomers().length || loadProspects().length)) throw new Error('This device has no customers or prospects to move.');
   const photos = await allPhotos();
   const r = inspectForMove(readText, photos);
   const age = backupAge();
-  if (age == null || age > DAY_MS) r.blockers.unshift('Make a backup first (Settings → Backup & Restore → Back Up Now). Moving needs one from the last 24 hours.');
+  if (!safetyCopied && (age == null || age > DAY_MS)) r.blockers.unshift('Make a backup first (Settings → Backup & Restore → Back Up Now). Moving needs one from the last 24 hours.');
   const { answer } = await cloudNow(sb, ws);
   if (!cloudIsEmpty(answer)) {
     if (readText(MOVE_STARTED_KEY) === projectRef()) r.warnings.push('A move from this device was started before and didn’t finish. Moving again updates what’s there (nothing is doubled).');
@@ -178,10 +179,10 @@ export async function checkMove() {
 }
 
 // 2. Move: upload, photos, verify. Turns this device on only after a clean match.
-export async function moveMyData(onStep = () => {}) {
+export async function moveMyData(onStep = () => {}, { safetyCopied = false } = {}) {
   const { sb, ws } = await ready();
   onStep('Checking…');
-  const plan = await checkMove();
+  const plan = await checkMove({ safetyCopied });
   if (plan.blockers.length) throw new Error(plan.blockers[0]);
 
   // Start fresh: anything noted during earlier tests is cleared, then changes are noted from here on
@@ -266,17 +267,17 @@ function turnOnSyncing(answer) {
 // Anything else is handed back untouched: 'ready' (already set up), 'not-invited', 'has-local' (this device
 // has its own data: asked about separately, never replaced here). Errors throw, and nothing on the device changes.
 export async function setUpAfterSignIn(onStep = () => {}) {
-  if (isRealSynced() || isTestCopy()) return { status: 'ready' };
+  if (isRealSynced()) return { status: 'ready' };
   const sb = cloud();
   if (!sb) throw new Error('Cloud isn’t set up in this version.');
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) return { status: 'signed-out' };
   if (!maySync(s.session.user && s.session.user.email)) return { status: 'not-invited' };
-  if (deviceHasData()) return { status: 'has-local' };
+  if (deviceHasData() || isTestCopy()) return askAbout(sb);
   onStep('Getting your account ready…');
   const { sb: sb2, ws } = await ready();
   const { answer } = await cloudNow(sb2, ws);
-  if (deviceHasData()) return { status: 'has-local' }; // something was added meanwhile: don't touch it
+  if (deviceHasData()) return askAbout(sb); // something was added meanwhile: don't touch it
   if (cloudIsEmpty(answer)) {
     turnOnSyncing(answer);
     return { status: 'fresh' };
@@ -317,4 +318,127 @@ function allSavedKeys() {
     // storage unreadable: nothing to list
   }
   return out;
+}
+
+// ---------------------------------------------------------------- step 2: a device that has its own data
+// It's never replaced or merged on its own: the person is asked once (SetupPage), with what's on each side.
+export const SEPARATE_KEY = 'crumb_setup_separate'; // '1' = "Keep Separate" was picked on this device
+
+async function peekCloud(sb) {
+  if (isTestProject()) throw new Error('This version is connected to the TEST cloud. Your real data only goes to your real cloud.');
+  const ws = await myWorkspace(sb);
+  const { answer } = await cloudNow(sb, ws);
+  return answer;
+}
+const liveCount = (rows, kind) => (rows || []).filter((r) => !r.deleted && (!kind || (r.cols && r.cols.kind) === kind || r.kind === kind)).length;
+
+async function askAbout(sb) {
+  const answer = await peekCloud(sb);
+  const accounts = (answer && answer.accounts) || [];
+  return {
+    status: 'ask',
+    testCopy: isTestCopy(),
+    cloudHasData: !cloudIsEmpty(answer),
+    device: { customers: loadCustomers().length, prospects: loadProspects().length },
+    cloud: { customers: liveCount(accounts, 'customer'), prospects: liveCount(accounts, 'prospect') },
+  };
+}
+
+// Keep everything this device has (data + photos) as the safety copy, restorable from Settings → Backup.
+async function keepSafetyCopy() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (isBackedUpKey(k)) data[k] = localStorage.getItem(k);
+  }
+  const photos = await allPhotos();
+  await saveSafetyCopy({
+    app: 'crumb',
+    reason: 'setup',
+    createdAt: new Date().toISOString(),
+    data,
+    photos,
+    manifest: makeManifest(data, photos.map((p) => String(p.id))),
+  });
+  return photos;
+}
+
+const clearSeparate = () => {
+  try {
+    localStorage.removeItem(SEPARATE_KEY);
+  } catch {
+    // nothing to clear
+  }
+};
+
+// "Use My Account": this device's copy goes into the safety copy, then the account comes down (or, if the
+// account is empty, the device starts fresh). If anything fails, the device is put back exactly as it was.
+export async function useMyAccount(onStep = () => {}) {
+  const sb = cloud();
+  if (!sb) throw new Error('Cloud isn’t set up in this version.');
+  const { data: s } = await sb.auth.getSession();
+  if (!s || !s.session) throw new Error('Sign in first.');
+  if (!maySync(s.session.user && s.session.user.email)) throw new Error('Cloud sync is coming soon. Your data stays on this device.');
+  onStep('Saving this device’s copy…');
+  let photos;
+  try {
+    photos = await keepSafetyCopy();
+  } catch {
+    throw new Error('Crumb couldn’t save a safety copy of this device’s data, so nothing was changed.');
+  }
+  const before = allSavedKeys();
+  const snap = snapshotSaved(before);
+  const putBack = async () => {
+    const added = {};
+    allSavedKeys().filter((k) => !before.includes(k)).forEach((k) => (added[k] = null));
+    quietly(() => restoreSaved({ ...added, ...snap }));
+    try {
+      await clearAllPhotos();
+      await putPhotosAll(photos);
+    } catch {
+      // the photos are still in the safety copy
+    }
+  };
+  try {
+    // Clear this device's own copy (it's in the safety copy), including an old test copy's leftovers.
+    await clearOutbox();
+    setRecording(false);
+    quietly(() =>
+      restoreSaved(Object.fromEntries(before.filter((k) => isBackedUpKey(k) || k.startsWith('crumb_sync_') || k === TEST_DEVICE_KEY).map((k) => [k, null])))
+    );
+    await clearAllPhotos();
+    onStep('Getting your account ready…');
+    const { sb: sb2, ws } = await ready();
+    const { answer } = await cloudNow(sb2, ws);
+    if (cloudIsEmpty(answer)) turnOnSyncing(answer);
+    else {
+      const r = await downloadMyData(onStep);
+      if (!r.ok) throw new Error('Your account didn’t come down cleanly, so this device wasn’t changed. Try again.');
+    }
+  } catch (e) {
+    if (!isRealSynced()) await putBack();
+    throw e;
+  }
+  clearSeparate();
+  return { status: 'done' };
+}
+
+// "Add It": this device's data goes up into an EMPTY account (the same checked move as before), with a
+// safety copy kept first. Nothing on this device changes.
+export async function addThisDevice(onStep = () => {}) {
+  onStep('Saving this device’s copy…');
+  try {
+    await keepSafetyCopy();
+  } catch {
+    throw new Error('Crumb couldn’t save a safety copy of this device’s data, so nothing was changed.');
+  }
+  const r = await moveMyData((label) => onStep(/Upload/.test(label) ? 'Adding this device’s information…' : label), { safetyCopied: true });
+  if (!r.ok) throw new Error('Your account didn’t match this device afterward, so syncing wasn’t turned on. Nothing on this device changed. Try again.');
+  clearSeparate();
+  return { status: 'done' };
+}
+
+// "Keep Separate" / "Not Now": remembered on this device; Home shows a note until it's set up.
+export function keepSeparate() {
+  writeText(SEPARATE_KEY, '1');
 }

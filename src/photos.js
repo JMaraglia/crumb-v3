@@ -182,6 +182,11 @@ export function rollbackPhotos(addedIds, replacedRecords) {
   });
 }
 
+// Empty the photo storage on this device (setup: after the photos were kept in the safety copy).
+export function clearAllPhotos() {
+  return tx('readwrite', (st) => st.clear());
+}
+
 export async function photoIds() {
   return ((await tx('readonly', (st) => st.getAllKeys())) || []).map(String);
 }
