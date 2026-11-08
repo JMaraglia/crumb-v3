@@ -857,7 +857,7 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
   const hold = React.useRef(null);
   const lastTap = React.useRef(0);
   const visit = visitSummary(a, config);
-  const latest = lastNote(a);
+  // (last note not shown on the tapped-open list card)
   const contacts = a.contacts || [];
   // the owner first (if there is one), otherwise the first contact listed
   const mainContact = contacts.find((c) => /owner/i.test(c.title || '') && (c.name || c.phone)) || contacts.find((c) => c.name || c.title);
@@ -974,13 +974,6 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
               </button>
             )}
           </div>
-          <BackgroundBox notes={backgroundNotes(a)} onClick={() => navigate(config.notesPath(a.id))} />
-          {latest && (
-            <button className="av-last-note" onClick={() => navigate(config.notesPath(a.id))}>
-              <span className="av-last-note-date">{shortDate(latest.timestamp)}</span>
-              {latest.text}
-            </button>
-          )}
           <div className="av-chips av-summary-chips">
             {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
             <VisitChips account={a} config={config} onPick={pickVisit} />
@@ -1005,11 +998,11 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
               </button>
             )}
             <button className="av-quick-btn" onClick={() => navigate(config.notesPath(a.id))}>
-              + Note
+              Notes
             </button>
             {!a.inactive && (
               <button className="av-quick-btn" onClick={addToItinerary}>
-                + Itinerary
+                Itinerary
               </button>
             )}
           </div>
@@ -1543,7 +1536,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
               </button>
             )}
             <button className="av-quick-btn" onClick={() => navigate(config.notesPath(account.id))}>
-              + Note
+              Notes
             </button>
           </div>
         </div>
