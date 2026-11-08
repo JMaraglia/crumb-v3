@@ -216,12 +216,3 @@
   margin-top: 2px;
 }
 
-/* Brand-new device: use Crumb without signing in */
-.si-page .si-skip,
-.si-page .si-skip:hover {
-  display: block;
-  margin: 18px auto 0;
-  padding: 8px;
-  font-size: 0.95rem;
-  color: #8e8e93;
-}

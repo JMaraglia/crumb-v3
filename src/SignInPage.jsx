@@ -8,8 +8,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoAddCircleOutline, IoPhonePortraitOutline } from 'react-icons/io5';
 import { cloud, cloudProblem } from './cloud';
 import { plainError } from './cloudErrors';
-import { needsSignIn, SKIP_SIGNIN_KEY } from './syncMode';
-import { writeText } from './store';
+import { needsSignIn } from './syncMode';
 import './SignInPage.css';
 
 // iPhone or iPad, in a browser tab (not the Home Screen app). iPads report themselves as a Mac, so they're
@@ -27,12 +26,8 @@ export default function SignInPage() {
   const [gate] = useState(() => Boolean(location.state && location.state.gate) || needsSignIn());
   // After signing in: the device sets itself up (download your account, or start fresh), then Home.
   const backTo = (location.state && location.state.from) || '/setup';
-  // Opened because this is a brand-new device: no back arrow, and a way to use Crumb without an account.
+  // Opened because this is a brand-new device: no back arrow (Crumb needs an account).
   const [fresh] = useState(() => Boolean(location.state && location.state.fresh));
-  const useWithoutAccount = () => {
-    writeText(SKIP_SIGNIN_KEY, '1');
-    navigate('/', { replace: true });
-  };
   const sb = cloud();
   const [mode, setMode] = useState('signin'); // 'signin' | 'create'
   const [email, setEmail] = useState('');
@@ -235,12 +230,6 @@ export default function SignInPage() {
             {creating ? 'Sign In' : 'Create An Account'}
           </button>
         </div>
-      )}
-
-      {fresh && (
-        <button type="button" className="si-link si-skip" onClick={useWithoutAccount}>
-          Use Crumb Without An Account
-        </button>
       )}
 
       {forgotOpen && (
