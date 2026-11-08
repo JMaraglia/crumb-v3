@@ -5,10 +5,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
+import { IoShareOutline, IoAddCircleOutline, IoPhonePortraitOutline } from 'react-icons/io5';
 import { cloud, cloudProblem } from './cloud';
 import { plainError } from './cloudErrors';
 import { needsSignIn } from './syncMode';
 import './SignInPage.css';
+
+// iPhone or iPad, in a browser tab (not the Home Screen app). iPads report themselves as a Mac, so they're
+// told apart by touch. The Home Screen app keeps its own copy of Crumb, separate from Safari's.
+const isIpad = () => /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const onAppleTablet = () => /iPhone|iPod/.test(navigator.userAgent) || isIpad();
+const inHomeScreenApp = () =>
+  window.navigator.standalone === true || Boolean(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+const BROWSER_OK_KEY = 'crumb_signin_in_browser'; // this visit only (sessionStorage): "Continue In Browser" was tapped
 
 export default function SignInPage() {
   const navigate = useNavigate();
@@ -29,6 +38,26 @@ export default function SignInPage() {
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotErr, setForgotErr] = useState('');
   const [forgotOk, setForgotOk] = useState('');
+  // Website Sign In on iPhone/iPad (Nov 8 plan, step 4): first show how to add Crumb to the Home Screen,
+  // with a way to keep going in the browser anyway. Computers, the Home Screen app and a device that's
+  // already syncing go straight to the form.
+  const [homeSteps, setHomeSteps] = useState(() => {
+    if (gate) return false;
+    try {
+      if (sessionStorage.getItem(BROWSER_OK_KEY) === '1') return false;
+    } catch {
+      /* can't remember: still fine */
+    }
+    return onAppleTablet() && !inHomeScreenApp();
+  });
+  const continueInBrowser = () => {
+    try {
+      sessionStorage.setItem(BROWSER_OK_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+    setHomeSteps(false);
+  };
 
   // Already signed in? Nothing to do here.
   useEffect(() => {
@@ -56,7 +85,7 @@ export default function SignInPage() {
         });
         if (error) throw error;
         if (data && data.session) {
-          navigate(backTo, { replace: true });
+          navigate('/setup', { replace: true });
           return;
         }
         setOk(`Account created. Check your email (${email.trim()}) and tap the confirmation link, then sign in here.`);
@@ -65,7 +94,9 @@ export default function SignInPage() {
       } else {
         const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        navigate(backTo, { replace: true });
+        // Every fresh sign-in goes through setup (it checks the invite list with the cloud, then sets this
+        // device up or simply goes Home), even when Sign In was opened from Settings or the Cloud screen.
+        navigate('/setup', { replace: true });
         return;
       }
     } catch (e2) {
@@ -111,6 +142,30 @@ export default function SignInPage() {
         Taking every last Crumb.
       </h2>
 
+      {homeSteps ? (
+        <div className="si-card si-home">
+          <div className="si-home-title">Add Crumb To Your Home Screen</div>
+          <p className="si-home-text">Crumb works best as an app on your {isIpad() ? 'iPad' : 'iPhone'}. It only takes a few seconds:</p>
+          <ol className="si-home-steps">
+            <li>
+              <span className="si-home-icon" aria-hidden="true"><IoShareOutline /></span>
+              <span>Tap the <b>Share</b> button {isIpad() ? 'at the top of the screen' : 'at the bottom of the screen'} (the square with an arrow).</span>
+            </li>
+            <li>
+              <span className="si-home-icon" aria-hidden="true"><IoAddCircleOutline /></span>
+              <span>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</span>
+            </li>
+            <li>
+              <span className="si-home-icon" aria-hidden="true"><IoPhonePortraitOutline /></span>
+              <span>Open <b>Crumb</b> from your Home Screen, then go to <b>Settings</b> → <b>Cloud</b> → <b>Sign In</b>.</span>
+            </li>
+          </ol>
+          <button type="button" className="si-btn si-btn-plain si-home-continue" onClick={continueInBrowser}>
+            Continue In Browser
+          </button>
+          <p className="si-home-note">Already added it? Open Crumb from your Home Screen.</p>
+        </div>
+      ) : (
       <div className="si-card">
         {!sb ? (
           <div className="si-msg si-err">{cloudProblem ? `The cloud settings in this version look wrong: ${cloudProblem}` : 'The cloud isn’t set up in this version.'}</div>
@@ -156,8 +211,9 @@ export default function SignInPage() {
           </form>
         )}
       </div>
+      )}
 
-      {sb && (
+      {sb && !homeSteps && (
         <div className="si-switch">
           {creating ? 'Already have an account?' : 'New here?'}{' '}
           <button
