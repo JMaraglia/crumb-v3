@@ -3,6 +3,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { cloud, cloudReady, cloudProblem, plainError, projectRef, signOutThisDevice } from './cloud.js';
 
+// Older tickets were filed under "Prospects"; the app now calls that section Pipeline (display only).
+const areaLabel = (a) => (a === 'Prospects' ? 'Pipeline' : a);
+
 const TAB_KEY = 'crumb_admin_tab';
 const readTab = () => { try { return localStorage.getItem(TAB_KEY) || 'overview'; } catch { return 'overview'; } };
 const saveTab = (t) => { try { localStorage.setItem(TAB_KEY, t); } catch { /* not important */ } };
@@ -388,7 +391,7 @@ function StatusSheet({ item, onClose, onSaved }) {
       <div className="ad-sheet" role="dialog" aria-modal="true" aria-labelledby="ad-st-title" onClick={(e) => e.stopPropagation()}>
         <h2 id="ad-st-title" className="ad-sheet-title">{item.kind === 'problem' ? `Ticket #${item.id}` : `Suggestion #${item.id}`}</h2>
         <p className="ad-sheet-quote">{item.message}</p>
-        <p className="ad-muted ad-small">{[item.area, item.email, item.device, item.app_version && `v ${item.app_version}`, shortDate(item.created_at)].filter(Boolean).join(' · ')}</p>
+        <p className="ad-muted ad-small">{[areaLabel(item.area), item.email, item.device, item.app_version && `v ${item.app_version}`, shortDate(item.created_at)].filter(Boolean).join(' · ')}</p>
         <div className="ad-status-list" role="group" aria-label="Status">
           {STATUSES[item.kind].map(([v, label]) => (
             <button key={v} type="button" className={`ad-status-btn ${item.status === v ? 'is-on' : ''}`} disabled={Boolean(busy)} onClick={() => pick(v)}>
@@ -481,7 +484,7 @@ function Inbox({ items, err, beta = [], betaErr = '', onChanged }) {
         {sorted.map((i) => (
           <button key={i.id} type="button" className={`ad-ticket ${DONE.has(i.status) ? 'is-done' : ''} ${i.status === 'new' ? 'is-new' : ''}`} onClick={() => setOpen(i)}>
             <span className="ad-ticket-top">
-              <span className="ad-muted ad-small">#{i.id}{i.area ? ` · ${i.area}` : ''}</span>
+              <span className="ad-muted ad-small">#{i.id}{i.area ? ` · ${areaLabel(i.area)}` : ''}</span>
               <span className={`ad-pill ${pillTone(i.status)}`}>{statusWord(i.kind, i.status).toUpperCase()}</span>
             </span>
             <span className="ad-ticket-msg">{i.message}</span>
