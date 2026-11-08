@@ -166,8 +166,8 @@
     }).then(function (x) {
       if (x.ok) {
         form.reset();
-        show('You’re on the list. We’ll email you an invite.', true);
-        btn.textContent = 'You’re On The List ✓';
+        show('Thanks for your interest in Crumb. We’ll be in touch.', true);
+        btn.textContent = 'Thank You ✓';
         return;
       }
       show(x.b.error || 'Something went wrong. Please try again.', false);
