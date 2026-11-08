@@ -1555,9 +1555,3 @@
 }
 .av-content.is-compact .av-summary { padding: 12px 14px; }
 .av-content.is-compact .av-quick { margin-top: 10px; }
-.av-summary-others {
-  margin-top: 3px;
-  color: #8e8e93;
-  font-size: 0.85rem;
-  line-height: 1.35;
-}
