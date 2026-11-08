@@ -13,6 +13,12 @@
 --   * Lockout guard: every current admin is put on the invite list, admins always pass can_sync(),
 --     and an admin's email can't be removed from the list.
 --   * Run once. Running it again changes nothing.
+--   * All or nothing: it runs as one transaction, so if any line fails, nothing at all is changed.
+--   * The new rules apply only to signed-in app users ("authenticated"). Admin, reminders and other
+--     server-side functions run under their own role and are not affected.
+--   * (select public.can_sync()) is asked once per request, not once per row (Supabase's advice for speed).
+
+begin;
 
 -- ---------------------------------------------------------------- the list
 create table if not exists public.sync_invites (
@@ -56,7 +62,7 @@ declare t text;
 begin
   foreach t in array array['accounts', 'notes', 'events', 'stops', 'todos', 'day_marks', 'settings', 'photos', 'operations', 'conflicts'] loop
     execute format('drop policy if exists "invited only" on public.%I', t);
-    execute format('create policy "invited only" on public.%I as restrictive for all to authenticated using (public.can_sync()) with check (public.can_sync())', t);
+    execute format('create policy "invited only" on public.%I as restrictive for all to authenticated using ((select public.can_sync())) with check ((select public.can_sync()))', t);
   end loop;
 end $$;
 
@@ -64,8 +70,8 @@ end $$;
 drop policy if exists "crumb photos: invited only" on storage.objects;
 create policy "crumb photos: invited only" on storage.objects
   as restrictive for all to authenticated
-  using (bucket_id <> 'photos' or public.can_sync())
-  with check (bucket_id <> 'photos' or public.can_sync());
+  using (bucket_id <> 'photos' or (select public.can_sync()))
+  with check (bucket_id <> 'photos' or (select public.can_sync()));
 
 -- ---------------------------------------------------------------- Admin: see / add / remove
 create or replace function public.admin_sync_invites_list()
@@ -175,5 +181,7 @@ begin
   return p_status;
 end;
 $$;
+
+commit;
 
 -- (end of file)
