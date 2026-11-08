@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Crumb: The CRM Built For Outside Sales Reps</title>
 <meta name="description" content="Crumb is the CRM built for outside sales reps. Your customers, your route and your follow-ups, planned for you, on the phone in your pocket. Join the beta.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#03070d">
 <meta property="og:title" content="Crumb: Taking Every Last Crumb.">
 <meta property="og:description" content="The CRM built for outside sales reps. Join the beta.">
 <meta property="og:type" content="website">
@@ -13,7 +13,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -30,18 +30,16 @@
 
 <main id="top">
   <section class="hero">
-    <div class="wrap hero-row">
-      <div class="hero-text">
-        <span class="sticker">Free During The Beta</span>
-        <h1>Taking Every Last <span class="hl">Crumb.</span></h1>
-        <p class="lede">The CRM built for outside sales reps. Your customers, your route and your follow-ups, planned for you, on the phone in your pocket.</p>
-        <div class="ctas">
-          <a href="#join" class="btn btn-red">Join The Beta</a>
-          <button type="button" class="btn btn-ghost" id="watch-demo">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 21 12 6 21 6 3"></polygon></svg>
-            Watch The 2-Minute Demo
-          </button>
-        </div>
+    <div class="wrap">
+      <span class="pill"><b></b>Free During The Beta</span>
+      <h1>Taking Every Last <span>Crumb.</span></h1>
+      <p class="lede">The CRM built for outside sales reps. Your customers, your route and your follow-ups, planned for you, on the phone in your pocket.</p>
+      <div class="ctas">
+        <a href="#join" class="btn btn-red">Join The Beta</a>
+        <button type="button" class="btn btn-line" id="watch-demo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 21 12 6 21 6 3"></polygon></svg>
+          Watch The 2-Minute Demo
+        </button>
       </div>
       <div class="stage" aria-hidden="true">
         <div class="phone"><img src="/img/itin.jpg" alt=""></div>
@@ -49,10 +47,9 @@
     </div>
   </section>
 
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker-track">
-      <span>Itinerary</span><span>Customers</span><span>Prospects</span><span>Calendar</span><span>Notes</span><span>Photos</span><span>Reminders</span><span>Works With No Signal</span><span>iPhone + iPad</span>
-      <span>Itinerary</span><span>Customers</span><span>Prospects</span><span>Calendar</span><span>Notes</span><span>Photos</span><span>Reminders</span><span>Works With No Signal</span><span>iPhone + iPad</span>
+  <div class="words" aria-hidden="true">
+    <div class="wrap words-row">
+      <span>Itinerary</span><span>Customers</span><span>Prospects</span><span>Calendar</span><span>Notes</span><span>Reminders</span><span>Works Offline</span><span>iPhone + iPad</span>
     </div>
   </div>
 
@@ -64,19 +61,19 @@
         <p>Most CRMs are built for the office. Crumb is built for the parking lot and the back door of the kitchen.</p>
       </div>
       <div class="cards">
-        <article class="card c-blue">
+        <article class="card">
           <div><span class="tag">Itinerary</span><h3>Your Day Plans Itself.</h3><p>Recurring visits, appointments and follow-ups land on today's list automatically. You adjust; Crumb does the logistics.</p></div>
           <div class="shot"><img src="/img/itin.jpg" alt="Crumb's Itinerary showing six stops for Thursday" loading="lazy"></div>
         </article>
-        <article class="card c-yellow">
+        <article class="card">
           <div><span class="tag">Accounts</span><h3>Every Customer, One Tap Away.</h3><p>Call, text, map, notes and the next visit, right there. Barely any typing.</p></div>
           <div class="shot"><img src="/img/cust.jpg" alt="Crumb's Customers list with one account open" loading="lazy"></div>
         </article>
-        <article class="card c-red">
+        <article class="card">
           <div><span class="tag">Check-Ins</span><h3>Nobody Falls Through The Cracks.</h3><p>Accounts you haven't seen in a while show up under today, one tap from your route.</p></div>
           <div class="shot shot-mid"><img src="/img/stale.jpg" alt="Due For A Check-In list with Add to today buttons" loading="lazy"></div>
         </article>
-        <article class="card c-ink">
+        <article class="card">
           <div><span class="tag">Calendar</span><h3>Your Week, Color-Coded.</h3><p>Customers, prospects and meetings in one view. Saturday work shows up too.</p></div>
           <div class="shot"><img src="/img/cal.jpg" alt="Crumb's week calendar for November 2026" loading="lazy"></div>
         </article>
@@ -84,29 +81,32 @@
     </div>
   </section>
 
-  <section class="day section">
+  <section class="section" style="padding-top:0">
     <div class="wrap">
       <div class="head">
         <span class="eyebrow">A Day With Crumb</span>
         <h2>From First Coffee To Last Stop.</h2>
       </div>
       <div class="times">
-        <div class="time"><b>7:00<small>AM</small></b><h4>Your Whole Day, Delivered.</h4><p>Every stop in order, in one reminder.</p></div>
-        <div class="time"><b>9:00<small>AM</small></b><h4>Tap. Done. Next Stop.</h4><p>Check it off and Maps opens to the next one.</p></div>
-        <div class="time"><b>12:30<small>PM</small></b><h4>Write The Note. Tap Meeting.</h4><p>It books the Calendar and the Itinerary.</p></div>
-        <div class="time"><b>4:00<small>PM</small></b><h4>Didn't Get To It? Move It.</h4><p>Tomorrow, next week or any day you pick.</p></div>
+        <div class="time"><code>7:00 AM</code><h4>Your Whole Day, Delivered.</h4><p>Every stop in order, in one reminder.</p></div>
+        <div class="time"><code>9:00 AM</code><h4>Tap. Done. Next Stop.</h4><p>Check it off and Maps opens to the next one.</p></div>
+        <div class="time"><code>12:30 PM</code><h4>Write The Note. Tap Meeting.</h4><p>It books the Calendar and the Itinerary.</p></div>
+        <div class="time"><code>4:00 PM</code><h4>Didn't Get To It? Move It.</h4><p>Tomorrow, next week or any day you pick.</p></div>
       </div>
     </div>
   </section>
 
-  <section class="band">
-    <div class="wrap band-row">
-      <div><h2>Free During The Beta.</h2><p>No card, no catch. Your data is always yours to export.</p></div>
-      <a href="#join" class="btn btn-ink">Join The Beta</a>
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="band">
+        <h2>Free During The Beta.</h2>
+        <p>No card, no catch. Your data is always yours to export.</p>
+        <a href="#join" class="btn btn-red">Join The Beta</a>
+      </div>
     </div>
   </section>
 
-  <section id="join" class="section">
+  <section id="join" class="section" style="padding-top:0">
     <div class="wrap join-row">
       <div class="head">
         <span class="eyebrow">Small Group, Real Reps</span>
