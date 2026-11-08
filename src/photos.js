@@ -16,7 +16,8 @@ function openDb() {
       }
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error || new Error('Photo storage isn’t available in this browser.'));
+    req.onblocked = () => reject(new Error('Photo storage isn’t available in this browser.'));
   });
 }
 
@@ -28,8 +29,8 @@ function tx(mode, fn) {
         const st = t.objectStore(STORE);
         const out = fn(st);
         t.oncomplete = () => resolve(out && 'result' in out ? out.result : out);
-        t.onerror = () => reject(t.error);
-        t.onabort = () => reject(t.error);
+        t.onerror = () => reject(t.error || new Error('Couldn’t save to photo storage on this device.'));
+        t.onabort = () => reject(t.error || new Error('Couldn’t save to photo storage on this device.'));
       })
   );
 }
@@ -196,7 +197,8 @@ function safetyDb() {
       if (!req.result.objectStoreNames.contains('copies')) req.result.createObjectStore('copies');
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error || new Error('Photo storage isn’t available in this browser.'));
+    req.onblocked = () => reject(new Error('Photo storage isn’t available in this browser.'));
   });
 }
 function safetyTx(mode, fn) {
@@ -206,8 +208,8 @@ function safetyTx(mode, fn) {
         const t = db.transaction('copies', mode);
         const out = fn(t.objectStore('copies'));
         t.oncomplete = () => resolve(out && 'result' in out ? out.result : undefined);
-        t.onerror = () => reject(t.error);
-        t.onabort = () => reject(t.error);
+        t.onerror = () => reject(t.error || new Error('Couldn’t save to photo storage on this device.'));
+        t.onabort = () => reject(t.error || new Error('Couldn’t save to photo storage on this device.'));
       })
   );
 }

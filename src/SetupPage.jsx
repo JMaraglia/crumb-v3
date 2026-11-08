@@ -10,17 +10,27 @@ import './SetupPage.css';
 
 export const SETUP_SKIP_KEY = 'crumb_setup_not_now'; // this visit only (sessionStorage): don't reopen setup
 
+// Setup runs on its own only once per app launch, even if this screen is redrawn. After a failure it waits
+// for Try Again (no retry loops hammering the cloud).
+let autoRan = false;
+let lastErr = '';
+
 export default function SetupPage() {
   const navigate = useNavigate();
-  const [err, setErr] = useState('');
+  const [err, setErr] = useState(lastErr);
   const [tries, setTries] = useState(0);
+  const step = useRef('starting');
   const running = useRef(false);
 
   useEffect(() => {
     if (running.current) return;
+    if (tries === 0 && autoRan) return; // already tried this launch: wait for Try Again
+    autoRan = true;
     running.current = true;
+    lastErr = '';
     setErr('');
-    setUpAfterSignIn()
+    step.current = 'starting';
+    setUpAfterSignIn((label) => (step.current = label))
       .then((r) => {
         if (r.status === 'downloaded' || r.status === 'fresh') {
           window.location.replace('/'); // every screen starts over with the account's data
@@ -38,7 +48,9 @@ export default function SetupPage() {
       })
       .catch((e) => {
         running.current = false;
-        setErr(plainError(e));
+        console.error('Crumb setup failed at', step.current, e);
+        lastErr = `${plainError(e)} (Step: ${step.current})`;
+        setErr(lastErr);
       });
   }, [tries, navigate]);
 

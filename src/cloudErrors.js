@@ -9,5 +9,10 @@ export function plainError(err) {
   if (/only request this after|security purposes/i.test(m)) return 'An email was just sent. Wait a minute before asking for another.';
   if (/rate limit|too many/i.test(m)) return 'Too many tries for now. Wait a few minutes and try again.';
   if (/fetch|network|load failed/i.test(m)) return 'Couldn’t reach the cloud. Check your signal and try again.';
-  return m || 'Something went wrong.';
+  if (/photo storage|indexeddb|InvalidStateError|UnknownError|QuotaExceeded/i.test(m + ' ' + ((err && err.name) || '')))
+    return 'This browser isn’t letting Crumb save your data here (Private Browsing can do this). Open Crumb in a regular tab or the Home Screen app.';
+  if (m) return m;
+  // No message: say what kind of error it was, so it can be tracked down.
+  const kind = [err && err.name, err && err.code, err && err.status].filter(Boolean).join(' ');
+  return kind ? `Something went wrong (${kind}).` : 'Something went wrong.';
 }
