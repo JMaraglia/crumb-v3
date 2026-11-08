@@ -157,7 +157,7 @@ export default function SignInPage() {
             </li>
             <li>
               <span className="si-home-icon" aria-hidden="true"><IoPhonePortraitOutline /></span>
-              <span>Open <b>Crumb</b> from your Home Screen, then go to <b>Settings</b> → <b>Cloud</b> → <b>Sign In</b>.</span>
+              <span>Open <b>Crumb</b> from your Home Screen, then go to <b>Settings</b> → <b>Account</b>.</span>
             </li>
           </ol>
           <button type="button" className="si-btn si-btn-plain si-home-continue" onClick={continueInBrowser}>

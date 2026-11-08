@@ -108,10 +108,14 @@ export function verifyMatch(expected, cloudAnswer, expectedPhotoIds = [], cloudP
     (want[c.table] = want[c.table] || new Map()).set(String(c.id), c);
   });
   const lines = [];
+  // A note whose customer/prospect was deleted can't show on any device (notes live inside their account),
+  // so it isn't expected here. It stays in the cloud untouched.
+  const liveAccounts = new Set(((cloudAnswer && cloudAnswer.accounts) || []).filter((r) => !r.deleted).map((r) => String(r.id)));
   Object.keys(label).forEach((t) => {
     const w = want[t] || new Map();
     let rows = (cloudAnswer && cloudAnswer[t]) || [];
     rows = rows.filter((r) => !r.deleted);
+    if (t === 'notes') rows = rows.filter((r) => liveAccounts.has(String(r.account_id)));
     if (t === 'settings') rows = rows.filter((r) => Object.values(SETTING_KEYS).includes(String(r.id)));
     const have = new Map(rows.map((r) => [String(r.id), r]));
     let ok = 0;

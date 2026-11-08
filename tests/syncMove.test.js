@@ -30,7 +30,7 @@ describe('Move My Data: verify (S7)', () => {
   const r = inspectForMove(reader(saved));
   const asCloud = (changes) => {
     const out = { accounts: [], notes: [], events: [], stops: [], todos: [], day_marks: [], settings: [] };
-    changes.forEach((c) => out[c.table].push({ id: String(c.id), kind: c.cols && c.cols.kind, data: JSON.parse(JSON.stringify(c.next)) }));
+    changes.forEach((c) => out[c.table].push({ id: String(c.id), kind: c.cols && c.cols.kind, account_id: c.cols && c.cols.account_id != null ? String(c.cols.account_id) : null, data: JSON.parse(JSON.stringify(c.next)) }));
     return out;
   };
   it('a perfect copy matches', () => {
@@ -41,7 +41,7 @@ describe('Move My Data: verify (S7)', () => {
     const cloud = asCloud(r.changes);
     cloud.todos = [];
     cloud.events[0].data.title = 'Different';
-    cloud.notes.push({ id: 'n-x', data: { text: 'extra' } });
+    cloud.notes.push({ id: 'n-x', account_id: '1', data: { text: 'extra' } });
     const v = verifyMatch(r.changes, cloud, ['p1'], []);
     expect(v.ok).toBe(false);
     expect(v.problemCount).toBe(4);
@@ -50,6 +50,12 @@ describe('Move My Data: verify (S7)', () => {
     const cloud = asCloud(r.changes);
     cloud.notes.push({ id: 'n-gone', data: {}, deleted: true });
     cloud.settings.push({ id: 'cloud_test', data: {} });
+    expect(verifyMatch(r.changes, cloud).ok).toBe(true);
+  });
+  it("a live note on a deleted customer isn't expected on the device (it can't show anywhere)", () => {
+    const cloud = asCloud(r.changes);
+    cloud.accounts.push({ id: '77', kind: 'customer', data: {}, deleted: true });
+    cloud.notes.push({ id: 'n-orphan', account_id: '77', data: { text: 'left behind' } });
     expect(verifyMatch(r.changes, cloud).ok).toBe(true);
   });
 });

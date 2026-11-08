@@ -113,8 +113,8 @@ export default function SettingsPage() {
       </header>
       <div className="st-content">
         <h1 className="st-title">Settings</h1>
-        {(email || isRealSynced()) && (
-          <div className="st-group st-group-gap">
+        {/* Always here (Nov 8): signing in shouldn't be buried. */}
+        <div className="st-group st-group-gap">
             <button
               className="st-row"
               disabled={signingOut}
@@ -123,12 +123,11 @@ export default function SettingsPage() {
               <span className="st-row-icon"><IoPersonCircleOutline /></span>
               <span className="st-row-text">
                 <span className="st-row-label">Account</span>
-                <span className="st-row-sub">{signingOut ? 'Signing out…' : email || 'Not signed in: tap to sign in'}</span>
+                <span className="st-row-sub">{signingOut ? 'Signing out…' : email || 'Not signed in · Tap to sign in and sync'}</span>
               </span>
               <FaChevronRight className="st-row-chev" />
             </button>
-          </div>
-        )}
+        </div>
         <div className="st-group">
           {rows.map((r) => (
             <button key={r.label} className="st-row" onClick={r.go}>

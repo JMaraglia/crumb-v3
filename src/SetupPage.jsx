@@ -33,7 +33,8 @@ export default function SetupPage() {
   const fail = (e) => {
     running.current = false;
     console.error('Crumb setup failed at', step.current, e);
-    lastErr = `${plainError(e)} (Step: ${step.current})`;
+    const first = e && e.detail && e.detail.problems && e.detail.problems[0];
+    lastErr = `${plainError(e)} (Step: ${step.current}${first ? `. ${first}` : ''})`;
     setBusy('');
     setErr(lastErr);
   };
