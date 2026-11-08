@@ -220,7 +220,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
   const filterSummary =
     [
       rangeLabel(range),
-      type === 'customer' ? 'Customers' : type === 'prospect' ? 'Prospects' : '',
+      type === 'customer' ? 'Customers' : type === 'prospect' ? 'Pipeline' : '',
       accountName || groupName,
       label === 'all' ? '' : label === 'open' ? 'Open follow-ups' : label === 'General' ? 'No label' : label,
       q ? `"${search.trim()}"` : '',
@@ -510,7 +510,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                 >
                   <option value="all">Customers & prospects</option>
                   <option value="customer">Customers</option>
-                  <option value="prospect">Prospects</option>
+                  <option value="prospect">Pipeline</option>
                 </select>
               </label>
               {groupOptions.length > 0 && (

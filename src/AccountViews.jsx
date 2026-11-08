@@ -606,9 +606,9 @@ function accountsXlsx(list, config, heading) {
   return makeXlsx({
     sheets: [
       {
-        name: config.plural,
+        name: config.section || config.plural,
         brand: 'Crumb.',
-        kicker: config.plural.toUpperCase(),
+        kicker: (config.section || config.plural).toUpperCase(),
         heading,
         detail: `${list.length} ${list.length === 1 ? config.singular.toLowerCase() : config.plural.toLowerCase()} · as of ${today}`,
         columns,
@@ -1207,7 +1207,7 @@ export function AccountList({ config, accounts, setAccounts }) {
 
       <div className="av-content">
         <div className="av-title-row">
-          <h1 className="av-big-title">{config.plural}</h1>
+          <h1 className="av-big-title">{config.section || config.plural}</h1>
           <button
             className="av-pill"
             disabled={!shown.length}
@@ -1227,7 +1227,7 @@ export function AccountList({ config, accounts, setAccounts }) {
                 .join(' ');
               const blob = accountsXlsx(sections.flatMap((sec) => sec.items), config, heading);
               const day = todayKey();
-              setListMsg(await shareFile(blob, `Crumb ${config.plural.toLowerCase()} ${day}.xlsx`, `Crumb ${config.plural.toLowerCase()}`));
+              setListMsg(await shareFile(blob, `Crumb ${(config.section || config.plural).toLowerCase()} ${day}.xlsx`, `Crumb ${(config.section || config.plural).toLowerCase()}`));
             }}
           >
             <IoShareOutline className="av-pill-icon" />
@@ -2233,7 +2233,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
               )}
             </div>
             {otherLocations.length > 0 && !locMsg && <div className="av-loc-hint">Hold a location to open it</div>}
-            {locMsg && <div className="av-loc-msg">{locMsg}. It's in {config.plural} as its own {config.singular.toLowerCase()}, linked to this one.</div>}
+            {locMsg && <div className="av-loc-msg">{locMsg}. It's in {config.section || config.plural} as its own {config.singular.toLowerCase()}, linked to this one.</div>}
           </>
         )}
 

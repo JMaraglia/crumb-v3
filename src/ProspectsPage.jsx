@@ -25,6 +25,7 @@ import {
 const PROSPECT_CONFIG = {
   singular: 'Prospect',
   plural: 'Prospects',
+  section: 'Pipeline', // what the screen is called; single records are still "Prospect"
   basePath: '/prospects',
   swipeToDelete: true, // swipe a row left to delete (asks first)
   notesPath: (id) => `/prospect-notes/${id}`,

@@ -2150,7 +2150,7 @@ function AddStopSheet({ date, accounts, onAdd, onCancel, canCreate = false }) {
             <label className="it-sheet-row">
               <span>
                 Also add as a new prospect
-                <span className="it-sheet-help">Creates “{search.trim()}” in Prospects</span>
+                <span className="it-sheet-help">Creates “{search.trim()}” in Pipeline</span>
               </span>
               <input type="checkbox" className="it-switch" checked={asProspect} onChange={(e) => setAsProspect(e.target.checked)} />
             </label>
