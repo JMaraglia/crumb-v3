@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setUpAfterSignIn, useMyAccount, addThisDevice, keepSeparate } from './syncMove';
 import { plainError } from './cloudErrors';
+import { lockApplies } from './syncMode';
 import './SetupPage.css';
 
 export const SETUP_SKIP_KEY = 'crumb_setup_not_now'; // this visit only (sessionStorage): don't reopen setup
@@ -63,7 +64,8 @@ export default function SetupPage() {
           navigate('/sign-in', { replace: true });
           return;
         }
-        navigate('/', { replace: true }); // ready / not-invited: nothing to set up
+        // not-invited: the beta lock decides (waitlist), unless the lock is off. ready: nothing to set up.
+        navigate(r.status === 'not-invited' && lockApplies() ? '/access' : '/', { replace: true });
       })
       .catch(fail);
   }, [tries, navigate]);

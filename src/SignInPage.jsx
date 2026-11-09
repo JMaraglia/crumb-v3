@@ -8,7 +8,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoAddCircleOutline, IoPhonePortraitOutline } from 'react-icons/io5';
 import { cloud, cloudProblem } from './cloud';
 import { plainError } from './cloudErrors';
-import { needsSignIn } from './syncMode';
+import { needsSignIn, isRealSynced } from './syncMode';
 import './SignInPage.css';
 
 // iPhone or iPad, in a browser tab (not the Home Screen app). iPads report themselves as a Mac, so they're
@@ -44,7 +44,7 @@ export default function SignInPage() {
   // with a way to keep going in the browser anyway. Computers, the Home Screen app and a device that's
   // already syncing go straight to the form.
   const [homeSteps, setHomeSteps] = useState(() => {
-    if (gate) return false;
+    if (isRealSynced()) return false; // this device was already set up: just sign back in
     try {
       if (sessionStorage.getItem(BROWSER_OK_KEY) === '1') return false;
     } catch {

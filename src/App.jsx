@@ -19,12 +19,13 @@ import SettingsPage from './SettingsPage';
 const CloudTestPage = React.lazy(() => import('./CloudTestPage'));
 const SignInPage = React.lazy(() => import('./SignInPage'));
 const SetupPage = React.lazy(() => import('./SetupPage'));
+const AccessPage = React.lazy(() => import('./AccessPage'));
 const FeedbackPage = React.lazy(() => import('./FeedbackPage'));
 // Sync step S2: if "Record changes on this device" is switched on (Cloud Test), start noting changes.
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
-import { needsSignIn, needsSetup, firstOpenSignIn } from './syncMode';
+import { needsSignIn, needsSetup, firstOpenSignIn, accessState, checkInvited, signedInEmail } from './syncMode';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
@@ -88,12 +89,42 @@ function NotificationTaps() {
 
 // A device that syncs your data opens on Sign In when nobody is signed in (like a banking app).
 // Devices that don't sync open on Home as always. Email links (confirm / reset password) are let through.
+// Beta lock (Nov 8 access plan): no Crumb without signing in with an approved account. These screens stay
+// reachable while locked; email links (confirm / reset password) are let through too.
+const OPEN_PATHS = ['/sign-in', '/access', '/setup'];
+const emailLink = () => /access_token|error_description|type=recovery/.test(window.location.hash || '');
+let accessCheckedThisLaunch = false;
+
 function SignInGate() {
   const navigate = useNavigate();
   const location = useLocation();
   React.useEffect(() => {
     if (location.pathname === '/sign-in') return;
-    if (/access_token|error_description|type=recovery/.test(window.location.hash || '')) return;
+    if (emailLink()) return;
+    const access = accessState();
+    if (access === 'signin') {
+      navigate('/sign-in', { replace: true, state: { from: '/setup', gate: true } });
+      return;
+    }
+    if ((access === 'denied' || access === 'unknown') && !OPEN_PATHS.includes(location.pathname)) {
+      navigate('/access', { replace: true });
+      return;
+    }
+    // Approved on this device: re-ask the cloud once per launch (quietly). Only a clear "no" locks it;
+    // no signal changes nothing.
+    if (access === 'ok' && !accessCheckedThisLaunch) {
+      accessCheckedThisLaunch = true;
+      import('./cloud')
+        .then(({ cloud }) => {
+          const sb = cloud();
+          return sb ? checkInvited(sb, signedInEmail()) : true;
+        })
+        .then((yes) => {
+          if (yes === false) navigate('/access', { replace: true });
+        })
+        .catch(() => {});
+    }
+    if (location.pathname === '/access') return;
     if (needsSignIn()) {
       navigate('/sign-in', { replace: true, state: { from: '/setup', gate: true } });
       return;
@@ -113,6 +144,14 @@ function SignInGate() {
     }
     if (!skipped && needsSetup()) navigate('/setup', { replace: true });
   }, [location.pathname, navigate]);
+  return null;
+}
+
+// While locked, nothing of Crumb is drawn (not even for a moment) except the open screens.
+function AccessGuard({ children }) {
+  const location = useLocation();
+  const access = accessState();
+  if (access === 'open' || access === 'ok' || OPEN_PATHS.includes(location.pathname) || emailLink()) return children;
   return null;
 }
 
@@ -253,6 +292,7 @@ export default function App() {
       <NotificationTaps />
       <SignInGate />
       <ErrorBoundary>
+      <AccessGuard>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/backup" element={<BackupPage />} />
@@ -261,6 +301,7 @@ export default function App() {
         <Route path="/cloud-test" element={<React.Suspense fallback={null}><CloudTestPage /></React.Suspense>} />
         <Route path="/sign-in" element={<React.Suspense fallback={null}><SignInPage /></React.Suspense>} />
         <Route path="/setup" element={<React.Suspense fallback={null}><SetupPage /></React.Suspense>} />
+        <Route path="/access" element={<React.Suspense fallback={null}><AccessPage /></React.Suspense>} />
         <Route path="/feedback" element={<React.Suspense fallback={null}><FeedbackPage /></React.Suspense>} />
         <Route
           path="/todo"
@@ -355,6 +396,7 @@ export default function App() {
           }
         />
       </Routes>
+      </AccessGuard>
       </ErrorBoundary>
     </Router>
   );

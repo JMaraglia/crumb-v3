@@ -18,6 +18,8 @@ export const projectRef = () => {
 };
 export const isTestProject = (ref = projectRef()) => ref === TEST_PROJECT;
 export const KILL_SWITCH = String(import.meta.env.VITE_SYNC_OFF || '') === '1';
+// Emergency switch for the beta lock (Vercel setting VITE_ACCESS_LOCK_OFF = 1): Crumb opens like before the lock.
+export const ACCESS_LOCK_OFF = String(import.meta.env.VITE_ACCESS_LOCK_OFF || '') === '1';
 
 export const TEST_DEVICE_KEY = 'crumb_sync_test_device'; // '1' = this copy holds demo data only
 export const MODE_KEY = 'crumb_sync_mode';               // 'real' = this device syncs your real data
@@ -30,6 +32,7 @@ export const PAUSED_KEY = 'crumb_sync_paused';           // '1' = paused
 // cloud last said yes to, so Crumb can tell on open without asking the cloud.
 export const SYNC_EMAILS = ['jmaraglia@gmail.com'];
 export const INVITED_KEY = 'crumb_sync_invited';
+export const DENIED_KEY = 'crumb_access_denied'; // the email the cloud last said NO to (this device only)
 const clean = (email) => String(email || '').trim().toLowerCase();
 export const maySync = (email) => {
   const e = clean(email);
@@ -47,8 +50,13 @@ export async function checkInvited(sb, email) {
     if (missing) return SYNC_EMAILS.includes(e);
     throw error;
   }
-  if (data === true) writeText(INVITED_KEY, e);
-  else if (readText(INVITED_KEY)) writeText(INVITED_KEY, '');
+  if (data === true) {
+    writeText(INVITED_KEY, e);
+    if (readText(DENIED_KEY)) writeText(DENIED_KEY, '');
+  } else {
+    if (readText(INVITED_KEY)) writeText(INVITED_KEY, '');
+    writeText(DENIED_KEY, e);
+  }
   return data === true;
 }
 
@@ -77,7 +85,23 @@ export function hasSignIn(ref = projectRef()) {
     return true; // can't tell: never lock anyone out
   }
 }
-export const needsSignIn = () => isRealSynced() && !hasSignIn();
+export const needsSignIn = () => (isRealSynced() || lockApplies()) && !hasSignIn();
+
+// ---------------------------------------------------------------- the beta lock (Nov 8 access plan)
+// Crumb is invite-only: nobody uses it without signing in with an approved account. (Later the same cloud
+// check will also say yes to an active subscription.) Not for the test cloud, demo builds without a cloud,
+// or when the emergency switch is on.
+export const lockApplies = () => !ACCESS_LOCK_OFF && Boolean(projectRef()) && !isTestProject();
+// 'open' (no lock) | 'signin' | 'ok' | 'denied' (the cloud said no) | 'unknown' (ask the cloud)
+export function accessState() {
+  if (!lockApplies()) return 'open';
+  if (!hasSignIn()) return 'signin';
+  const e = clean(signedInEmail());
+  if (!e) return 'unknown';
+  if (maySync(e)) return 'ok';
+  if (readText(DENIED_KEY) === e) return 'denied';
+  return 'unknown';
+}
 
 export function setPaused(on) {
   writeText(PAUSED_KEY, on ? '1' : '0');

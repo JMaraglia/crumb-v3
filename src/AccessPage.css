@@ -1,0 +1,84 @@
+/* "You're On The List" / checking access (wl-). Same look as Sign In and Setup. App.css styles every button,
+   so they're reset here (including :hover, which iPhones keep "on" after a tap). */
+.wl-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 18vh;
+  box-sizing: border-box;
+}
+.wl-logo {
+  text-align: center;
+  font-size: 4rem;
+  margin: 0 0 28px;
+}
+.wl-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 26px 22px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+.wl-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+.wl-sub {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #6e6e73;
+}
+.wl-email {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1c1c1e;
+  word-break: break-all;
+}
+.wl-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid #d6e7f7;
+  border-top-color: #0077cc;
+  animation: wl-spin 0.9s linear infinite;
+  margin-bottom: 6px;
+}
+@keyframes wl-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-spinner { animation-duration: 3s; }
+}
+.wl-page .wl-btn,
+.wl-page .wl-btn:hover {
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #0077cc;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: none;
+  transform: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.wl-page .wl-btn-plain,
+.wl-page .wl-btn-plain:hover {
+  margin-top: 2px;
+  background: none;
+  color: #0077cc;
+}
+.wl-page .wl-btn:disabled {
+  opacity: 0.5;
+}
