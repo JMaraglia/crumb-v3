@@ -64,7 +64,7 @@ export const END_OF_DAY_KINDS = [
   ['tasks', 'Tasks'],
   ['followups', 'Follow-ups'],
   ['samples', 'Samples'],
-  ['stops', 'Itinerary stops not checked off'],
+  ['stops', 'Daily stops not checked off'],
 ];
 
 export function loadNotifySettings() {

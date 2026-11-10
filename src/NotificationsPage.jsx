@@ -187,7 +187,7 @@ export default function NotificationsPage() {
           {settings.lead > 0 &&
             [
               ['appointments', 'Calendar Appointments'],
-              ['stops', 'Itinerary Stops'],
+              ['stops', 'Daily Stops'],
             ].map(([k, label]) => {
               const inc = { ...DEFAULT_NOTIFY.leadInclude, ...(settings.leadInclude || {}) };
               return (

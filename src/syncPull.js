@@ -183,7 +183,7 @@ export function planPull(cloud, readText, pendingKeys = new Set()) {
   // ---------- events, stops, to-dos: one item per record
   const recordLists = [
     ['events', 'crumb_calendar_events', 'calendar events'],
-    ['stops', 'visitData', 'itinerary stops'],
+    ['stops', 'visitData', 'daily stops'],
     ['todos', 'crumb_todos', 'to-dos'],
   ];
   recordLists.forEach(([table, key, label]) => {

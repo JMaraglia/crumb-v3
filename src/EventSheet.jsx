@@ -253,7 +253,7 @@ export default function EventSheet({
             onChange={(e) => setLocation(e.target.value)}
           />
           <label className="es-row es-switch-row">
-            <span className="es-label">Show in itinerary</span>
+            <span className="es-label">Show on Daily Stops</span>
             <input
               type="checkbox"
               className="es-switch"

@@ -16,7 +16,7 @@ import './CloudTestPage.css';
 
 
 // One waiting change in plain words: "Customer changed", "Note added", "Stop removed"…
-const WHAT = { accounts: 'Account', notes: 'Note', events: 'Calendar event', stops: 'Itinerary stop', todos: 'To-do', day_marks: 'Itinerary/Call Sheet marks', settings: 'Setting' };
+const WHAT = { accounts: 'Account', notes: 'Note', events: 'Calendar event', stops: 'Daily stop', todos: 'To-do', day_marks: 'Daily Stops/Call Sheet marks', settings: 'Setting' };
 function describe(c) {
   const what = c.table === 'accounts' && c.cols && c.cols.kind ? (c.cols.kind === 'customer' ? 'Customer' : 'Prospect') : WHAT[c.table] || c.table;
   const name = (c.next && (c.next.name || c.next.title || c.next.text)) || (c.base && (c.base.name || c.base.title || c.base.text)) || '';
@@ -223,7 +223,7 @@ export default function CloudTestPage() {
         <p className="cl-intro">
           {testProject
             ? 'A test of Crumb’s cloud connection, with made-up demo data only. Your real customers are never sent to the test cloud.'
-            : 'Keeps your customers, notes, calendar, itinerary, to-dos and photos the same on your iPhone and iPad. Crumb always keeps a full copy on this device, so it works with no signal.'}
+            : 'Keeps your customers, notes, calendar, daily stops, to-dos and photos the same on your iPhone and iPad. Crumb always keeps a full copy on this device, so it works with no signal.'}
         </p>
 
         {!cloudReady && (
@@ -357,7 +357,7 @@ export default function CloudTestPage() {
             {!realSynced && !testCopy && realData && (!session || allowed(session)) && (
               <div className="cl-card">
                 <div className="cl-text">
-                  <strong>Move My Data To The Cloud.</strong> Your customers, prospects, notes, calendar, itinerary, to-dos,
+                  <strong>Move My Data To The Cloud.</strong> Your customers, prospects, notes, calendar, daily stops, to-dos,
                   settings and photos go up to your cloud, so your other devices can get them. Nothing on this device changes.
                 </div>
                 {!session && <div className="cl-text cl-card-gap">Sign in above first.</div>}

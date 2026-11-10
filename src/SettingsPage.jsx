@@ -79,7 +79,7 @@ export default function SettingsPage() {
       icon: <IoNotificationsOutline />,
       label: 'Notifications',
       sub: n.enabled
-        ? 'Morning summary, end-of-day reminder (to-dos and Itinerary), heads-ups before visits'
+        ? 'Morning summary, end-of-day reminder (to-dos and Daily Stops), heads-ups before visits'
         : 'Off · tap to turn on reminders',
       go: () => navigate('/notifications'),
     },
@@ -99,7 +99,7 @@ export default function SettingsPage() {
     {
       icon: <IoTimeOutline />,
       label: "Due For A Check-In",
-      sub: stale ? `Accounts with no contact in ${stale}+ days (Itinerary, lists, morning summary)` : 'Off',
+      sub: stale ? `Accounts with no contact in ${stale}+ days (Daily Stops, lists, morning summary)` : 'Off',
       go: () => setPickStale(true),
     },
     {

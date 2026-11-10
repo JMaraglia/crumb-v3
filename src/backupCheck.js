@@ -63,7 +63,7 @@ export const COUNT_LABELS = [
   ['prospects', 'Prospects'],
   ['notes', 'Notes'],
   ['events', 'Calendar events'],
-  ['stops', 'Added itinerary stops'],
+  ['stops', 'Added daily stops'],
   ['todos', 'To-dos'],
   ['photos', 'Photos'],
   ['items', 'Saved items (all)'],

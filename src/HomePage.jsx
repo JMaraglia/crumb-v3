@@ -25,7 +25,7 @@ export default function HomePage() {
   const tiles = [
     { label: 'Customers', icon: <FaUsers />, path: '/customers' },
     { label: 'Pipeline', icon: <FaUserPlus />, path: '/prospects' },
-    { label: 'Itinerary', icon: <FaClipboardList />, path: '/itinerary' },
+    { label: 'Daily Stops', icon: <FaClipboardList />, path: '/itinerary' },
     { label: 'To-Do', icon: <FaCheckSquare />, path: '/todo' },
     { label: 'Calendar', icon: <FaCalendarAlt />, path: '/calendar' },
     { label: 'Notes', icon: <FaStickyNote />, path: '/notes' },

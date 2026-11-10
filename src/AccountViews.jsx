@@ -142,7 +142,7 @@ function RevisitSheet({ account, onSave, onCancel }) {
             No revisit
           </button>
         )}
-        <div className="av-vs-hint">On that day it shows on your Itinerary and Calendar (with a reminder). It stays Inactive until you tap Activate.</div>
+        <div className="av-vs-hint">On that day it shows on your Daily Stops and Calendar (with a reminder). It stays Inactive until you tap Activate.</div>
       </div>
     </div>
   );
@@ -158,7 +158,7 @@ export function inactiveLabel(account) {
    Its notes (they live on the account), its photos, calendar events linked to it, Itinerary stops
    added for it, and To-Do tasks linked to it. (Other locations in its group are not touched.) */
 export function deleteWarning(account, config) {
-  return `Permanently delete ${displayName(account)}?\n\nThis deletes the ${config.singular.toLowerCase()} and everything with it: notes, photos, its meetings on the Calendar, its Itinerary stops and To-Do tasks.\n\nIt can't be undone.`;
+  return `Permanently delete ${displayName(account)}?\n\nThis deletes the ${config.singular.toLowerCase()} and everything with it: notes, photos, its meetings on the Calendar, its Daily Stops and To-Do tasks.\n\nIt can't be undone.`;
 }
 export function deleteAccountExtras(type, id) {
   const same = (x) => x && x.accountType === type && String(x.accountId) === String(id);
@@ -382,7 +382,7 @@ export function VisitSheet({ account, config, onSave, onCancel }) {
             </label>
           )}
         </div>
-        <div className="av-vs-hint">Shows up on your Itinerary and Calendar right away. No days = no scheduled visits.</div>
+        <div className="av-vs-hint">Shows up on your Daily Stops and Calendar right away. No days = no scheduled visits.</div>
       </div>
     </div>
   );
@@ -719,7 +719,7 @@ export function itinerarySheet(account, type, daysField, onDone) {
           const kept = stops.filter((v) => !mine(v, day));
           if (kept.length !== stops.length) saveStops(kept); // added by hand: taken off
           if (scheduled(day)) setRemoved(day, true); // regular visit: skips that day only
-          onDone(`Removed from ${dayWord(day, i)} Itinerary`);
+          onDone(`Removed from ${dayWord(day, i)} Daily Stops`);
           return;
         }
         if (scheduled(day) && removedThatDay(day)) {
@@ -740,11 +740,11 @@ export function itinerarySheet(account, type, daysField, onDone) {
             },
           ]);
         }
-        onDone(`Added to ${dayWord(day, i)} Itinerary ✓`);
+        onDone(`Added to ${dayWord(day, i)} Daily Stops ✓`);
       },
     };
   });
-  return { title: `${account.name || 'This account'} on the Itinerary`, actions };
+  return { title: `${account.name || 'This account'} on Daily Stops`, actions };
 }
 
 function niceShort(k) {
@@ -1021,7 +1021,7 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
             </button>
             {!a.inactive && (
               <button className="av-quick-btn" onClick={addToItinerary}>
-                Itinerary
+                Daily Stops
               </button>
             )}
           </div>
@@ -1460,7 +1460,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
               {account.inactive.since
                 ? new Date(account.inactive.since + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                 : '—'}
-              . Not on your Itinerary, Calendar, Call Sheet or reminders
+              . Not on your Daily Stops, Calendar, Call Sheet or reminders
               {account.inactive.revisit ? ', except its revisit day' : ''}.
             </span>
             {setAccounts && (
@@ -1790,7 +1790,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
       {askInactive && (
         <AskSheet
           title={`Why is ${displayName(account)} Inactive?`}
-          message="It keeps all its notes, but comes off your lists, Itinerary, Calendar, Call Sheet and reminders. You can activate it again any time."
+          message="It keeps all its notes, but comes off your lists, Daily Stops, Calendar, Call Sheet and reminders. You can activate it again any time."
           choices={INACTIVE_REASONS.map(([value, label]) => ({ value, label }))}
           onPick={(reason) => {
             setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, inactive: { reason, since: todayKey() } } : x)));
@@ -2391,7 +2391,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
               </select>
             </label>
             <label className="av-row av-static-row">
-              <span className="av-row-label-inline">Show in itinerary</span>
+              <span className="av-row-label-inline">Show on Daily Stops</span>
               <input
                 type="checkbox"
                 className="av-switch"
@@ -2514,7 +2514,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       {askInactiveEdit && existing && (
         <AskSheet
           title={`Why is ${displayName(existing)} Inactive?`}
-          message="It keeps all its notes, but comes off your lists, Itinerary, Calendar, Call Sheet and reminders. You can activate it again any time."
+          message="It keeps all its notes, but comes off your lists, Daily Stops, Calendar, Call Sheet and reminders. You can activate it again any time."
           choices={INACTIVE_REASONS.map(([value, label]) => ({ value, label }))}
           onPick={(reason) => {
             setAccounts((prev) => prev.map((x) => (x.id === existing.id ? { ...x, inactive: { reason, since: todayKey() } } : x)));

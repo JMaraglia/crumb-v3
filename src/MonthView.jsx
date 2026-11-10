@@ -189,7 +189,7 @@ export default function MonthView({
                 <span className="mv-item-title">{ev.title}</span>
                 {(ev.location || ev.virtual) && (
                   <span className="mv-item-location">
-                    {[ev.virtual ? (ev.source === 'schedule' ? 'Scheduled visit' : 'Itinerary stop') : null, ev.location]
+                    {[ev.virtual ? (ev.source === 'schedule' ? 'Scheduled visit' : 'Daily stop') : null, ev.location]
                       .filter(Boolean)
                       .join(' · ')}
                   </span>

@@ -360,7 +360,7 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
         const title = isVisit ? `Remove the ${ev.title} visit on ${dayText}?` : `Delete "${ev.title}"?`;
         const message = [
           isVisit ? 'Just this day. The regular visit schedule stays the same.' : '',
-          alsoOnItinerary ? 'Also delete it from the Itinerary?' : '',
+          alsoOnItinerary ? 'Also delete it from Daily Stops?' : '',
         ]
           .filter(Boolean)
           .join(' ');
@@ -447,7 +447,7 @@ function CalendarSettings({ settings, onChange, onClose }) {
         <div className="cal-set-section">Show on calendar</div>
         <div className="cal-set-group">
           <label className="cal-set-row">
-            <span>Show Itinerary Visits</span>
+            <span>Show Scheduled Visits</span>
             <input
               type="checkbox"
               className="cal-set-switch"

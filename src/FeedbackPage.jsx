@@ -8,7 +8,7 @@ import { cloud, cloudReady } from './cloud';
 import { plainError } from './cloudErrors';
 import './FeedbackPage.css';
 
-const AREAS = ['Calendar', 'Itinerary', 'Customers', 'Pipeline', 'Notes', 'To-Do', 'Reminders', 'Sync', 'Other'];
+const AREAS = ['Calendar', 'Daily Stops', 'Customers', 'Pipeline', 'Notes', 'To-Do', 'Reminders', 'Sync', 'Other'];
 
 const TEXT = {
   problem: {

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { cloud, cloudReady, cloudProblem, plainError, projectRef, signOutThisDevice } from './cloud.js';
 
 // Older tickets were filed under "Prospects"; the app now calls that section Pipeline (display only).
-const areaLabel = (a) => (a === 'Prospects' ? 'Pipeline' : a);
+const areaLabel = (a) => (a === 'Prospects' ? 'Pipeline' : a === 'Itinerary' ? 'Daily Stops' : a); // display names only
 
 const TAB_KEY = 'crumb_admin_tab';
 const readTab = () => { try { return localStorage.getItem(TAB_KEY) || 'overview'; } catch { return 'overview'; } };
@@ -223,7 +223,7 @@ function DeleteSheet({ email, onClose, onDeleted }) {
   const blocked = fp && (fp.is_self || fp.is_admin || !fp.found);
   const items = fp ? [
     ['accounts', 'customer or prospect', 'customers & prospects'], ['notes', 'note', 'notes'],
-    ['events', 'calendar event', 'calendar events'], ['stops', 'itinerary stop', 'itinerary stops'],
+    ['events', 'calendar event', 'calendar events'], ['stops', 'daily stop', 'daily stops'],
     ['todos', 'to-do', 'to-dos'], ['photos', 'photo', 'photos'],
   ].filter(([k]) => fp[k] > 0).map(([k, one, many]) => `${fp[k]} ${fp[k] === 1 ? one : many}`) : [];
 

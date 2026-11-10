@@ -154,7 +154,7 @@ function buildItineraryPdf(days) {
       for (let dy = doc.top; dy < y; dy += 6) doc.line(x1 + gap / 2, dy, x1 + gap / 2, dy + 3, { width: 0.5, color: '#999999' });
     }
   });
-  return doc.save('Crumb itinerary');
+  return doc.save('Crumb daily stops');
 }
 
 /* ---------- page ---------- */
@@ -582,9 +582,9 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     const text =
       where === 'both'
         ? stop.kind === 'scheduled'
-          ? 'Removed from Itinerary and Calendar'
-          : 'Deleted from Itinerary and Calendar'
-        : 'Removed from Itinerary';
+          ? 'Removed from Daily Stops and Calendar'
+          : 'Deleted from Daily Stops and Calendar'
+        : 'Removed from Daily Stops';
     setUndoIt({
       text,
       restore: () => {
@@ -653,11 +653,11 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       { dayKey: date, list: stops },
       { dayKey: nextKey, list: buildStops(nextKey) },
     ]);
-    const fileName = `Crumb itinerary - ${fromKey(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.pdf`;
+    const fileName = `Crumb daily stops - ${fromKey(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.pdf`;
     try {
       const file = new File([blob], fileName, { type: 'application/pdf' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Crumb itinerary' });
+        await navigator.share({ files: [file], title: 'Crumb daily stops' });
         return;
       }
     } catch (err) {
@@ -988,7 +988,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
           )}
 
           <button className="it-leftover-link" onClick={() => navigate('/itinerary')}>
-            Open Itinerary ›
+            Open Daily Stops ›
           </button>
         </div>
         {undoIt && (
@@ -1009,7 +1009,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
         <button className="it-icon-btn" onClick={() => navigate('/')} aria-label="Back">
           <FaArrowLeft />
         </button>
-        <div className="it-header-title">Itinerary</div>
+        <div className="it-header-title">Daily Stops</div>
         {/* Jump to a date: the calendar button opens the phone's date picker */}
         <label className="it-cal-btn" aria-label="Pick a date">
           <IoCalendarOutline />
@@ -1496,11 +1496,11 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
 
       {askingStop && (
         <AskSheet
-          title={`Remove "${askingStop.title}" from the Itinerary?`}
+          title={`Remove "${askingStop.title}" from Daily Stops?`}
           message={`${askingStop.kind === 'scheduled' ? 'Just this day. The regular visit schedule stays the same. ' : ''}Also delete it from the Calendar?`}
           choices={[
             { label: 'Yes, delete from both', value: 'both', tone: 'danger' },
-            { label: 'No, just the Itinerary', value: 'itinerary' },
+            { label: 'No, just Daily Stops', value: 'itinerary' },
           ]}
           onPick={(where) => {
             const stop = askingStop;
@@ -1643,7 +1643,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             <div key={dayKey} className="it-print-day">
               <div className="it-print-top">
                 <div className="it-print-brand">Crumb.</div>
-                <div className="it-print-kicker">Itinerary</div>
+                <div className="it-print-kicker">Daily Stops</div>
               </div>
               <div className="it-print-bottom">
                 <div className="it-print-heading">
@@ -2018,7 +2018,7 @@ function LeftoverPanel({ stops, viewDate, onSave }) {
   return (
     <>
         <div className="it-move-who">
-          <span>Pick the stops to put back on the Itinerary, then pick a day.</span>
+          <span>Pick the stops to put back on Daily Stops, then pick a day.</span>
         </div>
         <div className="it-sheet-group it-left-list">
           {stops.map((st) => (

@@ -69,7 +69,7 @@ export default function MeetingSheet({ account, presetNotes = '', existing = nul
       timestamp: stampOf(),
       meeting: { date: day, start, eventId: event.id },
     };
-    onSaved(`Meeting added to Calendar and Itinerary: ${niceMeeting(day, start)}`, note);
+    onSaved(`Meeting added to Calendar and Daily Stops: ${niceMeeting(day, start)}`, note);
   };
 
   return (
@@ -82,7 +82,7 @@ export default function MeetingSheet({ account, presetNotes = '', existing = nul
         </div>
         <div className="mt-who">
           <strong>{account.name}</strong>
-          <span>Goes on the Calendar and that day's Itinerary, with a reminder before it.</span>
+          <span>Goes on the Calendar and that day's Daily Stops, with a reminder before it.</span>
         </div>
         <div className="mt-group">
           <label className="mt-row">

@@ -91,9 +91,9 @@ export const COUNT_NAMES = [
   ['prospects', 'Prospects'],
   ['notes', 'Notes'],
   ['events', 'Calendar events'],
-  ['stops', 'Added itinerary stops'],
+  ['stops', 'Added daily stops'],
   ['todos', 'To-dos'],
-  ['marks', 'Itinerary & Call Sheet day marks'],
+  ['marks', 'Daily Stops & Call Sheet day marks'],
   ['settings', 'Settings'],
   ['photos', 'Photos'],
 ];
@@ -104,7 +104,7 @@ export const COUNT_NAMES = [
 // (e.g. Due For A Check-In days) that the account never saved isn't a mismatch: it's just this device's choice.
 export function verifyMatch(expected, cloudAnswer, expectedPhotoIds = [], cloudPhotoIds = [], { download = false } = {}) {
   const problems = [];
-  const label = { accounts: 'Customers & prospects', notes: 'Notes', events: 'Calendar events', stops: 'Itinerary stops', todos: 'To-dos', day_marks: 'Day marks', settings: 'Settings' };
+  const label = { accounts: 'Customers & prospects', notes: 'Notes', events: 'Calendar events', stops: 'Daily stops', todos: 'To-dos', day_marks: 'Day marks', settings: 'Settings' };
   const want = {};
   expected.forEach((c) => {
     (want[c.table] = want[c.table] || new Map()).set(String(c.id), c);
