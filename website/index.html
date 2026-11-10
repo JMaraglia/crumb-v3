@@ -23,7 +23,7 @@
     <nav class="nav" aria-label="Main">
       <a href="/features">Features</a>
       <a href="https://crumb-v3.vercel.app/sign-in">Sign In</a>
-      <a href="#join" class="btn btn-red btn-sm">Join The Beta</a>
+      <a href="#demo" class="btn btn-red btn-sm" id="nav-demo">Watch The Demo</a>
     </nav>
   </div>
 </header>
@@ -51,7 +51,7 @@
 
   <div class="words" aria-hidden="true">
     <div class="wrap words-row">
-      <span>Customers</span><span>Itinerary</span><span>Pipeline</span><span>Notes</span><span>To-Dos</span><span>Reminders</span>
+      <span>Customers</span><span>Daily Stops</span><span>Pipeline</span><span>Notes</span><span>To-Dos</span><span>Reminders</span>
     </div>
   </div>
 
@@ -64,8 +64,8 @@
       </div>
       <div class="cards">
         <article class="card">
-          <div><span class="tag">Itinerary</span><h3>Hit The Ground Running.</h3><p>Start your day knowing where you need to be and what needs your attention. The rest is up to you.</p></div>
-          <div class="shot"><img src="/img/itin.jpg" alt="Crumb's Itinerary showing six stops for Thursday" loading="lazy"></div>
+          <div><span class="tag">Daily Stops</span><h3>Hit The Ground Running.</h3><p>Start your day knowing where you need to be and what needs your attention. The rest is up to you.</p></div>
+          <div class="shot"><img src="/img/itin.jpg" alt="Crumb's Daily Stops showing six stops for Thursday" loading="lazy"></div>
         </article>
         <article class="card">
           <div><span class="tag">Accounts</span><h3>Every Customer, One Tap Away.</h3></div>
@@ -93,7 +93,7 @@
         <h2>Join The Beta.</h2>
         <p>Crumb is opening up to a small group of outside sales reps. Leave your name and email and we'll send you an invite.</p>
         <ul class="perks">
-          <li>Built by a rep, for reps</li>
+          <li>Built in the field, for the field</li>
           <li>Works even when your signal doesn’t</li>
           <li>Your data, always exportable</li>
         </ul>
@@ -141,10 +141,15 @@
   var back = document.getElementById('video-back');
   var vid = document.getElementById('demo-video');
   function close() { vid.pause(); back.hidden = true; document.body.style.overflow = ''; }
-  document.getElementById('watch-demo').addEventListener('click', function () {
+  function open(e) {
+    if (e) e.preventDefault();
     back.hidden = false; document.body.style.overflow = 'hidden';
     var p = vid.play(); if (p && p.catch) p.catch(function () {});
-  });
+  }
+  document.getElementById('watch-demo').addEventListener('click', open);
+  document.getElementById('nav-demo').addEventListener('click', open);
+  // From the Features or Privacy page: crumbsales.com/#demo opens the video (tap play if the phone doesn't start it).
+  if (location.hash === '#demo') open();
   document.getElementById('video-close').addEventListener('click', close);
   back.addEventListener('click', function (e) { if (e.target === back) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !back.hidden) close(); });
