@@ -99,6 +99,7 @@ h2 { margin: 0; font: 600 clamp(36px, 5vw, 56px)/1.02 var(--sans); letter-spacin
 .form { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .form label { font-size: 14px; font-weight: 500; color: var(--dim); margin-top: 4px; }
 .form .opt { color: var(--faint); }
+.form .req { color: #ff6b66; }
 .form input { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-hi); background: #040a12; color: var(--fg); font: 400 16px var(--sans); outline: none; }
 .form input:focus { border-color: var(--blue-hi); }
 .form select { width: 100%; padding: 14px 40px 14px 16px; border-radius: 12px; border: 1px solid var(--line-hi); background: #040a12 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238aa0b8' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 16px center; color: var(--fg); font: 400 16px var(--sans); outline: none; -webkit-appearance: none; appearance: none; }

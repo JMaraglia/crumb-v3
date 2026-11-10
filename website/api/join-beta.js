@@ -20,6 +20,7 @@ export default async function handler(req, res) {
   const key = String(process.env.SUPABASE_PUBLISHABLE_KEY || '').trim();
   if (!base || !key) return res.status(500).json({ error: 'The sign-up form isn’t connected yet. Please try again later.' });
 
+  if (clip(body.name, 100).split(/\s+/).length < 2) return res.status(400).json({ error: 'Please enter your first and last name.' });
   if (!clip(body.industry, 60)) return res.status(400).json({ error: 'Please enter your industry.' });
   if (!clip(body.state, 40)) return res.status(400).json({ error: 'Please pick your state.' });
 
