@@ -138,17 +138,53 @@ function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, 
 }
 
 // ---------- delete account (guardrails: counts first, type the email, server re-checks everything) ----------
+// ---------- welcome email (sent by the CRM's server through Resend; admins only, approved emails only) ----------
+async function sendWelcome(email, name = '') {
+  try {
+    const sb = cloud();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return 'Signed out. Sign in again and resend from Sync Access.';
+    const r = await fetch(`${CRM_URL}/api/admin-invite-email`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name }),
+      cache: 'no-store',
+    });
+    const body = await r.json().catch(() => ({}));
+    return r.ok ? '' : (body.error || `Error ${r.status}`);
+  } catch (err) {
+    return plainError(err);
+  }
+}
+const nameFor = (beta, email) => {
+  const b = (beta || []).find((x) => String(x.email || '').toLowerCase() === String(email || '').toLowerCase());
+  return (b && b.name) || '';
+};
+const mailNote = (email, err) => (err ? ` The welcome email didn’t go out (${err}). Resend it from Inbox → Beta → Sync Access.` : ` Welcome email sent to ${email}.`);
+
+function WelcomeToggle({ on, setOn, disabled }) {
+  return (
+    <label className="ad-check">
+      <input type="checkbox" checked={on} onChange={(e) => setOn(e.target.checked)} disabled={disabled} />
+      <span>Send Welcome Email</span>
+    </label>
+  );
+}
+
 // Approve For Beta: puts the email on the Sync Access list (same step as Sync Access → Add Email; logged).
-function ApproveSheet({ email, onClose, onApproved }) {
+function ApproveSheet({ email, name = '', onClose, onApproved }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [mail, setMail] = useState(true);
   const approve = async () => {
     if (busy) return;
     setBusy(true); setMsg('');
     const { data, error } = await cloud().rpc('admin_sync_invite_add', { p_email: email });
+    if (error) { setBusy(false); setMsg(plainError(error)); return; }
+    const em = data || email;
+    const mailErr = mail ? await sendWelcome(em, name) : null;
     setBusy(false);
-    if (error) { setMsg(plainError(error)); return; }
-    onApproved(data || email);
+    onApproved(em, mailErr);
   };
   return (
     <div className="ad-sheet-back" onClick={busy ? undefined : onClose}>
@@ -156,8 +192,9 @@ function ApproveSheet({ email, onClose, onApproved }) {
         <h2 id="ad-approve-title" className="ad-sheet-title">Approve For Beta?</h2>
         <p className="ad-sheet-email">{email}</p>
         <div className="ad-sheet-box">
-          They get into Crumb the next time they open it. No email is sent yet, so let them know yourself.
+          They get into Crumb the next time they open it.{mail ? ' The welcome email tells them how to get set up.' : ' No email goes out, so let them know yourself.'}
         </div>
+        <WelcomeToggle on={mail} setOn={setMail} disabled={busy} />
         <p className="ad-muted ad-small">You can take access away later in Inbox → Beta → Sync Access. That never deletes their data.</p>
         <button className="ad-btn" type="button" disabled={busy} onClick={approve}>{busy ? 'Approving…' : 'Approve For Beta'}</button>
         {msg && <p className="ad-error" role="alert">{msg}</p>}
@@ -241,7 +278,7 @@ function logText(l) {
 // ---------- users ----------
 // Beta approval: a rep is approved when their email is on the Sync Access list (admins always pass).
 // invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
-function Users({ users, log, invites = [], invitesOk = false, onChanged }) {
+function Users({ users, log, invites = [], invitesOk = false, beta = [], onChanged }) {
   const [q, setQ] = useState('');
   const [deleting, setDeleting] = useState('');
   const [approving, setApproving] = useState('');
@@ -314,8 +351,13 @@ function Users({ users, log, invites = [], invitesOk = false, onChanged }) {
       {approving && (
         <ApproveSheet
           email={approving}
+          name={nameFor(beta, approving)}
           onClose={() => setApproving('')}
-          onApproved={(em) => { setApproving(''); setDone(`Approved ${em}. They get in the next time they open Crumb.`); onChanged(); }}
+          onApproved={(em, mailErr) => {
+            setApproving('');
+            setDone(`Approved ${em}. They get in the next time they open Crumb.${mailErr === null ? '' : mailNote(em, mailErr)}`);
+            onChanged();
+          }}
         />
       )}
 
@@ -464,13 +506,16 @@ const betaWord = (st) => (BETA_STATUSES.find(([v]) => v === st) || [st, st])[1];
 function BetaSheet({ item, onClose, onSaved }) {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
+  const [mail, setMail] = useState(true);
   const pick = async (st) => {
     if (busy) return;
     setBusy(st); setMsg('');
     const { error } = await cloud().rpc('admin_beta_set_status', { p_id: item.id, p_status: st });
+    if (error) { setBusy(''); setMsg(plainError(error)); return; }
+    // Newly marked Invited: send the welcome email (if the switch is on).
+    const mailErr = st === 'invited' && item.status !== 'invited' && mail ? await sendWelcome(item.email, item.name) : null;
     setBusy('');
-    if (error) { setMsg(plainError(error)); return; }
-    onSaved();
+    onSaved(mailErr === null ? '' : `${item.email} is invited.${mailNote(item.email, mailErr)}`);
   };
   return (
     <div className="ad-sheet-back" onClick={busy ? undefined : onClose}>
@@ -485,7 +530,8 @@ function BetaSheet({ item, onClose, onSaved }) {
             </button>
           ))}
         </div>
-        <p className="ad-muted ad-small">Invited lets this email sync with the cloud. New or Declined takes that away. Send the invite email yourself for now.</p>
+        {item.status !== 'invited' && <WelcomeToggle on={mail} setOn={setMail} disabled={Boolean(busy)} />}
+        <p className="ad-muted ad-small">Invited lets this email into Crumb{item.status !== 'invited' && mail ? ' and sends the welcome email' : ''}. New or Declined takes access away (never their data).</p>
         {msg && <p className="ad-error" role="alert">{msg}</p>}
         <button className="ad-link-btn ad-sheet-cancel" type="button" onClick={onClose} disabled={Boolean(busy)}>Close</button>
       </div>
@@ -496,20 +542,31 @@ function BetaSheet({ item, onClose, onSaved }) {
 // ---------- sync access (invite-only beta): who may sync with the cloud ----------
 const SOURCE_WORD = { founder: 'Owner', beta: 'From Beta', admin: 'Added By Hand' };
 
-function SyncAccess({ invites, err, onChanged }) {
+function SyncAccess({ invites, err, beta = [], onChanged }) {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
+  const [note, setNote] = useState('');
   const [asking, setAsking] = useState('');
+  const [mail, setMail] = useState(true);
   const add = async (e) => {
     e.preventDefault();
     if (busy || !email.trim()) return;
-    setBusy('add'); setMsg('');
-    const { error } = await cloud().rpc('admin_sync_invite_add', { p_email: email });
+    setBusy('add'); setMsg(''); setNote('');
+    const { data, error } = await cloud().rpc('admin_sync_invite_add', { p_email: email });
+    if (error) { setBusy(''); setMsg(plainError(error)); return; }
+    const em = data || email.trim().toLowerCase();
+    if (mail) setNote(`Added ${em}.${mailNote(em, await sendWelcome(em, nameFor(beta, em)))}`);
     setBusy('');
-    if (error) { setMsg(plainError(error)); return; }
     setEmail('');
     onChanged();
+  };
+  const resend = async (em) => {
+    if (busy) return;
+    setBusy(`mail:${em}`); setMsg(''); setNote('');
+    const mailErr = await sendWelcome(em, nameFor(beta, em));
+    setBusy('');
+    if (mailErr) setMsg(`Welcome email to ${em} didn’t go out: ${mailErr}`); else setNote(`Welcome email sent to ${em}.`);
   };
   const remove = async (em) => {
     if (busy) return;
@@ -531,6 +588,8 @@ function SyncAccess({ invites, err, onChanged }) {
             <input type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" placeholder="Email Address" aria-label="Email address" value={email} onChange={(e) => setEmail(e.target.value)} disabled={Boolean(busy)} />
             <button type="submit" className="ad-btn ad-invite-btn" disabled={Boolean(busy) || !email.trim()}>{busy === 'add' ? 'Adding…' : 'Add Email'}</button>
           </form>
+          <WelcomeToggle on={mail} setOn={setMail} disabled={Boolean(busy)} />
+          {note && <p className="ad-done" role="status">{note}</p>}
           {msg && <p className="ad-error" role="alert">{msg}</p>}
           <div className="ad-card ad-rows">
             {invites.map((i) => (
@@ -545,7 +604,10 @@ function SyncAccess({ invites, err, onChanged }) {
                     <button type="button" className="ad-link-btn" onClick={() => setAsking('')} disabled={Boolean(busy)}>Cancel</button>
                   </span>
                 ) : (
-                  <button type="button" className="ad-link-btn" onClick={() => setAsking(i.email)} disabled={Boolean(busy)}>Remove</button>
+                  <span className="ad-invite-ask">
+                    <button type="button" className="ad-link-btn" onClick={() => resend(i.email)} disabled={Boolean(busy)}>{busy === `mail:${i.email}` ? 'Sending…' : 'Email'}</button>
+                    <button type="button" className="ad-link-btn" onClick={() => setAsking(i.email)} disabled={Boolean(busy)}>Remove</button>
+                  </span>
                 ))}
               </div>
             ))}
@@ -560,6 +622,7 @@ function Inbox({ items, err, beta = [], betaErr = '', invites = [], invitesErr =
   const [kind, setKind] = useState('problem');
   const [open, setOpen] = useState(null);
   const [openBeta, setOpenBeta] = useState(null);
+  const [betaNote, setBetaNote] = useState('');
   const list = items.filter((i) => i.kind === kind);
   const openCount = (k) => (k === 'beta' ? beta.filter((b) => b.status === 'new').length : items.filter((i) => i.kind === k && !DONE.has(i.status)).length);
   const sorted = [...list].sort((a, b) => (DONE.has(a.status) - DONE.has(b.status)) || (new Date(b.created_at) - new Date(a.created_at)));
@@ -589,8 +652,9 @@ function Inbox({ items, err, beta = [], betaErr = '', invites = [], invitesErr =
             ))}
             {!betaErr && beta.length === 0 && <div className="ad-card ad-coming"><p>No beta sign-ups yet. They come from the Join The Beta form on crumbsales.com.</p></div>}
           </div>
-          <SyncAccess invites={invites} err={invitesErr} onChanged={onChanged} />
-          {openBeta && <BetaSheet item={openBeta} onClose={() => setOpenBeta(null)} onSaved={() => { setOpenBeta(null); onChanged(); }} />}
+          {betaNote && <p className="ad-done" role="status">{betaNote}</p>}
+          <SyncAccess invites={invites} err={invitesErr} beta={beta} onChanged={onChanged} />
+          {openBeta && <BetaSheet item={openBeta} onClose={() => setOpenBeta(null)} onSaved={(note) => { setOpenBeta(null); setBetaNote(note || ''); onChanged(); }} />}
         </>
       ) : (
       <>
@@ -735,7 +799,7 @@ export default function App() {
         </div>
         {msg && <p className="ad-error">{msg}</p>}
         {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} />}
-        {tab === 'users' && <Users users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} onChanged={load} />}
+        {tab === 'users' && <Users users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} beta={inbox.beta} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
         {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} onChanged={load} />}
       </main>

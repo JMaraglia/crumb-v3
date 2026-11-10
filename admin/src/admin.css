@@ -215,3 +215,7 @@ input { font: inherit; }
 .ad-approve-btn { width: 100%; }
 .ad-user-name .ad-small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ad-user-pill { display: inline-block; margin-top: 6px; }
+
+/* Send Welcome Email switch */
+.ad-check { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+.ad-check input { width: 22px; height: 22px; accent-color: var(--ad-blue); flex: none; }
