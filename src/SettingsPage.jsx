@@ -12,6 +12,7 @@ import { writeText } from './store';
 import './SettingsPage.css';
 import { useCloudRefresh } from './useCloudRefresh';
 import { syncBlockReason, isTestProject, isRealSynced, projectRef } from './syncMode';
+import { APP_VERSION } from './version';
 
 // Who's signed in on this device (read from where the sign-in is remembered; no cloud library needed).
 function signedInEmail() {
@@ -156,6 +157,7 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+        <div className="st-version">Crumb Version {APP_VERSION}</div>
       </div>
       {accountOpen && (
         <AskSheet

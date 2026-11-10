@@ -127,3 +127,11 @@
   text-transform: uppercase;
   color: #8a8a8e;
 }
+
+/* Version line at the bottom of Settings */
+.st-version {
+  text-align: center;
+  font-size: 12px;
+  color: #8e8e93;
+  margin: 18px 0 8px;
+}
