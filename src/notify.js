@@ -292,12 +292,12 @@ export async function enableNotifications() {
   if (!supported) {
     throw new Error(
       standalone
-        ? "This phone doesn't support notifications for web apps. iPhones need iOS 16.4 or newer."
-        : 'Open Crumb from its Home Screen icon (not Safari), then try again.'
+        ? "This device doesn't support notifications for web apps. On iPhone or iPad, update to iOS 16.4 or newer."
+        : 'Open Crumb from its Home Screen icon (not the browser), then try again.'
     );
   }
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Notifications were not allowed. You can allow them in iPhone Settings › Crumb › Notifications.');
+  if (permission !== 'granted') throw new Error('Notifications were not allowed. You can allow them for Crumb in your device settings.');
   const reg = await navigator.serviceWorker.register('/sw.js');
   await navigator.serviceWorker.ready;
   const keyRes = await fetch('/api/push-key').then((r) => r.json()).catch(() => ({}));

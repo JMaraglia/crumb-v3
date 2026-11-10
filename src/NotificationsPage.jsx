@@ -30,12 +30,16 @@ const LEADS = [
 ];
 const timeText = (m) => `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, '0')} ${m < 720 ? 'AM' : 'PM'}`;
 
+// Nov 10: the Home Screen hint is only true on iPhone/iPad (iPads report themselves as a Mac with touch).
+const onAppleDevice = () =>
+  /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+
 export default function NotificationsPage() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(loadNotifySettings);
   useCloudRefresh(() => setSettings(loadNotifySettings())); // changes from your other device, re-read in place
   const [busy, setBusy] = useState(false);
-  const [phoneOpen, setPhoneOpen] = useState(false); // the "On For This Phone" line, opened
+  const [phoneOpen, setPhoneOpen] = useState(false); // the "On For This Device" line, opened
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const support = pushSupport();
@@ -99,12 +103,12 @@ export default function NotificationsPage() {
         {/* Nov 10: once on, this is one line; tap it for Send A Test / Turn Off */}
         {on && !phoneOpen ? (
           <button className="nt-card nt-on-line" onClick={() => setPhoneOpen(true)}>
-            <span className="nt-status is-on">On For This Phone</span>
+            <span className="nt-status is-on">On For This Device</span>
             <FaChevronRight className="nt-on-chev" />
           </button>
         ) : (
         <div className="nt-card">
-          <div className={`nt-status ${on ? 'is-on' : ''}`}>{on ? 'On For This Phone' : 'Off'}</div>
+          <div className={`nt-status ${on ? 'is-on' : ''}`}>{on ? 'On For This Device' : 'Off'}</div>
           <div className="nt-text">
             {on
               ? `${upcoming.length} reminder${upcoming.length === 1 ? '' : 's'} lined up for the next 7 days.`
@@ -124,7 +128,7 @@ export default function NotificationsPage() {
               </button>
             </div>
           )}
-          {!support.standalone && !on && (
+          {!support.standalone && !on && onAppleDevice() && (
             <div className="nt-hint">On iPhone this only works when Crumb is opened from its Home Screen icon.</div>
           )}
         </div>
@@ -136,7 +140,7 @@ export default function NotificationsPage() {
         <div className="nt-group">
           <label className="nt-row">
             <span>
-              Morning summary
+              Morning Summary
               <span className="nt-help">Stops for the day and to-dos that are due</span>
             </span>
             <input type="checkbox" className="nt-switch" checked={settings.morning} onChange={(e) => change({ morning: e.target.checked })} />
@@ -153,8 +157,8 @@ export default function NotificationsPage() {
           )}
           <label className="nt-row">
             <span>
-              End-of-day reminder
-              <span className="nt-help">What's still open from today (and overdue), in the kinds you pick</span>
+              End-of-Day Reminder
+              <span className="nt-help">What's still open from today (and overdue)</span>
             </span>
             <input type="checkbox" className="nt-switch" checked={settings.afternoon} onChange={(e) => change({ afternoon: e.target.checked })} />
           </label>
@@ -232,7 +236,7 @@ export default function NotificationsPage() {
 
         <div className="nt-foot">
           Only your reminder list (times, account names, and what's due) goes to Crumb's notification server. Your customer
-          list and notes stay on this phone.
+          list and notes stay on this device.
         </div>
       </div>
     </div>
