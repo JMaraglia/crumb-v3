@@ -1559,3 +1559,20 @@
 /* A chip row with nothing in it (e.g. no visit set) takes no space */
 .av-chips:empty,
 .av-summary-chips:empty { display: none; }
+
+/* "Meeting added…" message after booking a meeting from a list row (Nov 10) */
+.av-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(env(safe-area-inset-bottom) + 20px);
+  z-index: 60;
+  padding: 13px 16px;
+  border-radius: 14px;
+  background: #1e8e3e;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}

@@ -19,6 +19,7 @@ import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveSt
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
+import MeetingSheet from './MeetingSheet';
 import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, keyOf, fromKey, addDaysToKey, onItinerary } from './schedule';
 
 /* ---------- Groups: one business, several locations ----------
@@ -872,7 +873,7 @@ function SwipeIf({ onDelete, children }) {
   );
 }
 
-function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete, onStage, onVisit }) {
+function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull, onEdit, onSheet, onSnooze, onDelete, onStage, onVisit, onMeeting }) {
   const pickVisit = onVisit ? () => onVisit(a) : undefined;
   const pickStage = onStage ? () => onSheet(stageSheet(a, (key) => onStage(a.id, key))) : undefined;
   const navigate = useNavigate();
@@ -1004,9 +1005,12 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
             <SnoozeChip account={a} daysField={config.visitDaysField} />
           </div>
           <div className="av-quick">
-            <button className="av-quick-btn" disabled={!reachable} onClick={() => onSheet(contactSheet(contacts))}>
-              Contact
-            </button>
+            {/* Nov 10: Meeting replaces Contact here (tapping the contact's number already gives Call / Text / Email) */}
+            {onMeeting && (
+              <button className="av-quick-btn" onClick={() => onMeeting(a)}>
+                Meeting
+              </button>
+            )}
             <button
               className="av-quick-btn"
               disabled={!a.address}
@@ -1061,6 +1065,8 @@ export function AccountList({ config, accounts, setAccounts }) {
   const [sheet, setSheet] = useState(null);   // Call/Text or Maps pop-up
   const [listMsg, setListMsg] = useState('');
   const [visitFor, setVisitFor] = useState(null); // account whose visits are being changed (quick panel)
+  const [meetingFor, setMeetingFor] = useState(null); // account getting a meeting set from its list row
+  const [meetingMsg, setMeetingMsg] = useState('');
 
   const q = search.trim().toLowerCase();
   const realAccounts = accounts.filter((a) => !isEmptyRecord(a)); // hide leftover blank records
@@ -1196,6 +1202,7 @@ export function AccountList({ config, accounts, setAccounts }) {
             }
             onSheet={(info) => info && setSheet(info)}
             onVisit={setAccounts ? (acct) => setVisitFor(acct) : null}
+            onMeeting={setAccounts ? (acct) => { setMeetingMsg(''); setMeetingFor(acct); } : null}
             onStage={
               config.hasStage && setAccounts
                 ? (id, key) => setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, stage: key } : x)))
@@ -1325,6 +1332,21 @@ export function AccountList({ config, accounts, setAccounts }) {
       </button>
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
+      {meetingMsg && <div className="av-toast" onClick={() => setMeetingMsg('')}>{meetingMsg}</div>}
+      {meetingFor && (
+        <MeetingSheet
+          account={{ type: typeOf(config), id: meetingFor.id, name: meetingFor.name, address: meetingFor.address }}
+          onCancel={() => setMeetingFor(null)}
+          onSaved={(msg, note) => {
+            // Also saved on the account as a "Meeting" note (same as booking it from Notes or Daily Stops)
+            const id = meetingFor.id;
+            setAccounts((prev) => prev.map((x) => (x.id === id ? { ...x, notes: [...(x.notes || []), note] } : x)));
+            setMeetingFor(null);
+            setMeetingMsg(msg);
+            setTimeout(() => setMeetingMsg(''), 4000);
+          }}
+        />
+      )}
       {visitFor && (
         <VisitSheet
           account={visitFor}
