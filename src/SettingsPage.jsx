@@ -147,8 +147,8 @@ export default function SettingsPage() {
             <button key={r.label} className="st-row" onClick={r.go}>
               <span className="st-row-icon">{r.icon}</span>
               <span className="st-row-text">
+                {/* Titles only, no line underneath (founder, Nov 10: "not everything needs a description") */}
                 <span className="st-row-label">{r.label}</span>
-                <span className={`st-row-sub ${r.due ? 'is-due' : ''}`}>{r.due ? `${r.sub} · time to back up` : r.sub}</span>
               </span>
               <FaChevronRight className="st-row-chev" />
             </button>
