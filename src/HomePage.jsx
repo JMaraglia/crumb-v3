@@ -6,7 +6,7 @@ import { IoSettingsOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { readText } from './store';
 import { isRealSynced } from './syncMode';
-import { loadCallSheetSettings } from './store';
+import { loadCallSheetSettings, loadAppSettings } from './store';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -22,12 +22,13 @@ export default function HomePage() {
   const handleHover = e => e.currentTarget.style.transform = 'scale(1.2)';
   const handleLeave = e => e.currentTarget.style.transform = 'scale(1)';
 
+  const on = loadAppSettings(); // tools switched off in Settings don't get a tile
   const tiles = [
     { label: 'Customers', icon: <FaUsers />, path: '/customers' },
     { label: 'Pipeline', icon: <FaUserPlus />, path: '/prospects' },
-    { label: 'Daily Stops', icon: <FaClipboardList />, path: '/itinerary' },
-    { label: 'To-Do', icon: <FaCheckSquare />, path: '/todo' },
-    { label: 'Calendar', icon: <FaCalendarAlt />, path: '/calendar' },
+    ...(on.dailyStops ? [{ label: 'Daily Stops', icon: <FaClipboardList />, path: '/itinerary' }] : []),
+    ...(on.todo ? [{ label: 'To-Do', icon: <FaCheckSquare />, path: '/todo' }] : []),
+    ...(on.calendar ? [{ label: 'Calendar', icon: <FaCalendarAlt />, path: '/calendar' }] : []),
     { label: 'Notes', icon: <FaStickyNote />, path: '/notes' },
     ...(loadCallSheetSettings().show ? [{ label: 'Call Sheet', icon: <FaPhoneAlt />, path: '/call-sheet' }] : []),
   ];

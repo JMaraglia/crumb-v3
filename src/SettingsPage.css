@@ -170,3 +170,7 @@
 }
 .st-page .st-switch:checked { background: #34c759; }
 .st-page .st-switch:checked::after { transform: translateX(20px); }
+
+/* A group with space above it (Backup & Restore at the bottom; tool pages) */
+.st-group-top { margin-top: 22px; }
+.st-note { margin: 14px 4px 0; font-size: 0.8rem; color: #8e8e93; line-height: 1.4; }

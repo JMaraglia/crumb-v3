@@ -17,7 +17,7 @@ import {
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
 import { loadObject, saveQuiet, readText, writeText, NOTIFY_KEY, PUSH_DEVICE_KEY } from './store';
-import { loadCustomers, loadProspects, loadEvents, loadTodos, loadStops, loadDayMap, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
+import { loadCustomers, loadProspects, loadEvents, loadTodos, loadStops, loadDayMap, loadAppSettings, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
 
 import { isRealSynced, projectRef } from './syncMode';
 
@@ -112,7 +112,8 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
   const visits = loadStops();
   const doneMap = loadDayMap(DONE_KEY);
   const lockMap = loadDayMap(LOCKS_KEY);
-  const todos = loadTodos();
+  const app = loadAppSettings(); // tools switched off in Settings get no reminders
+  const todos = app.todo ? loadTodos() : [];
   const nowMs = now.getTime();
   const today = keyOf(now);
   const out = [];
@@ -164,6 +165,8 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     // Stops swiped off this day's Itinerary list don't get reminders or count in the summary
     const gone = loadDayMap(REMOVED_KEY)[day] || [];
     for (let j = stops.length - 1; j >= 0; j--) if (gone.includes(stops[j].key)) stops.splice(j, 1);
+    // Daily Stops switched off in Settings: only real appointments stay (no visits or hand-added stops).
+    if (!app.dailyStops) for (let j = stops.length - 1; j >= 0; j--) if (!String(stops[j].key).startsWith('e-')) stops.splice(j, 1);
 
     // Reminders before visits and appointments (each one once, even if it's on both lists)
     if (settings.lead > 0) {
@@ -191,6 +194,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
     // To-dos (tasks + follow-up/sample notes) not done and due that day or earlier
     const dueBy = (kinds = { tasks: true, followups: true, samples: true }) => {
       const due = [];
+      if (!app.todo) return due; // To-Do switched off: no to-do reminders
       if (kinds.tasks)
         todos.forEach((t) => t && !t.done && t.due && t.due <= day && due.push({ text: t.text, who: t.accountName, late: t.due < day }));
       [...contacts, ...prospects].filter(hasName).forEach((a) =>

@@ -28,3 +28,16 @@ describe('Call Sheet switches', () => {
     expect(ch).toEqual([{ table: 'day_marks', id: 'ordered|2026-11-12', type: 'upsert', base: [1], next: [1, 'no:2'], cols: {} }]);
   });
 });
+
+import { loadAppSettings, saveAppSettings } from '../src/store';
+describe('tools you can switch off (Calendar, Daily Stops, To-Do)', () => {
+  it('all on until switched off; one switch never touches the others', () => {
+    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: true });
+    saveAppSettings({ todo: false });
+    saveAppSettings({ calendar: false });
+    expect(loadAppSettings()).toEqual({ calendar: false, dailyStops: true, todo: false });
+  });
+  it('follow you to your other devices', () => {
+    expect(changesFor('crumb_app_settings', J({}), J({ todo: false }))[0]).toMatchObject({ table: 'settings', id: 'app', next: { todo: false } });
+  });
+});

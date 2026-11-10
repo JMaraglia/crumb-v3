@@ -392,3 +392,17 @@ export function loadCallSheetSettings() {
   return { show: o.show !== false, online: o.online !== false, orders: o.orders !== false };
 }
 export const saveCallSheetSettings = (settings) => writeSaved(CALLSHEET_SETTINGS_KEY, settings);
+
+// Which tools are on (Nov 10, 2026). Customers, Pipeline and Notes are always on.
+// Turning a tool off hides it (Home tile, buttons, reminders); nothing is deleted. Follows you to every device.
+export const APP_SETTINGS_KEY = 'crumb_app_settings';
+export function loadAppSettings() {
+  const v = readSaved(APP_SETTINGS_KEY, {});
+  const o = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  return { calendar: o.calendar !== false, dailyStops: o.dailyStops !== false, todo: o.todo !== false };
+}
+export function saveAppSettings(patch) {
+  const v = readSaved(APP_SETTINGS_KEY, {});
+  const o = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  return writeSaved(APP_SETTINGS_KEY, { ...o, ...patch });
+}

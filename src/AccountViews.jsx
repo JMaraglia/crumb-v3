@@ -15,7 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
-import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadDayMap, saveDayMap, REMOVED_KEY, HIDDEN_KEY } from './store';
+import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadAppSettings, loadDayMap, saveDayMap, REMOVED_KEY, HIDDEN_KEY } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
@@ -1019,7 +1019,7 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
             <button className="av-quick-btn" onClick={() => navigate(config.notesPath(a.id))}>
               Notes
             </button>
-            {!a.inactive && (
+            {!a.inactive && loadAppSettings().dailyStops && (
               <button className="av-quick-btn" onClick={addToItinerary}>
                 Daily Stops
               </button>

@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
-import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline, IoBugOutline, IoBulbOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline, IoBugOutline, IoBulbOutline, IoLocationOutline, IoCallOutline, IoCheckboxOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
 import AskSheet from './AskSheet';
-import { writeText, loadCallSheetSettings, saveCallSheetSettings } from './store';
+import { writeText, loadCallSheetSettings, loadAppSettings } from './store';
 import './SettingsPage.css';
 import { useCloudRefresh } from './useCloudRefresh';
 import { syncBlockReason, isTestProject, isRealSynced, projectRef } from './syncMode';
@@ -53,18 +53,15 @@ export default function SettingsPage() {
     // Restart Crumb so nothing of the old sign-in stays in memory (synced devices land on Sign In).
     window.location.replace(isRealSynced() ? '/sign-in' : window.location.pathname);
   };
-  const [cs, setCs] = useState(loadCallSheetSettings);
+  const [, refresh] = useState(0);
   useCloudRefresh(() => {
     // changes from your other device, re-read in place
     setStale(staleDays());
-    setCs(loadCallSheetSettings());
+    refresh((x) => x + 1);
   });
-  // Call Sheet switches (Nov 10): follow you to every device; turning one off hides it, nothing is deleted.
-  const setCallSheet = (patch) => {
-    const next = { ...cs, ...patch };
-    setCs(next);
-    saveCallSheetSettings(next);
-  };
+  const app = loadAppSettings();
+  const cs = loadCallSheetSettings();
+  const offWord = (on, text) => (on ? text : 'Off');
   const [pickStale, setPickStale] = useState(false);
   const setStaleDays = (v) => {
     writeText(STALE_KEY, v); // not critical if it can't save
@@ -83,31 +80,36 @@ export default function SettingsPage() {
         : 'Off · tap to turn on reminders',
       go: () => navigate('/notifications'),
     },
+    // Each tool has its own settings page (Nov 10): a Show switch now, more settings later.
     {
       icon: <IoCalendarOutline />,
       label: 'Calendar',
-      sub: 'Week view, event length, start time, what shows, colors',
-      go: () => {
-        try {
-          sessionStorage.setItem('crumb_open_cal_settings', '1'); // Calendar opens its settings right away
-        } catch {
-          /* not critical */
-        }
-        navigate('/calendar');
-      },
+      sub: offWord(app.calendar, 'Week view, event length, start time, what shows, colors'),
+      go: () => navigate('/settings/calendar'),
+    },
+    {
+      icon: <IoLocationOutline />,
+      label: 'Daily Stops',
+      sub: offWord(app.dailyStops, 'On'),
+      go: () => navigate('/settings/daily-stops'),
+    },
+    {
+      icon: <IoCallOutline />,
+      label: 'Call Sheet',
+      sub: offWord(cs.show, [cs.online ? 'Online ordering' : '', cs.orders ? 'Track orders' : ''].filter(Boolean).join(' · ') || 'On'),
+      go: () => navigate('/settings/call-sheet'),
+    },
+    {
+      icon: <IoCheckboxOutline />,
+      label: 'To-Do',
+      sub: offWord(app.todo, 'On'),
+      go: () => navigate('/settings/todo'),
     },
     {
       icon: <IoTimeOutline />,
       label: "Due For A Check-In",
       sub: stale ? `Accounts with no contact in ${stale}+ days (Daily Stops, lists, morning summary)` : 'Off',
       go: () => setPickStale(true),
-    },
-    {
-      icon: <IoCloudUploadOutline />,
-      label: 'Backup & Restore',
-      sub: !last ? 'Never backed up' : days === 0 ? 'Last backup: today' : days === 1 ? 'Last backup: yesterday' : `Last backup: ${days} days ago`,
-      go: () => navigate('/backup'),
-      due: !last || days >= 7,
     },
     {
       icon: <IoCloudOutline />,
@@ -152,32 +154,6 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
-        <div className="st-group-label">Call Sheet</div>
-        <div className="st-group">
-          {[
-            { k: 'show', label: 'Show Call Sheet', sub: 'The Call Sheet tile on Home' },
-            ...(cs.show
-              ? [
-                  { k: 'online', label: 'Online Ordering', sub: 'Shows who orders online (set on each customer)' },
-                  { k: 'orders', label: 'Track Orders', sub: 'Ordered / Did Not Order on each row' },
-                ]
-              : []),
-          ].map((r) => (
-            <label key={r.k} className="st-row st-switch-row">
-              <span className="st-row-text">
-                <span className="st-row-label">{r.label}</span>
-                <span className="st-row-sub">{r.sub}</span>
-              </span>
-              <input
-                type="checkbox"
-                className="st-switch"
-                checked={cs[r.k]}
-                onChange={(e) => setCallSheet({ [r.k]: e.target.checked })}
-                aria-label={r.label}
-              />
-            </label>
-          ))}
-        </div>
         <div className="st-group-label">Help</div>
         <div className="st-group">
           {[
@@ -193,6 +169,20 @@ export default function SettingsPage() {
               <FaChevronRight className="st-row-chev" />
             </button>
           ))}
+        </div>
+        {/* Backup & Restore sits at the very bottom, below Help (founder, Nov 10) */}
+        <div className="st-group st-group-top">
+          <button className="st-row" onClick={() => navigate('/backup')}>
+            <span className="st-row-icon"><IoCloudUploadOutline /></span>
+            <span className="st-row-text">
+              <span className="st-row-label">Backup &amp; Restore</span>
+              <span className={`st-row-sub ${!last || days >= 7 ? 'is-due' : ''}`}>
+                {!last ? 'Never backed up' : days === 0 ? 'Last backup: today' : days === 1 ? 'Last backup: yesterday' : `Last backup: ${days} days ago`}
+                {!last || days >= 7 ? ' · time to back up' : ''}
+              </span>
+            </span>
+            <FaChevronRight className="st-row-chev" />
+          </button>
         </div>
         <div className="st-version">Crumb Version {APP_VERSION}</div>
       </div>

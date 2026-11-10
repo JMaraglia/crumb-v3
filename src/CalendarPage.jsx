@@ -447,7 +447,7 @@ function CalendarSettings({ settings, onChange, onClose }) {
         <div className="cal-set-section">Show on calendar</div>
         <div className="cal-set-group">
           <label className="cal-set-row">
-            <span>Show Scheduled Visits</span>
+            <span>Show Daily Stops</span>
             <input
               type="checkbox"
               className="cal-set-switch"
