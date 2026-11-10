@@ -11,6 +11,7 @@ import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
 import { isCheckable, isNoteDone } from './noteStatus';
 import MeetingSheet, { niceMeeting } from './MeetingSheet';
+import { loadAppSettings } from './store';
 import SwipeRow from './SwipeRow';
 import { stampOf } from './store';
 import './NotesView.css';
@@ -130,6 +131,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const [shareMsg, setShareMsg] = useState('');
   const [askRange, setAskRange] = useState(false); // "Share which notes?" before sharing
   const [meeting, setMeeting] = useState(false); // "Set a meeting" panel open
+  const hiddenLabels = loadAppSettings().hiddenLabels; // labels switched off in Settings → Note Labels
   const [changingMeeting, setChangingMeeting] = useState(null); // index of a Meeting note whose time is being changed
 
   const notes = (account.notes || []).map((n, index) => ({ ...n, index, cat: normalizeCategory(n.category) }));
@@ -266,7 +268,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <CategoryChips
             value={editing.category}
             onChange={(c) => setEditing({ ...editing, category: c })}
-            labels={[...LABELS, 'Meeting']}
+            labels={[...LABELS, 'Meeting'].filter((l) => !hiddenLabels.includes(l) || normalizeCategory(editing.category) === l)}
           />
           {isCheckable(editing.category) && (
             <DueChips value={editing.due} onChange={(d) => setEditing({ ...editing, due: d })} />
@@ -401,10 +403,13 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <CategoryChips
             value={category}
             onChange={setCategory}
+            labels={LABELS.filter((l) => !hiddenLabels.includes(l))}
             extra={
-              <button type="button" className="nv-cat nv-cat-meeting" onClick={() => setMeeting(true)}>
-                Meeting
-              </button>
+              hiddenLabels.includes('Meeting') ? null : (
+                <button type="button" className="nv-cat nv-cat-meeting" onClick={() => setMeeting(true)}>
+                  Meeting
+                </button>
+              )
             }
           />
           {isCheckable(category) && <DueChips value={due} onChange={setDue} />}

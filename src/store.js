@@ -399,7 +399,13 @@ export const APP_SETTINGS_KEY = 'crumb_app_settings';
 export function loadAppSettings() {
   const v = readSaved(APP_SETTINGS_KEY, {});
   const o = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
-  return { calendar: o.calendar !== false, dailyStops: o.dailyStops !== false, todo: o.todo !== false };
+  return {
+    calendar: o.calendar !== false,
+    dailyStops: o.dailyStops !== false,
+    todo: o.todo !== false,
+    // Note labels switched off (Nov 10): not offered on new notes; old notes keep theirs.
+    hiddenLabels: Array.isArray(o.hiddenLabels) ? o.hiddenLabels.filter((x) => typeof x === 'string') : [],
+  };
 }
 export function saveAppSettings(patch) {
   const v = readSaved(APP_SETTINGS_KEY, {});

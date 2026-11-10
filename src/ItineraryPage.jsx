@@ -63,6 +63,7 @@ import {
   loadEvents,
   saveEvents,
   loadCalendarSettings,
+  loadAppSettings,
   loadStops,
   saveStops,
   loadDayMap,
@@ -523,7 +524,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
   const saveQuickNote = (stop) => {
     const text = noteText.trim();
     if (!text || !stop.accountId) return;
-    const note = { text, category: 'Visit', timestamp: stampOf() };
+    const note = { text, category: loadAppSettings().hiddenLabels.includes('Visit') ? 'General' : 'Visit', timestamp: stampOf() };
     const add = (list) =>
       list.map((a) => (String(a.id) === String(stop.accountId) ? { ...a, notes: [...(a.notes || []), note] } : a));
     if (stop.accountType === 'prospect' && setProspects) setProspects(add);

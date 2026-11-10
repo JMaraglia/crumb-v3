@@ -27,6 +27,11 @@ const TOOLS = {
       { store: 'cs', k: 'orders', label: 'Track Orders', sub: 'Ordered / Did Not Order on each row', needs: 'show' },
     ],
   },
+  'note-labels': {
+    title: 'Note Labels',
+    labels: ['Visit', 'Sample', 'Follow-up', 'Contacted', 'Background', 'Meeting'],
+    switches: [],
+  },
   todo: {
     title: 'To-Do',
     switches: [{ store: 'app', k: 'todo', label: 'Show To-Do', sub: 'The To-Do tile on Home and to-do reminders' }],
@@ -78,7 +83,34 @@ export default function ToolSettingsPage() {
       </header>
       <div className="st-content">
         <h1 className="st-title">{t.title}</h1>
-        <div className="st-group">
+        {t.labels && (
+          <div className="st-group">
+            {t.labels.map((l) => {
+              const on = !app.hiddenLabels.includes(l);
+              const last = on && t.labels.filter((x) => !app.hiddenLabels.includes(x)).length === 1; // keep at least one
+              return (
+                <label key={l} className="st-row st-switch-row">
+                  <span className="st-row-text">
+                    <span className="st-row-label">{l}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="st-switch"
+                    checked={on}
+                    disabled={last}
+                    onChange={(e) => {
+                      const hiddenLabels = e.target.checked ? app.hiddenLabels.filter((x) => x !== l) : [...app.hiddenLabels, l];
+                      setApp({ ...app, hiddenLabels });
+                      saveAppSettings({ hiddenLabels });
+                    }}
+                    aria-label={l}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        )}
+        {shown.length > 0 && <div className="st-group">
           {shown.map((s) => (
             <label key={s.k} className="st-row st-switch-row">
               <span className="st-row-text">
@@ -88,7 +120,7 @@ export default function ToolSettingsPage() {
               <input type="checkbox" className="st-switch" checked={value(s)} onChange={(e) => set(s, e.target.checked)} aria-label={s.label} />
             </label>
           ))}
-        </div>
+        </div>}
         {t.more && (
           <div className="st-group st-group-top">
             <button className="st-row" onClick={openCalendarSettings}>
