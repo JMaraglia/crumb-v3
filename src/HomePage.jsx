@@ -6,6 +6,7 @@ import { IoSettingsOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { readText } from './store';
 import { isRealSynced } from './syncMode';
+import { loadCallSheetSettings } from './store';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function HomePage() {
     { label: 'To-Do', icon: <FaCheckSquare />, path: '/todo' },
     { label: 'Calendar', icon: <FaCalendarAlt />, path: '/calendar' },
     { label: 'Notes', icon: <FaStickyNote />, path: '/notes' },
-    { label: 'Call Sheet', icon: <FaPhoneAlt />, path: '/call-sheet' },
+    ...(loadCallSheetSettings().show ? [{ label: 'Call Sheet', icon: <FaPhoneAlt />, path: '/call-sheet' }] : []),
   ];
 
   return (

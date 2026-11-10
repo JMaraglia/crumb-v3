@@ -135,3 +135,38 @@
   color: #8e8e93;
   margin: 18px 0 8px;
 }
+
+/* Call Sheet switches (Nov 10) — same look as the Notifications switches */
+.st-page .st-switch-row { cursor: pointer; box-sizing: border-box; }
+.st-page .st-switch {
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  min-width: 51px;
+  max-width: 51px;
+  padding: 0;
+  border: none;
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 16px;
+  background: #e9e9eb;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.st-page .st-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.st-page .st-switch:checked { background: #34c759; }
+.st-page .st-switch:checked::after { transform: translateX(20px); }

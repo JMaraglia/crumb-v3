@@ -8,7 +8,7 @@ import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
 import AskSheet from './AskSheet';
-import { writeText } from './store';
+import { writeText, loadCallSheetSettings, saveCallSheetSettings } from './store';
 import './SettingsPage.css';
 import { useCloudRefresh } from './useCloudRefresh';
 import { syncBlockReason, isTestProject, isRealSynced, projectRef } from './syncMode';
@@ -53,7 +53,18 @@ export default function SettingsPage() {
     // Restart Crumb so nothing of the old sign-in stays in memory (synced devices land on Sign In).
     window.location.replace(isRealSynced() ? '/sign-in' : window.location.pathname);
   };
-  useCloudRefresh(() => setStale(staleDays())); // changes from your other device, re-read in place
+  const [cs, setCs] = useState(loadCallSheetSettings);
+  useCloudRefresh(() => {
+    // changes from your other device, re-read in place
+    setStale(staleDays());
+    setCs(loadCallSheetSettings());
+  });
+  // Call Sheet switches (Nov 10): follow you to every device; turning one off hides it, nothing is deleted.
+  const setCallSheet = (patch) => {
+    const next = { ...cs, ...patch };
+    setCs(next);
+    saveCallSheetSettings(next);
+  };
   const [pickStale, setPickStale] = useState(false);
   const setStaleDays = (v) => {
     writeText(STALE_KEY, v); // not critical if it can't save
@@ -139,6 +150,32 @@ export default function SettingsPage() {
               </span>
               <FaChevronRight className="st-row-chev" />
             </button>
+          ))}
+        </div>
+        <div className="st-group-label">Call Sheet</div>
+        <div className="st-group">
+          {[
+            { k: 'show', label: 'Show Call Sheet', sub: 'The Call Sheet tile on Home' },
+            ...(cs.show
+              ? [
+                  { k: 'online', label: 'Online Ordering', sub: 'Shows who orders online (set on each customer)' },
+                  { k: 'orders', label: 'Track Orders', sub: 'Ordered / Did Not Order on each row' },
+                ]
+              : []),
+          ].map((r) => (
+            <label key={r.k} className="st-row st-switch-row">
+              <span className="st-row-text">
+                <span className="st-row-label">{r.label}</span>
+                <span className="st-row-sub">{r.sub}</span>
+              </span>
+              <input
+                type="checkbox"
+                className="st-switch"
+                checked={cs[r.k]}
+                onChange={(e) => setCallSheet({ [r.k]: e.target.checked })}
+                aria-label={r.label}
+              />
+            </label>
           ))}
         </div>
         <div className="st-group-label">Help</div>

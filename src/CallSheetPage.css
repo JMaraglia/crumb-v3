@@ -449,6 +449,40 @@
   background: #eef7ee;
 }
 
+/* Did Not Order (Nov 10): the whole row turns red */
+.cs-not-ordered {
+  accent-color: #d93025;
+}
+
+.cs-table tbody tr.is-not-ordered td {
+  background: #fde8e6;
+}
+
+.cs-table tbody tr.is-not-ordered td.cs-name .cs-link {
+  color: #b3261e;
+}
+
+.cs-progress-no {
+  color: #d93025;
+}
+
+/* Online ordering: set on the customer, shown (locked) here */
+.cs-lock {
+  display: inline-block;
+  min-width: 20px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e8e3e;
+}
+
+@media print {
+  .cs-table tbody tr.is-not-ordered td {
+    background: #fde8e6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 .cs-progress {
   font-weight: 600;
   color: #1e8e3e;

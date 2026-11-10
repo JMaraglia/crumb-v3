@@ -297,7 +297,8 @@ export const NOTIFY_KEY = 'crumb_notify_settings';     // notification settings 
 export const STALE_DAYS_KEY = 'crumb_stale_days';      // "Due For A Check-In" days (plain text number)
 export const MAPS_APP_KEY = 'crumb_maps_app';          // 'apple' | 'google' | 'waze' (plain text)
 export const COMPETITORS_LIST_KEY = 'crumb_competitors'; // competitor names you added (list)
-export const ORDERED_KEY = 'crumb_callsheet_ordered';  // Call Sheet "Ordered" marks { date: [customerId] }
+export const ORDERED_KEY = 'crumb_callsheet_ordered';  // Call Sheet marks { date: [customerId, 'no:customerId'] } (no: = Did Not Order)
+export const CALLSHEET_SETTINGS_KEY = 'crumb_callsheet_settings'; // Call Sheet switches (object, follows you to every device)
 export const GEO_CACHE_KEY = 'crumb_geo_cache';        // map coordinates already looked up (cache only)
 export const PUSH_DEVICE_KEY = 'crumb_push_device';    // this phone's notification ID (never backed up)
 
@@ -382,3 +383,12 @@ export function withStandardDates(accounts) {
   });
   return changed ? out : accounts;
 }
+
+// Call Sheet switches (Nov 10, 2026). All on unless switched off in Settings.
+//   show: the Call Sheet tile on Home · online: the Online column · orders: Ordered / Did Not Order marks
+export function loadCallSheetSettings() {
+  const v = readSaved(CALLSHEET_SETTINGS_KEY, {});
+  const o = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  return { show: o.show !== false, online: o.online !== false, orders: o.orders !== false };
+}
+export const saveCallSheetSettings = (settings) => writeSaved(CALLSHEET_SETTINGS_KEY, settings);

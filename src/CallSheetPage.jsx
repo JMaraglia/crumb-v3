@@ -9,7 +9,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { DAYS, ActionSheet, contactSheet, TIME_OPTIONS, timeLabel, formatPhone } from './AccountViews';
 import { makeXlsx } from './xlsx';
-import { loadObject, writeSaved, ORDERED_KEY } from './store';
+import { loadObject, writeSaved, ORDERED_KEY, loadCallSheetSettings } from './store';
 import './CallSheetPage.css';
 import { useCloudRefresh } from './useCloudRefresh';
 
@@ -21,6 +21,10 @@ function nextDay(day) {
 }
 
 // "Ordered" marks are saved through store.js (ORDERED_KEY): { 'YYYY-MM-DD': [customerId, ...] }
+// "Did Not Order" marks live in the same list as 'no:<customerId>' (Nov 10, 2026), so they sync and back up
+// exactly like Ordered. A customer is Ordered OR Did Not Order, never both.
+const noMark = (id) => `no:${id}`;
+const hasMark = (list, mark) => (list || []).some((x) => String(x) === String(mark));
 
 function keyOf(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -58,6 +62,7 @@ function phoneText(c) {
 
 // One row per customer that orders on `orderDay`.
 function rowsFor(customers, orderDay, orderedIds = []) {
+  const has = (mark) => hasMark(orderedIds, mark);
   const delivers = nextDay(orderDay);
   return customers
     .filter((c) => c.name && c.name.trim() && !c.inactive && (c.deliveryDays || []).includes(delivers))
@@ -81,41 +86,35 @@ function rowsFor(customers, orderDay, orderedIds = []) {
         noCall: c.callTime === 'na',
         online: Boolean(c.onlineOrdering),
         onlineText: c.onlineOrdering ? 'Yes' : 'No',
-        ordered: orderedIds.includes(c.id),
-        orderedText: orderedIds.includes(c.id) ? 'Yes' : 'No',
+        ordered: has(c.id),
+        orderedText: has(c.id) ? 'Yes' : 'No',
+        notOrdered: has(noMark(c.id)),
         callNote: c.callNote || '',
       };
     });
 }
 
-const COLUMNS = [
-  { key: 'number', label: 'Acct #' },
-  { key: 'name', label: 'Account' },
-  { key: 'contact', label: 'Contact' },
-  { key: 'phone', label: 'Phone' },
-  { key: 'callAt', label: 'Call at' },
-  { key: 'onlineText', label: 'Online ordering' },
-  { key: 'callNote', label: 'Call notes' },
-  { key: 'orderedText', label: 'Ordered' },
+// Columns on screen, in print and in the shared spreadsheet. Settings can hide Online and the order marks.
+// width = Excel's "characters"; on = which Settings switch shows it (none = always shown).
+const ALL_COLUMNS = [
+  { key: 'number', label: 'Acct #', width: 13, kind: 'quiet' },
+  { key: 'name', label: 'Account', width: 28, kind: 'bold' },
+  { key: 'contact', label: 'Contact', width: 22 },
+  { key: 'phone', label: 'Phone', width: 21 },
+  { key: 'callAt', label: 'Call at', width: 11 },
+  { key: 'online', label: 'Online', width: 10, kind: 'check', on: 'online' },
+  { key: 'callNote', label: 'Call notes', width: 40 },
+  { key: 'ordered', label: 'Ordered', width: 11, kind: 'check', on: 'orders' },
+  { key: 'notOrdered', label: 'Did Not Order', width: 14, kind: 'check', on: 'orders' },
 ];
-
-// Column widths (in Excel's "characters") for the shared spreadsheet
-const XLSX_COLUMNS = [
-  { label: 'Acct #', width: 13, kind: 'quiet' },
-  { label: 'Account', width: 28, kind: 'bold' },
-  { label: 'Contact', width: 22 },
-  { label: 'Phone', width: 21 },
-  { label: 'Call at', width: 11 },
-  { label: 'Online', width: 10, kind: 'check' },
-  { label: 'Call notes', width: 40 },
-  { label: 'Ordered', width: 11, kind: 'check' },
-];
+const columnsFor = (settings) => ALL_COLUMNS.filter((c) => !c.on || settings[c.on]);
 
 // Order days that get a tab in the shared file, in tab order
 const SHARE_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 // One Excel file, one tab per order day (Sunday–Friday). Opens on `currentDay`'s tab.
-function toWeekXlsx(customers, orderedMap, currentDay) {
+function toWeekXlsx(customers, orderedMap, currentDay, settings) {
+  const cols = columnsFor(settings);
   const sheets = SHARE_DAYS.map((orderDay) => {
     const date = dateThisWeek(orderDay);
     const dateText = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -126,10 +125,8 @@ function toWeekXlsx(customers, orderedMap, currentDay) {
       kicker: 'CALL SHEET',
       heading: date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
       detail: `Orders for ${FULL_DAY[nextDay(orderDay)]} delivery · ${rows.length} ${rows.length === 1 ? 'account' : 'accounts'}`,
-      columns: XLSX_COLUMNS,
-      rows: rows.map((r) => ({
-        cells: [r.number, r.name, r.contact, r.phone, r.callAt, r.online, r.callNote, r.ordered],
-      })),
+      columns: cols.map(({ label, width, kind }) => ({ label, width, ...(kind ? { kind } : {}) })),
+      rows: rows.map((r) => ({ cells: cols.map((c) => r[c.key]) })),
       emptyText: `No customers order on ${FULL_DAY[orderDay]}.`,
     };
   });
@@ -141,23 +138,33 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
   const [day, setDay] = useState(todayShort());
   const [sheet, setSheet] = useState(null);
   const [orderedMap, setOrderedMap] = useState(readOrdered);
-  useCloudRefresh(() => setOrderedMap(readOrdered())); // changes from your other device, re-read in place
+  const [settings, setSettings] = useState(loadCallSheetSettings);
+  useCloudRefresh(() => {
+    // changes from your other device, re-read in place
+    setOrderedMap(readOrdered());
+    setSettings(loadCallSheetSettings());
+  });
+  const columns = columnsFor(settings);
   const dateKeyForDay = keyOf(dateThisWeek(day));
   const dateText = dateThisWeek(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const orderedIds = orderedMap[dateKeyForDay] || [];
 
-  // Ordered checkmarks are kept per date, so next week starts unchecked.
-  const toggleOrdered = (id) => {
+  // Ordered / Did Not Order marks are kept per date, so next week starts clear.
+  // Tapping one clears the other (a customer can't be both).
+  const toggleMark = (mark, other) => {
     const list = orderedMap[dateKeyForDay] || [];
-    const nextList = list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
-    const next = { ...orderedMap, [dateKeyForDay]: nextList };
+    const on = hasMark(list, mark);
+    const rest = list.filter((x) => String(x) !== String(mark) && String(x) !== String(other));
+    const next = { ...orderedMap, [dateKeyForDay]: on ? rest : [...rest, mark] };
     setOrderedMap(next);
     writeSaved(ORDERED_KEY, next); // a failed save shows the "couldn't save" banner
   };
+  const toggleOrdered = (id) => toggleMark(id, noMark(id));
+  const toggleNotOrdered = (id) => toggleMark(noMark(id), id);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(null); // { id, name, text } while editing a call note
 
-  // Change one customer right from the sheet (call time, online ordering)
+  // Change one customer right from the sheet (call time). Online ordering is set on the customer only.
   const updateCustomer = (id, patch) => {
     if (setContacts) setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   };
@@ -173,12 +180,13 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
   const rows = rowsFor(contacts, day, orderedIds);
   const anyCustomers = SHARE_DAYS.some((d) => rowsFor(contacts, d).length > 0);
   const orderedCount = rows.filter((r) => r.ordered).length;
+  const notOrderedCount = rows.filter((r) => r.notOrdered).length;
 
   const shareCSV = async () => {
     setMessage('');
     const weekOf = dateThisWeek('Sun').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const fileName = `Crumb call sheet - week of ${weekOf}.xlsx`;
-    const blob = toWeekXlsx(contacts, orderedMap, day);
+    const blob = toWeekXlsx(contacts, orderedMap, day, settings);
     try {
       const file = new File([blob], fileName, { type: blob.type });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -248,10 +256,11 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
             {FULL_DAY[day]}, {dateText} orders
           </strong>{' '}
           · deliver {FULL_DAY[nextDay(day)]}
-          {rows.length > 0 && (
+          {rows.length > 0 && settings.orders && (
             <span className="cs-progress">
               {' '}
               · {orderedCount} of {rows.length} ordered
+              {notOrderedCount > 0 && <span className="cs-progress-no"> · {notOrderedCount} did not order</span>}
             </span>
           )}
         </div>
@@ -284,14 +293,14 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
             <table className="cs-table">
               <thead>
                 <tr>
-                  {COLUMNS.map((c) => (
-                    <th key={c.key}>{c.key === 'onlineText' ? 'Online' : c.label}</th>
+                  {columns.map((c) => (
+                    <th key={c.key}>{c.label}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.account.id} className={r.noCall ? 'is-no-call' : ''}>
+                  <tr key={r.account.id} className={[r.noCall ? 'is-no-call' : '', settings.orders && r.notOrdered ? 'is-not-ordered' : ''].join(' ').trim()}>
                     <td>{r.number}</td>
                     <td className="cs-name">
                       <button className="cs-link" onClick={() => navigate(`/customers/${r.account.id}`)}>
@@ -333,16 +342,14 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
                       </select>
                       <span className="cs-print-only">{r.callAt}</span>
                     </td>
-                    <td className="cs-center">
-                      <input
-                        type="checkbox"
-                        className="cs-check"
-                        checked={r.online}
-                        onChange={(e) => updateCustomer(r.account.id, { onlineOrdering: e.target.checked })}
-                        aria-label="Uses online ordering"
-                      />
-                      <span className="cs-print-only">{r.online ? '☑' : '☐'}</span>
-                    </td>
+                    {settings.online && (
+                      <td className="cs-center">
+                        {/* Set on the customer (Edit → Orders online); shown here, not changed here */}
+                        <span className={`cs-lock ${r.online ? 'is-on' : ''}`} aria-label={r.online ? 'Orders online' : 'Does not order online'}>
+                          {r.online ? '✓' : ''}
+                        </span>
+                      </td>
+                    )}
                     <td className="cs-wide">
                       <button
                         className={`cs-note ${r.callNote ? '' : 'is-empty'}`}
@@ -351,16 +358,30 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
                         {r.callNote || '+ Add call note'}
                       </button>
                     </td>
-                    <td className="cs-center">
-                      <input
-                        type="checkbox"
-                        className="cs-check cs-ordered"
-                        checked={r.ordered}
-                        onChange={() => toggleOrdered(r.account.id)}
-                        aria-label="Ordered"
-                      />
-                      <span className="cs-print-only">{r.ordered ? '☑' : '☐'}</span>
-                    </td>
+                    {settings.orders && (
+                      <>
+                        <td className="cs-center">
+                          <input
+                            type="checkbox"
+                            className="cs-check cs-ordered"
+                            checked={r.ordered}
+                            onChange={() => toggleOrdered(r.account.id)}
+                            aria-label="Ordered"
+                          />
+                          <span className="cs-print-only">{r.ordered ? '☑' : '☐'}</span>
+                        </td>
+                        <td className="cs-center">
+                          <input
+                            type="checkbox"
+                            className="cs-check cs-not-ordered"
+                            checked={r.notOrdered}
+                            onChange={() => toggleNotOrdered(r.account.id)}
+                            aria-label="Did not order"
+                          />
+                          <span className="cs-print-only">{r.notOrdered ? '☑' : '☐'}</span>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

@@ -55,6 +55,7 @@ export const SETTING_KEYS = {
   crumb_stale_days: 'staleDays',
   crumb_competitors: 'competitors',
   crumb_notify_settings: 'notify',
+  crumb_callsheet_settings: 'callSheet',
 };
 // Notification settings follow you everywhere EXCEPT "on for this device" (founder decision, Nov 7).
 const DEVICE_ONLY_SETTING_FIELDS = { notify: ['enabled'] };
