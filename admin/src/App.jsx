@@ -522,7 +522,7 @@ function BetaSheet({ item, onClose, onSaved }) {
       <div className="ad-sheet" role="dialog" aria-modal="true" aria-labelledby="ad-beta-title" onClick={(e) => e.stopPropagation()}>
         <h2 id="ad-beta-title" className="ad-sheet-title">{item.name}</h2>
         <p className="ad-sheet-email">{item.email}</p>
-        <p className="ad-muted ad-small">{[item.company, `Joined ${shortDate(item.created_at)}`].filter(Boolean).join(' · ')}</p>
+        <p className="ad-muted ad-small">{[item.industry, item.state, item.company, `Joined ${shortDate(item.created_at)}`].filter(Boolean).join(' · ')}</p>
         <div className="ad-status-list" role="group" aria-label="Status">
           {BETA_STATUSES.map(([v, label]) => (
             <button key={v} type="button" className={`ad-status-btn ${item.status === v ? 'is-on' : ''}`} disabled={Boolean(busy)} onClick={() => pick(v)}>
@@ -643,11 +643,11 @@ function Inbox({ items, err, beta = [], betaErr = '', invites = [], invitesErr =
             {beta.map((b) => (
               <button key={b.id} type="button" className={`ad-ticket ${b.status === 'new' ? 'is-new' : ''} ${b.status === 'declined' ? 'is-done' : ''} ${b.status === 'invited' ? 'is-invited' : ''}`} onClick={() => setOpenBeta(b)}>
                 <span className="ad-ticket-top">
-                  <span className="ad-muted ad-small">{b.company || 'No Company Given'}</span>
+                  <span className="ad-beta-ind">{b.industry || 'No Industry Given'}</span>
                   <span className={`ad-pill ${b.status === 'new' ? 'ad-pill-new' : b.status === 'invited' ? 'ad-pill-ok' : 'ad-pill-quiet'}`}>{betaWord(b.status).toUpperCase()}</span>
                 </span>
                 <span className="ad-ticket-msg">{b.name}</span>
-                <span className="ad-muted ad-small">{b.email} · {ago(b.created_at)}</span>
+                <span className="ad-muted ad-small">{[b.email, b.state, b.company, ago(b.created_at)].filter(Boolean).join(' · ')}</span>
               </button>
             ))}
             {!betaErr && beta.length === 0 && <div className="ad-card ad-coming"><p>No beta sign-ups yet. They come from the Join The Beta form on crumbsales.com.</p></div>}

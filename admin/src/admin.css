@@ -219,3 +219,6 @@ input { font: inherit; }
 /* Send Welcome Email switch */
 .ad-check { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
 .ad-check input { width: 22px; height: 22px; accent-color: var(--ad-blue); flex: none; }
+
+/* Beta list: industry on top */
+.ad-beta-ind { font-size: 13px; font-weight: 800; letter-spacing: 0.02em; color: var(--ad-blue); text-transform: uppercase; }

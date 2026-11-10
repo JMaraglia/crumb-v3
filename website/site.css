@@ -101,6 +101,10 @@ h2 { margin: 0; font: 600 clamp(36px, 5vw, 56px)/1.02 var(--sans); letter-spacin
 .form .opt { color: var(--faint); }
 .form input { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-hi); background: #040a12; color: var(--fg); font: 400 16px var(--sans); outline: none; }
 .form input:focus { border-color: var(--blue-hi); }
+.form select { width: 100%; padding: 14px 40px 14px 16px; border-radius: 12px; border: 1px solid var(--line-hi); background: #040a12 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238aa0b8' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 16px center; color: var(--fg); font: 400 16px var(--sans); outline: none; -webkit-appearance: none; appearance: none; }
+.form select:invalid { color: var(--faint); }
+.form select:focus { border-color: var(--blue-hi); }
+.form select option { color: #111; }
 .form .btn { margin-top: 14px; width: 100%; padding-block: 17px; }
 .msg { margin: 6px 0 0; font-size: 15px; min-height: 1px; }
 .msg.ok { padding: 12px 14px; border-radius: 12px; background: rgba(52,199,89,.12); color: #6fdc8c; }
