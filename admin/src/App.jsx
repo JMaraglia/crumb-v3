@@ -138,6 +138,35 @@ function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, 
 }
 
 // ---------- delete account (guardrails: counts first, type the email, server re-checks everything) ----------
+// Approve For Beta: puts the email on the Sync Access list (same step as Sync Access → Add Email; logged).
+function ApproveSheet({ email, onClose, onApproved }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const approve = async () => {
+    if (busy) return;
+    setBusy(true); setMsg('');
+    const { data, error } = await cloud().rpc('admin_sync_invite_add', { p_email: email });
+    setBusy(false);
+    if (error) { setMsg(plainError(error)); return; }
+    onApproved(data || email);
+  };
+  return (
+    <div className="ad-sheet-back" onClick={busy ? undefined : onClose}>
+      <div className="ad-sheet" role="dialog" aria-modal="true" aria-labelledby="ad-approve-title" onClick={(e) => e.stopPropagation()}>
+        <h2 id="ad-approve-title" className="ad-sheet-title">Approve For Beta?</h2>
+        <p className="ad-sheet-email">{email}</p>
+        <div className="ad-sheet-box">
+          They get into Crumb the next time they open it. No email is sent yet, so let them know yourself.
+        </div>
+        <p className="ad-muted ad-small">You can take access away later in Inbox → Beta → Sync Access. That never deletes their data.</p>
+        <button className="ad-btn" type="button" disabled={busy} onClick={approve}>{busy ? 'Approving…' : 'Approve For Beta'}</button>
+        {msg && <p className="ad-error" role="alert">{msg}</p>}
+        <button className="ad-link-btn ad-sheet-cancel" type="button" onClick={onClose} disabled={busy}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 function DeleteSheet({ email, onClose, onDeleted }) {
   const [fp, setFp] = useState(null);
   const [typed, setTyped] = useState('');
@@ -210,14 +239,20 @@ function logText(l) {
 }
 
 // ---------- users ----------
-function Users({ users, log, onChanged }) {
+// Beta approval: a rep is approved when their email is on the Sync Access list (admins always pass).
+// invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
+function Users({ users, log, invites = [], invitesOk = false, onChanged }) {
   const [q, setQ] = useState('');
   const [deleting, setDeleting] = useState('');
+  const [approving, setApproving] = useState('');
   const [done, setDone] = useState('');
   const [filter, setFilter] = useState('all');
   const active = (u) => u.last_change_at && Date.now() - new Date(u.last_change_at).getTime() < 7 * DAY;
+  const invited = new Set(invites.map((i) => String(i.email || '').toLowerCase()));
+  const approved = (u) => u.is_admin || invited.has(String(u.email || '').toLowerCase());
+  const waiting = (u) => invitesOk && !approved(u);
   const shown = users
-    .filter((u) => (filter === 'active' ? active(u) : true))
+    .filter((u) => (filter === 'active' ? active(u) : filter === 'waiting' ? waiting(u) : true))
     .filter((u) => !q.trim() || String(u.email || '').toLowerCase().includes(q.trim().toLowerCase()));
 
   return (
@@ -231,6 +266,9 @@ function Users({ users, log, onChanged }) {
       <div className="ad-chips" role="group" aria-label="Filter users">
         <button type="button" className={`ad-chip ${filter === 'all' ? 'is-on' : ''}`} onClick={() => setFilter('all')}>All · {users.length}</button>
         <button type="button" className={`ad-chip ${filter === 'active' ? 'is-on' : ''}`} onClick={() => setFilter('active')}>Active · {users.filter(active).length}</button>
+        {invitesOk && (
+          <button type="button" className={`ad-chip ${filter === 'waiting' ? 'is-on' : ''}`} onClick={() => setFilter('waiting')}>Waiting · {users.filter(waiting).length}</button>
+        )}
       </div>
 
       <div className="ad-list">
@@ -240,15 +278,18 @@ function Users({ users, log, onChanged }) {
               <div className="ad-avatar" aria-hidden="true">{String(u.email || '?').charAt(0).toUpperCase()}</div>
               <div className="ad-user-name">
                 <div className="ad-user-email">{u.email}</div>
-                <div className="ad-muted ad-small">{u.is_admin ? 'Admin' : 'Rep'} · Joined {shortDate(u.joined_at)}</div>
+                <div className="ad-muted ad-small">{u.is_admin ? 'Admin' : 'Rep'} · Joined {shortDate(u.joined_at)} · {active(u) ? 'Active This Week' : 'Quiet'}</div>
+                {invitesOk && (waiting(u)
+                  ? <span className="ad-pill ad-pill-work ad-user-pill">WAITING FOR APPROVAL</span>
+                  : <span className="ad-pill ad-pill-ok ad-user-pill">APPROVED</span>)}
               </div>
-              <span className={`ad-pill ${active(u) ? 'ad-pill-ok' : 'ad-pill-quiet'}`}>{active(u) ? 'ACTIVE' : 'QUIET'}</span>
             </div>
             <div className="ad-user-stats">
               <div><span>Last Sign-In</span><b>{ago(u.last_sign_in_at)}</b></div>
               <div><span>Last Change</span><b>{ago(u.last_change_at)}</b></div>
               <div><span>Devices</span><b>{u.devices_30d}</b></div>
             </div>
+            {waiting(u) && <button type="button" className="ad-btn ad-approve-btn" onClick={() => { setDone(''); setApproving(u.email); }}>Approve For Beta</button>}
             {!u.is_admin && <button type="button" className="ad-del-btn" onClick={() => { setDone(''); setDeleting(u.email); }}>Delete Account</button>}
           </div>
         ))}
@@ -268,6 +309,14 @@ function Users({ users, log, onChanged }) {
             ))}
           </div>
         </>
+      )}
+
+      {approving && (
+        <ApproveSheet
+          email={approving}
+          onClose={() => setApproving('')}
+          onApproved={(em) => { setApproving(''); setDone(`Approved ${em}. They get in the next time they open Crumb.`); onChanged(); }}
+        />
       )}
 
       {deleting && (
@@ -686,7 +735,7 @@ export default function App() {
         </div>
         {msg && <p className="ad-error">{msg}</p>}
         {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} />}
-        {tab === 'users' && <Users users={users} log={log} onChanged={load} />}
+        {tab === 'users' && <Users users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
         {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} onChanged={load} />}
       </main>

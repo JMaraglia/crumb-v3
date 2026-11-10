@@ -210,3 +210,8 @@ input { font: inherit; }
 .ad-invite-email { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ad-invite-ask { display: flex; gap: 14px; flex: none; }
 .ad-invite-yes { color: var(--ad-bad); }
+
+/* Approve For Beta (Users) */
+.ad-approve-btn { width: 100%; }
+.ad-user-name .ad-small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-user-pill { display: inline-block; margin-top: 6px; }
