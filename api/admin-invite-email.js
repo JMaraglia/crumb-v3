@@ -5,7 +5,7 @@
 //   - only to an email that is already on the Sync Access list (asked with the admin's own token),
 //   - at most 20 emails an hour across all admins.
 // Sent through Resend (RESEND_API_KEY in this Vercel project's settings, never in code or chat)
-// from Crumb <no-reply@crumbsales.com>. Optional settings: INVITE_REPLY_TO (where replies go), CRM_URL.
+// from Crumb <no-reply@crumbsales.com>. Optional settings: INVITE_REPLY_TO (where replies go), SITE_URL.
 import { verifyUser, isAdminToken, readJsonBody, bump } from './_push.js';
 
 const ADMIN_ORIGINS = ['https://crumb-admin.vercel.app'];
@@ -36,29 +36,45 @@ async function onSyncList(token, email) {
   return rows.find((r) => String(r.email || '').toLowerCase() === email) || false;
 }
 
-export function welcomeEmail({ name, hasAccount, appUrl }) {
-  const hi = firstName(name) || 'there';
-  const link = `${appUrl}/sign-in`;
-  const signInLine = hasAccount
-    ? 'Sign in with this email and the password you already made.'
-    : 'Sign in with this email. First time? Tap Create Account.';
+// Founder's final copy (Nov 10, 2026). Greeting is "Welcome!" (no names); signed "The Crumb Team".
+// Someone who already made an account gets "sign in" steps instead of "Create Account".
+export function welcomeEmail({ hasAccount, siteUrl = 'https://crumbsales.com' }) {
   const subject = 'You’re In. Welcome To The Crumb Beta.';
+  const steps = hasAccount
+    ? [
+        ['Go to <a href="SITE" style="color:#0077cc;font-weight:bold;">CrumbSales.com</a> and tap <b>Sign In</b>.', 'Go to CrumbSales.com (SITE) and tap Sign In.'],
+        ['Sign in with this email address and the password you already created.', 'Sign in with this email address and the password you already created.'],
+      ]
+    : [
+        ['Go to <a href="SITE" style="color:#0077cc;font-weight:bold;">CrumbSales.com</a> and tap <b>Sign In</b>.', 'Go to CrumbSales.com (SITE) and tap Sign In.'],
+        ['At the bottom of the sign-in page, tap <b>Create Account</b>.', 'At the bottom of the sign-in page, tap Create Account.'],
+        ['Use the same email address that received this invitation and create a password.', 'Use the same email address that received this invitation and create a password.'],
+      ];
+  const site = siteUrl.replace(/\/+$/, '');
   const text = [
-    `Hey ${hi},`,
+    'Welcome!',
     '',
-    'You’re approved for the Crumb beta. Crumb is the CRM built for outside sales reps: your customers, your route and your follow-ups, on the phone in your pocket.',
+    'You’re approved for the Crumb beta. Built for outside sales reps, Crumb keeps your customers, daily stops, notes and follow-ups together on your phone.',
     '',
-    'Get set up (2 minutes):',
-    `1. On your iPhone, open Crumb in Safari: ${link}`,
-    `2. ${signInLine}`,
-    '3. Tap Share → Add To Home Screen so Crumb opens like an app.',
+    'Get Set Up:',
+    ...steps.map(([, t], i) => `${i + 1}. ${t.replace('SITE', site)}`),
     '',
-    'Something broken or got an idea? In Crumb, go to Settings → Report A Problem or Make A Suggestion. Tell us what you were doing and what happened. A screenshot helps.',
+    'Crumb works on desktop, but it’s built for your day in the field and works best on your phone. Add it to your home screen for easy access:',
+    '- iPhone: Open Crumb in Safari, tap Share → Add To Home Screen.',
+    '- Android: Open Crumb in Chrome, tap the three-dot menu → Add To Home Screen or Install App.',
     '',
-    'Crumb. Team',
+    'Found A Bug Or Have A Cool Idea?',
+    'Go to Settings → Report A Problem or Make A Suggestion. For problems, tell us what you were doing and what happened.',
+    '',
+    'You’re getting early access, so expect a few rough edges. Your feedback will help shape Crumb.',
+    'Thanks for being part of it.',
+    '',
+    'The Crumb Team',
   ].join('\n');
-  const step = (n, body) =>
-    `<tr><td valign="top" style="padding:0 12px 12px 0;font-size:16px;font-weight:bold;color:#0077cc;">${n}.</td><td style="padding:0 0 12px;font-size:16px;line-height:1.5;color:#444444;">${body}</td></tr>`;
+  const p = (body, extra = '') => `<p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#444444;${extra}">${body}</p>`;
+  const h = (body) => `<p style="margin:0 0 10px;font-size:17px;font-weight:bold;color:#222222;">${body}</p>`;
+  const row = (n, body) =>
+    `<tr><td valign="top" style="padding:0 12px 10px 0;font-size:16px;line-height:1.5;font-weight:bold;color:#0077cc;">${n}</td><td style="padding:0 0 10px;font-size:16px;line-height:1.5;color:#444444;">${body}</td></tr>`;
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,24 +93,22 @@ export function welcomeEmail({ name, hasAccount, appUrl }) {
         </tr>
         <tr>
           <td style="background:#ffffff;border-radius:16px;padding:32px 28px;font-family:Helvetica,Arial,sans-serif;color:#222222;">
-            <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#222222;">You&rsquo;re In.</h1>
-            <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#444444;">Hey ${esc(hi)},</p>
-            <p style="margin:0 0 24px;font-size:16px;line-height:1.5;color:#444444;">You&rsquo;re approved for the Crumb beta. Crumb is the CRM built for outside sales reps: your customers, your route and your follow-ups, on the phone in your pocket.</p>
-            <p style="margin:0 0 12px;font-size:16px;font-weight:bold;color:#222222;">Get set up (2 minutes):</p>
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Helvetica,Arial,sans-serif;">
-              ${step(1, 'On your iPhone, open Crumb in Safari.')}
-              ${step(2, esc(signInLine))}
-              ${step(3, 'Tap Share &rarr; Add To Home Screen so Crumb opens like an app.')}
+            <h1 style="margin:0 0 12px;font-size:24px;line-height:1.3;color:#222222;">Welcome!</h1>
+            ${p('You&rsquo;re approved for the Crumb beta. Built for outside sales reps, Crumb keeps your customers, daily stops, notes and follow-ups together on your phone.', 'margin-bottom:24px;')}
+            ${h('Get Set Up:')}
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Helvetica,Arial,sans-serif;margin:0 0 14px;">
+              ${steps.map(([b], i) => row(`${i + 1}.`, b.replace('SITE', esc(site)))).join('\n              ')}
             </table>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 24px;">
-              <tr>
-                <td align="center" style="border-radius:12px;background:#0077cc;">
-                  <a href="${esc(link)}" style="display:block;padding:16px 20px;font-family:Helvetica,Arial,sans-serif;font-size:17px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:12px;">Open Crumb</a>
-                </td>
-              </tr>
+            ${p('Crumb works on desktop, but it&rsquo;s built for your day in the field and works best on your phone. Add it to your home screen for easy access:', 'margin-bottom:10px;')}
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Helvetica,Arial,sans-serif;margin:0 0 24px;">
+              ${row('&bull;', '<b>iPhone:</b> Open Crumb in Safari, tap Share &rarr; Add To Home Screen.')}
+              ${row('&bull;', '<b>Android:</b> Open Crumb in Chrome, tap the three-dot menu &rarr; Add To Home Screen or Install App.')}
             </table>
-            <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#444444;"><b>Something broken or got an idea?</b> In Crumb, go to Settings &rarr; Report A Problem or Make A Suggestion. Tell us what you were doing and what happened. A screenshot helps.</p>
-            <p style="margin:0;font-size:16px;font-weight:bold;color:#222222;">Crumb. Team</p>
+            ${h('Found A Bug Or Have A Cool Idea?')}
+            ${p('Go to Settings &rarr; Report A Problem or Make A Suggestion. For problems, tell us what you were doing and what happened.', 'margin-bottom:24px;')}
+            ${p('You&rsquo;re getting early access, so expect a few rough edges. Your feedback will help shape Crumb.', 'margin-bottom:8px;')}
+            ${p('Thanks for being part of it.', 'margin-bottom:24px;')}
+            <p style="margin:0;font-size:16px;font-weight:bold;color:#222222;">The Crumb Team</p>
           </td>
         </tr>
         <tr>
@@ -141,8 +155,8 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: `Limit reached: ${PER_HOUR} welcome emails an hour. Try again later.` });
     }
 
-    const appUrl = String(process.env.CRM_URL || 'https://crumb-v3.vercel.app').trim().replace(/\/+$/, '');
-    const { subject, text, html } = welcomeEmail({ name: body.name, hasAccount: Boolean(row.has_account), appUrl });
+    const siteUrl = String(process.env.SITE_URL || 'https://crumbsales.com').trim();
+    const { subject, text, html } = welcomeEmail({ hasAccount: Boolean(row.has_account), siteUrl });
     const replyTo = String(process.env.INVITE_REPLY_TO || '').trim();
     const sent = await fetch('https://api.resend.com/emails', {
       method: 'POST',
