@@ -2,7 +2,7 @@
 // Turn push notifications on/off and choose what Crumb reminds you about.
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
 import {
   loadNotifySettings,
   saveNotifySettings,
@@ -35,6 +35,7 @@ export default function NotificationsPage() {
   const [settings, setSettings] = useState(loadNotifySettings);
   useCloudRefresh(() => setSettings(loadNotifySettings())); // changes from your other device, re-read in place
   const [busy, setBusy] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false); // the "On For This Phone" line, opened
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const support = pushSupport();
@@ -95,8 +96,15 @@ export default function NotificationsPage() {
       <div className="nt-content">
         <h1 className="nt-title">Notifications</h1>
 
+        {/* Nov 10: once on, this is one line; tap it for Send A Test / Turn Off */}
+        {on && !phoneOpen ? (
+          <button className="nt-card nt-on-line" onClick={() => setPhoneOpen(true)}>
+            <span className="nt-status is-on">On For This Phone</span>
+            <FaChevronRight className="nt-on-chev" />
+          </button>
+        ) : (
         <div className="nt-card">
-          <div className={`nt-status ${on ? 'is-on' : ''}`}>{on ? 'On for this phone' : 'Off'}</div>
+          <div className={`nt-status ${on ? 'is-on' : ''}`}>{on ? 'On For This Phone' : 'Off'}</div>
           <div className="nt-text">
             {on
               ? `${upcoming.length} reminder${upcoming.length === 1 ? '' : 's'} lined up for the next 7 days.`
@@ -120,6 +128,7 @@ export default function NotificationsPage() {
             <div className="nt-hint">On iPhone this only works when Crumb is opened from its Home Screen icon.</div>
           )}
         </div>
+        )}
         {message && <div className="nt-message">{message}</div>}
         {error && <div className="nt-error">{error}</div>}
 
@@ -134,7 +143,7 @@ export default function NotificationsPage() {
           </label>
           {settings.morning && (
             <label className="nt-row">
-              <span>Send it at</span>
+              <span>Send:</span>
               <select className="nt-select" value={settings.morningTime} onChange={(e) => change({ morningTime: Number(e.target.value) })}>
                 {MORNING_TIMES.map((m) => (
                   <option key={m} value={m}>{timeText(m)}</option>
@@ -151,7 +160,7 @@ export default function NotificationsPage() {
           </label>
           {settings.afternoon && (
             <label className="nt-row">
-              <span>Send it at</span>
+              <span>Send:</span>
               <select className="nt-select" value={settings.afternoonTime} onChange={(e) => change({ afternoonTime: Number(e.target.value) })}>
                 {AFTERNOON_TIMES.map((m) => (
                   <option key={m} value={m}>{timeText(m)}</option>

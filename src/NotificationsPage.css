@@ -266,3 +266,19 @@
   font-size: 0.95rem;
   color: #3a3a3c;
 }
+
+/* Nov 10: "On For This Phone ›" one-line card (tap to open Send A Test / Turn Off) */
+.nt-page .nt-on-line,
+.nt-page .nt-on-line:hover {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+.nt-on-line .nt-status { margin: 0; }
+.nt-on-chev { color: #c7c7cc; flex-shrink: 0; }
