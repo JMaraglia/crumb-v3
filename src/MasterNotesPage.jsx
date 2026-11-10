@@ -165,7 +165,7 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
     .filter((n) => groupKey === 'all' || n.group === groupKey)
     .filter((n) => accountKey === 'all' || `${n.kind}-${n.accountId}` === accountKey)
     .filter((n) =>
-      label === 'all' ? true : label === 'open' ? n.cat === 'Follow-up' && !n.done : n.cat === label
+      label === 'all' ? true : label === 'open' ? isCheckable(n.cat) && !n.done : n.cat === label
     )
     .filter((n) => !q || (n.text || '').toLowerCase().includes(q) || n.accountName.toLowerCase().includes(q))
     .filter((n) => !range || (n.time >= range[0] && n.time < range[1]))
@@ -551,8 +551,8 @@ export default function MasterNotesPage({ contacts = [], setContacts, prospects 
                 <span>Label</span>
                 <select className="mn-select" value={label} onChange={(e) => setLabel(e.target.value)}>
                   <option value="all">All labels</option>
-                  <option value="open">Open follow-ups</option>
-                  {NOTE_CATEGORIES.map((c) => (
+                  <option value="open">Open to-dos</option>
+                  {[...new Set([...NOTE_CATEGORIES, ...all.map((n) => n.cat)])].map((c) => (
                     <option key={c} value={c}>
                       {c === 'General' ? 'No label' : c}
                     </option>

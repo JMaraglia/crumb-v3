@@ -175,3 +175,18 @@
 .st-group-top { margin-top: 22px; }
 .st-note { margin: 14px 4px 0; font-size: 0.8rem; color: #8e8e93; line-height: 1.4; }
 .st-page .st-switch:disabled { opacity: 0.5; }
+
+/* Note Labels boxes (Nov 10) */
+.st-label-head { margin-top: 18px; }
+.st-label-box { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; min-height: 44px; background: #fff; border-radius: 12px; box-sizing: border-box; }
+.st-page .st-label,
+.st-page .st-label:hover { border: none; border-radius: 999px; padding: 8px 13px; font-size: 0.95rem; font-weight: 600; cursor: pointer; width: auto; margin: 0; }
+.st-page .st-label.is-off,
+.st-page .st-label.is-off:hover { background: #f2f2f7; color: #6e6e73; border: 1px dashed #c7c7cc; }
+.st-label-empty { font-size: 0.85rem; color: #8e8e93; align-self: center; }
+.st-label-add { display: flex; gap: 8px; }
+.st-page .st-label-input { flex: 1; min-width: 0; box-sizing: border-box; height: 44px; padding: 0 12px; border: none; border-radius: 12px; background: #fff; font-size: 17px; font-family: inherit; color: #1c1c1e; outline: none; margin: 0; width: auto; }
+.st-page .st-label-addbtn,
+.st-page .st-label-addbtn:hover { height: 44px; padding: 0 18px; border: none; border-radius: 12px; background: #0077cc; color: #fff; font-weight: 600; font-size: 1rem; margin: 0; width: auto; }
+.st-page .st-label-addbtn:disabled { opacity: 0.5; }
+.st-label-msg { margin: 8px 4px 0; font-size: 0.85rem; color: #d93025; }

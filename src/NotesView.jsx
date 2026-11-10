@@ -11,26 +11,17 @@ import { buildNotesPdf } from './notesPdf';
 import { useNavigate } from 'react-router-dom';
 import { isCheckable, isNoteDone } from './noteStatus';
 import MeetingSheet, { niceMeeting } from './MeetingSheet';
-import { loadAppSettings } from './store';
+import { labelsInUse, labelColor, LIBRARY } from './noteLabels';
 import SwipeRow from './SwipeRow';
 import { stampOf } from './store';
 import './NotesView.css';
 
-export const NOTE_CATEGORIES = ['General', 'Visit', 'Sample', 'Follow-up', 'Contacted', 'Background', 'Meeting'];
+// Filters list every library label plus "no label" (custom labels are added where notes use them).
+export const NOTE_CATEGORIES = ['General', ...LIBRARY];
 // Labels you can pick. A note with no label is saved as 'General' and shows no tag.
 // (Meeting is picked with the Meeting button, which also books it on the Calendar.)
 // Contacted = touched the account without a visit (email, text, call).
-const LABELS = ['Visit', 'Sample', 'Follow-up', 'Contacted', 'Background'];
-
-const CATEGORY_COLORS = {
-  General: { bg: '#eeeef0', fg: '#3a3a3c' },
-  Visit: { bg: '#e6f1fa', fg: '#0077cc' },
-  Sample: { bg: '#e3f6e8', fg: '#1e8e3e' },
-  'Follow-up': { bg: '#fff1de', fg: '#b25e00' },
-  Contacted: { bg: '#e0f4f6', fg: '#0e7c86' },
-  Background: { bg: '#f3e8fb', fg: '#8a3fb5' },
-  Meeting: { bg: '#fff1e0', fg: '#d96b00' },
-};
+// The labels offered come from Settings → Note Labels (noteLabels.js); Meeting has its own button.
 
 // Older notes used "Follow-Up"; treat it the same as "Follow-up".
 export function normalizeCategory(cat) {
@@ -40,7 +31,7 @@ export function normalizeCategory(cat) {
 }
 
 export function categoryStyle(cat) {
-  return CATEGORY_COLORS[normalizeCategory(cat)] || { bg: '#eeeef0', fg: '#3a3a3c' };
+  return labelColor(normalizeCategory(cat));
 }
 
 // "Tue, Nov 3 · 2:40 PM" (falls back to whatever was saved if it can't be read)
@@ -62,7 +53,7 @@ export function noteDate(timestamp) {
   return `${day} · ${time}`;
 }
 
-function CategoryChips({ value, onChange, extra = null, labels = LABELS }) {
+function CategoryChips({ value, onChange, extra = null, labels = [] }) {
   return (
     <div className="nv-cats">
       {labels.map((c) => {
@@ -131,7 +122,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
   const [shareMsg, setShareMsg] = useState('');
   const [askRange, setAskRange] = useState(false); // "Share which notes?" before sharing
   const [meeting, setMeeting] = useState(false); // "Set a meeting" panel open
-  const hiddenLabels = loadAppSettings().hiddenLabels; // labels switched off in Settings → Note Labels
+  const inUse = labelsInUse(); // Settings → Note Labels
   const [changingMeeting, setChangingMeeting] = useState(null); // index of a Meeting note whose time is being changed
 
   const notes = (account.notes || []).map((n, index) => ({ ...n, index, cat: normalizeCategory(n.category) }));
@@ -268,7 +259,7 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <CategoryChips
             value={editing.category}
             onChange={(c) => setEditing({ ...editing, category: c })}
-            labels={[...LABELS, 'Meeting'].filter((l) => !hiddenLabels.includes(l) || normalizeCategory(editing.category) === l)}
+            labels={inUse.includes(normalizeCategory(editing.category)) || normalizeCategory(editing.category) === 'General' ? inUse : [...inUse, normalizeCategory(editing.category)]}
           />
           {isCheckable(editing.category) && (
             <DueChips value={editing.due} onChange={(d) => setEditing({ ...editing, due: d })} />
@@ -403,9 +394,9 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           <CategoryChips
             value={category}
             onChange={setCategory}
-            labels={LABELS.filter((l) => !hiddenLabels.includes(l))}
+            labels={inUse.filter((l) => l !== 'Meeting')}
             extra={
-              hiddenLabels.includes('Meeting') ? null : (
+              !inUse.includes('Meeting') ? null : (
                 <button type="button" className="nv-cat nv-cat-meeting" onClick={() => setMeeting(true)}>
                   Meeting
                 </button>

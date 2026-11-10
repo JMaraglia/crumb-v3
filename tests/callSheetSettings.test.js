@@ -32,10 +32,10 @@ describe('Call Sheet switches', () => {
 import { loadAppSettings, saveAppSettings } from '../src/store';
 describe('tools you can switch off (Calendar, Daily Stops, To-Do)', () => {
   it('all on until switched off; one switch never touches the others', () => {
-    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: true, hiddenLabels: [] });
+    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: true, hiddenLabels: [], labels: null, customLabels: [] });
     saveAppSettings({ todo: false });
     saveAppSettings({ calendar: false });
-    expect(loadAppSettings()).toEqual({ calendar: false, dailyStops: true, todo: false, hiddenLabels: [] });
+    expect(loadAppSettings()).toEqual({ calendar: false, dailyStops: true, todo: false, hiddenLabels: [], labels: null, customLabels: [] });
   });
   it('follow you to your other devices', () => {
     expect(changesFor('crumb_app_settings', J({}), J({ todo: false }))[0]).toMatchObject({ table: 'settings', id: 'app', next: { todo: false } });
@@ -45,7 +45,29 @@ describe('tools you can switch off (Calendar, Daily Stops, To-Do)', () => {
 describe('note labels you can switch off', () => {
   it('remembers hidden labels and keeps the other switches', () => {
     saveAppSettings({ todo: false });
-    saveAppSettings({ hiddenLabels: ['Sample', 'Background'] });
-    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: false, hiddenLabels: ['Sample', 'Background'] });
+    saveAppSettings({ hiddenLabels: ['Sample', 'Background'], labels: null, customLabels: [] });
+    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: false, hiddenLabels: ['Sample', 'Background'], labels: null, customLabels: [] });
+  });
+});
+
+import { labelsInUse, saveLabels, customLabels as ownLabels } from '../src/noteLabels';
+import { isCheckable } from '../src/noteStatus';
+describe('note labels: in use, your own, and which become to-dos', () => {
+  it('starts with the six original labels; old hidden-label setting still respected', () => {
+    expect(labelsInUse()).toEqual(['Visit', 'Sample', 'Follow-up', 'Contacted', 'Background', 'Meeting']);
+    saveAppSettings({ hiddenLabels: ['Sample'] });
+    expect(labelsInUse()).toEqual(['Visit', 'Follow-up', 'Contacted', 'Background', 'Meeting']);
+  });
+  it('saves the order you pick and your own labels, 12 at most', () => {
+    saveLabels(['Visit', 'Proposal', 'Site Walk'], ['Site Walk']);
+    expect(labelsInUse()).toEqual(['Visit', 'Proposal', 'Site Walk']);
+    expect(ownLabels()).toEqual(['Site Walk']);
+    saveLabels(Array.from({ length: 15 }, (_, i) => `L${i}`), []);
+    expect(labelsInUse().length).toBe(12);
+  });
+  it('Proposal and Quote work like Follow-up; custom labels are plain', () => {
+    expect(['Follow-up', 'Sample', 'Proposal', 'Quote'].every(isCheckable)).toBe(true);
+    expect(isCheckable('Site Walk')).toBe(false);
+    expect(isCheckable('Email')).toBe(false);
   });
 });

@@ -405,6 +405,9 @@ export function loadAppSettings() {
     todo: o.todo !== false,
     // Note labels switched off (Nov 10): not offered on new notes; old notes keep theirs.
     hiddenLabels: Array.isArray(o.hiddenLabels) ? o.hiddenLabels.filter((x) => typeof x === 'string') : [],
+    // Labels in use, in order, and your own labels (see noteLabels.js). null = not set yet.
+    labels: Array.isArray(o.labels) ? o.labels.filter((x) => typeof x === 'string' && x.trim()) : null,
+    customLabels: Array.isArray(o.customLabels) ? o.customLabels.filter((x) => typeof x === 'string' && x.trim()) : [],
   };
 }
 export function saveAppSettings(patch) {

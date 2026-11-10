@@ -25,7 +25,7 @@ export function collectTodoItems(todos = [], contacts = [], prospects = []) {
     list.filter(hasName).forEach((acct) =>
       (acct.notes || []).forEach((n, index) => {
         const cat = noteCat(n.category);
-        if (cat !== 'Follow-up' && cat !== 'Sample') return;
+        if (cat !== 'Follow-up' && cat !== 'Sample' && cat !== 'Proposal' && cat !== 'Quote') return;
         if (cat === 'Sample' && typeof n.done !== 'boolean') return; // old sample records, not to-dos
         items.push({
           key: `f-${type}-${acct.id}-${index}`,

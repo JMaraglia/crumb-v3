@@ -10,7 +10,7 @@ export function noteCat(category) {
 
 export function isCheckable(category) {
   const c = noteCat(category);
-  return c === 'Follow-up' || c === 'Sample';
+  return c === 'Follow-up' || c === 'Sample' || c === 'Proposal' || c === 'Quote'; // Proposal & Quote added Nov 10
 }
 
 export function isNoteDone(note) {

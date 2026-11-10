@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
 import { loadAppSettings, saveAppSettings, loadCallSheetSettings, saveCallSheetSettings } from './store';
 import { useCloudRefresh } from './useCloudRefresh';
+import { LIBRARY, MAX_IN_USE, MAX_LABEL_LENGTH, MAX_CUSTOM, labelsInUse, customLabels, saveLabels, labelColor } from './noteLabels';
 import './SettingsPage.css';
 
 const TOOLS = {
@@ -29,7 +30,7 @@ const TOOLS = {
   },
   'note-labels': {
     title: 'Note Labels',
-    labels: ['Visit', 'Sample', 'Follow-up', 'Contacted', 'Background', 'Meeting'],
+    labels: true,
     switches: [],
   },
   todo: {
@@ -83,33 +84,7 @@ export default function ToolSettingsPage() {
       </header>
       <div className="st-content">
         <h1 className="st-title">{t.title}</h1>
-        {t.labels && (
-          <div className="st-group">
-            {t.labels.map((l) => {
-              const on = !app.hiddenLabels.includes(l);
-              const last = on && t.labels.filter((x) => !app.hiddenLabels.includes(x)).length === 1; // keep at least one
-              return (
-                <label key={l} className="st-row st-switch-row">
-                  <span className="st-row-text">
-                    <span className="st-row-label">{l}</span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    className="st-switch"
-                    checked={on}
-                    disabled={last}
-                    onChange={(e) => {
-                      const hiddenLabels = e.target.checked ? app.hiddenLabels.filter((x) => x !== l) : [...app.hiddenLabels, l];
-                      setApp({ ...app, hiddenLabels });
-                      saveAppSettings({ hiddenLabels });
-                    }}
-                    aria-label={l}
-                  />
-                </label>
-              );
-            })}
-          </div>
-        )}
+        {t.labels && <NoteLabelsEditor />}
         {shown.length > 0 && <div className="st-group">
           {shown.map((s) => (
             <label key={s.k} className="st-row st-switch-row">
@@ -132,8 +107,86 @@ export default function ToolSettingsPage() {
             </button>
           </div>
         )}
-        <p className="st-note">Turning something off only hides it. Nothing is deleted, and turning it back on brings it all back.</p>
+        {!t.labels && <p className="st-note">Turning something off only hides it. Nothing is deleted, and turning it back on brings it all back.</p>}
       </div>
     </div>
+  );
+}
+
+// Note Labels (Nov 10): the top box is what's offered on notes, in that order (max 12).
+// Tap a label to move it between the boxes. Your own labels go straight into the top box.
+function NoteLabelsEditor() {
+  const [inUse, setInUse] = useState(() => labelsInUse());
+  const [custom, setCustom] = useState(() => customLabels());
+  const [name, setName] = useState('');
+  const [msg, setMsg] = useState('');
+  useCloudRefresh(() => {
+    setInUse(labelsInUse());
+    setCustom(customLabels());
+  });
+  const save = (u, c) => {
+    setInUse(u);
+    setCustom(c);
+    saveLabels(u, c);
+  };
+  const more = [...LIBRARY, ...custom].filter((l) => !inUse.includes(l));
+  const remove = (l) => {
+    setMsg('');
+    if (inUse.length === 1) return setMsg('Keep at least one label.');
+    save(inUse.filter((x) => x !== l), custom);
+  };
+  const addBack = (l) => {
+    setMsg('');
+    if (inUse.length >= MAX_IN_USE) return setMsg(`${MAX_IN_USE} labels max. Remove one first.`);
+    save([...inUse, l], custom);
+  };
+  const addOwn = (e) => {
+    e.preventDefault();
+    setMsg('');
+    const v = name.trim().replace(/\s+/g, ' ');
+    if (!v) return;
+    if (v.toLowerCase() === 'general') return setMsg('Pick another name.');
+    if ([...LIBRARY, ...custom].some((x) => x.toLowerCase() === v.toLowerCase())) return setMsg('That label already exists.');
+    if (custom.length >= MAX_CUSTOM) return setMsg(`${MAX_CUSTOM} of your own labels max.`);
+    if (inUse.length >= MAX_IN_USE) return setMsg(`${MAX_IN_USE} labels max. Remove one first.`);
+    save([...inUse, v], [...custom, v]);
+    setName('');
+  };
+  const chip = (l, on) => {
+    const c = labelColor(l);
+    return (
+      <button
+        key={l}
+        type="button"
+        className={`st-label ${on ? '' : 'is-off'}`}
+        style={on ? { background: c.bg, color: c.fg } : undefined}
+        onClick={() => (on ? remove(l) : addBack(l))}
+      >
+        {l}
+      </button>
+    );
+  };
+  return (
+    <>
+      <div className="st-group-label st-label-head">In Use · {inUse.length} of {MAX_IN_USE}</div>
+      <div className="st-label-box">{inUse.map((l) => chip(l, true))}</div>
+      <div className="st-group-label st-label-head">More Labels</div>
+      <div className="st-label-box">{more.length ? more.map((l) => chip(l, false)) : <span className="st-label-empty">All labels are in use.</span>}</div>
+      <div className="st-group-label st-label-head">Add Your Own</div>
+      <form className="st-label-add" onSubmit={addOwn}>
+        <input
+          className="st-label-input"
+          value={name}
+          maxLength={MAX_LABEL_LENGTH}
+          placeholder="Label name"
+          onChange={(e) => {
+            setName(e.target.value);
+            setMsg('');
+          }}
+        />
+        <button type="submit" className="st-label-addbtn" disabled={!name.trim()}>Add</button>
+      </form>
+      {msg && <p className="st-label-msg">{msg}</p>}
+    </>
   );
 }

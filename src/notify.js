@@ -200,7 +200,8 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
       [...contacts, ...prospects].filter(hasName).forEach((a) =>
         (a.notes || []).forEach((n) => {
           const c = noteCat(n.category);
-          const wanted = (c === 'Follow-up' && kinds.followups) || (c === 'Sample' && kinds.samples);
+          // Proposal and Quote work like Follow-ups (Nov 10)
+          const wanted = ((c === 'Follow-up' || c === 'Proposal' || c === 'Quote') && kinds.followups) || (c === 'Sample' && kinds.samples);
           if (wanted && n.due && n.due <= day && !isNoteDone(n)) due.push({ text: n.text, who: a.name, late: n.due < day });
         })
       );
