@@ -4,6 +4,8 @@ export function plainError(err) {
   const m = String((err && (err.message || err.error_description)) || err || '');
   if (/Invalid login credentials/i.test(m)) return 'That email and password don’t match. Check them and try again.';
   if (/Email not confirmed/i.test(m)) return 'Check your email and tap the confirmation link first, then sign in.';
+  // Nov 10: Supabase's sign-up check (0013) refuses emails that aren't approved yet.
+  if (/approved for the Crumb beta/i.test(m)) return 'This email isn’t approved for the Crumb beta yet. Join the beta waitlist at CrumbSales.com.';
   if (/already registered/i.test(m)) return 'That email already has an account. Sign in instead.';
   if (/Password should be/i.test(m)) return 'Use a longer password (at least 6 characters).';
   if (/only request this after|security purposes/i.test(m)) return 'An email was just sent. Wait a minute before asking for another.';

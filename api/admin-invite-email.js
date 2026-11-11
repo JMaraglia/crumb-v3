@@ -55,19 +55,14 @@ async function rpc(token, name, args) {
 }
 
 // Founder's final copy (Nov 10, 2026). Greeting is "Welcome!" (no names); signed "The Crumb Team".
-// Someone who already made an account gets "sign in" steps instead of "Create Account".
-export function welcomeEmail({ hasAccount, siteUrl = 'https://crumbsales.com' }) {
+// Nov 10 (step 3): only approved emails can create an account, so there's no "already have an account" version.
+export function welcomeEmail({ siteUrl = 'https://crumbsales.com' } = {}) {
   const subject = 'You’re In. Welcome To The Crumb Beta.';
-  const steps = hasAccount
-    ? [
-        ['Go to <a href="SITE" style="color:#0077cc;font-weight:bold;">CrumbSales.com</a> and tap <b>Sign In</b>.', 'Go to CrumbSales.com (SITE) and tap Sign In.'],
-        ['Sign in with this email address and the password you already created.', 'Sign in with this email address and the password you already created.'],
-      ]
-    : [
-        ['Go to <a href="SITE" style="color:#0077cc;font-weight:bold;">CrumbSales.com</a> and tap <b>Sign In</b>.', 'Go to CrumbSales.com (SITE) and tap Sign In.'],
-        ['At the bottom of the sign-in page, tap <b>Create Account</b>.', 'At the bottom of the sign-in page, tap Create Account.'],
-        ['Use the same email address that received this invitation and create a password.', 'Use the same email address that received this invitation and create a password.'],
-      ];
+  const steps = [
+    ['Go to <a href="SITE" style="color:#0077cc;font-weight:bold;">CrumbSales.com</a> and tap <b>Sign In</b>.', 'Go to CrumbSales.com (SITE) and tap Sign In.'],
+    ['At the bottom of the sign-in page, tap <b>Create Account</b>.', 'At the bottom of the sign-in page, tap Create Account.'],
+    ['Use the same email address that received this invitation and create a password.', 'Use the same email address that received this invitation and create a password.'],
+  ];
   const site = siteUrl.replace(/\/+$/, '');
   const text = [
     'Welcome!',
@@ -182,7 +177,7 @@ export default async function handler(req, res) {
     }
 
     const siteUrl = String(process.env.SITE_URL || 'https://crumbsales.com').trim();
-    const { subject, text, html } = welcomeEmail({ hasAccount: Boolean(row.has_account), siteUrl });
+    const { subject, text, html } = welcomeEmail({ siteUrl });
     const replyTo = String(process.env.INVITE_REPLY_TO || '').trim();
     const sent = await fetch('https://api.resend.com/emails', {
       method: 'POST',
