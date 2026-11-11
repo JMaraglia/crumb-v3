@@ -8,7 +8,7 @@ export function plainError(err) {
   if (/approved for the Crumb beta/i.test(m)) return 'This email isn’t approved for the Crumb beta yet. Join the beta waitlist at CrumbSales.com.';
   if (/already registered/i.test(m)) return 'That email already has an account. Sign in instead.';
   if (/known to be weak|pwned|leaked/i.test(m)) return 'That password has shown up in a data leak somewhere. Pick a different one.';
-  if (/Password should (be|contain)/i.test(m) || /weak.?password/i.test(m)) return 'Use at least 8 characters, with a letter and a number.';
+  if (/Password should (be|contain)/i.test(m) || /weak.?password/i.test(m)) return 'Use at least 8 characters, with a letter, a number and a special character (like ! or #).';
   if (/only request this after|security purposes/i.test(m)) return 'An email was just sent. Wait a minute before asking for another.';
   if (/rate limit|too many/i.test(m)) return 'Too many tries for now. Wait a few minutes and try again.';
   if (/fetch|network|load failed/i.test(m)) return 'Couldn’t reach the cloud. Check your signal and try again.';

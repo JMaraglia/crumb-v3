@@ -201,12 +201,13 @@ export default function SignInPage() {
               id="si-pass"
               className="si-input"
               type="password"
-              placeholder={creating ? 'Password (8+ characters, a letter and a number)' : 'Password'}
+              placeholder="Password"
               aria-label="Password"
               autoComplete={creating ? 'new-password' : 'current-password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {creating && <p className="si-q-note si-pass-note">At least 8 characters, with a letter, a number and a symbol (like ! or #).</p>}
 
             {creating && (
               <>

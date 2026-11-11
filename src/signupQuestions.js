@@ -46,10 +46,10 @@ export function answersToSave(a) {
   };
 }
 
-// Password rule (founder chose A): 8+ characters with at least one letter and one number.
+// Password rule (founder, Nov 10): 8+ characters with at least one letter, one number and one special character.
 export function passwordProblem(p) {
   if (String(p).length < 8) return 'Use at least 8 characters.';
-  if (!/[A-Za-z]/.test(p) || !/\d/.test(p)) return 'Use at least one letter and one number.';
+  if (!/[A-Za-z]/.test(p) || !/\d/.test(p) || !/[^A-Za-z0-9]/.test(p)) return 'Use at least one letter, one number and one special character (like ! or #).';
   return '';
 }
 
