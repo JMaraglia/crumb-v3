@@ -1,5 +1,8 @@
-// POST /api/admin-invite-email  { email, name? }   (Authorization: Bearer <the admin's Supabase sign-in token>)
+// POST /api/admin-invite-email  { email, name?, resend? }   (Authorization: Bearer <the admin's Supabase sign-in token>)
 // Crumb Admin: sends the beta welcome email after the founder approves someone.
+// Nov 10: every send is recorded in the database (0012_welcome_sent.sql). Approving sends only if this
+// address never got one; resend: true (Resend Welcome Email, confirmed) sends again. Replies
+// { ok, sent: true, times } or { ok, skipped: true, reason: 'already_sent' | 'sending', sent_at, times }.
 // Safeguards:
 //   - only Crumb admins (the token is checked with Supabase, then the database's own is_admin()),
 //   - only to an email that is already on the Sync Access list (asked with the admin's own token),
@@ -34,6 +37,21 @@ async function onSyncList(token, email) {
   const rows = await res.json().catch(() => null);
   if (!Array.isArray(rows)) return null;
   return rows.find((r) => String(r.email || '').toLowerCase() === email) || false;
+}
+
+// Ask the database (with the admin's own token) whether to send, and record the result.
+async function rpc(token, name, args) {
+  const base = String(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+  const key = String(process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  if (!base || !key) return { error: 'missing settings' };
+  const res = await fetch(`${base}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) return { error: (data && data.message) || `status ${res.status}` };
+  return { data };
 }
 
 // Founder's final copy (Nov 10, 2026). Greeting is "Welcome!" (no names); signed "The Crumb Team".
@@ -141,6 +159,7 @@ export default async function handler(req, res) {
   const token = (req.headers.authorization || '').replace(/^Bearer /, '');
   const body = readJsonBody(req);
   const email = String(body.email || '').trim().toLowerCase();
+  const resend = body.resend === true;
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: 'That doesn’t look like an email address.' });
 
   try {
@@ -155,6 +174,13 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: `Limit reached: ${PER_HOUR} welcome emails an hour. Try again later.` });
     }
 
+    // Approving never sends twice; Resend (confirmed in Admin) does. Blocks double taps too.
+    const claim = await rpc(token, 'admin_welcome_claim', { p_email: email, p_resend: resend });
+    if (claim.error) return res.status(502).json({ error: `Couldn’t check whether a welcome email already went out (${String(claim.error).slice(0, 120)}).` });
+    if (!claim.data || claim.data.send !== true) {
+      return res.status(200).json({ ok: true, skipped: true, email, reason: (claim.data && claim.data.reason) || 'already_sent', sent_at: claim.data && claim.data.sent_at, times: (claim.data && claim.data.times) || 0 });
+    }
+
     const siteUrl = String(process.env.SITE_URL || 'https://crumbsales.com').trim();
     const { subject, text, html } = welcomeEmail({ hasAccount: Boolean(row.has_account), siteUrl });
     const replyTo = String(process.env.INVITE_REPLY_TO || '').trim();
@@ -165,9 +191,11 @@ export default async function handler(req, res) {
     });
     if (!sent.ok) {
       const err = await sent.json().catch(() => ({}));
+      await rpc(token, 'admin_welcome_done', { p_email: email, p_ok: false, p_resend: resend });
       return res.status(502).json({ error: `The email service said no: ${String(err.message || sent.status).slice(0, 160)}` });
     }
-    return res.status(200).json({ ok: true, email });
+    const done = await rpc(token, 'admin_welcome_done', { p_email: email, p_ok: true, p_resend: resend });
+    return res.status(200).json({ ok: true, sent: true, email, times: (done.data && done.data.times) || 1 });
   } catch {
     return res.status(502).json({ error: 'Something went wrong sending the email. Try again.' });
   }

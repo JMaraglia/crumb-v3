@@ -222,3 +222,8 @@ input { font: inherit; }
 
 /* Beta list: industry on top */
 .ad-beta-ind { font-size: 13px; font-weight: 800; letter-spacing: 0.02em; color: var(--ad-blue); text-transform: uppercase; }
+
+/* Welcome email record + Resend Welcome Email (asks first) — Nov 10 */
+.ad-welcome-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 10px 0 4px; }
+.ad-resend-btn { padding: 4px 0; text-align: left; align-self: flex-start; }
+.ad-resend-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 0; }
