@@ -81,6 +81,10 @@ const SHOTS = [
   ['c/home-trim', '/', null, null, { crumb_callsheet_settings: '{"show":false}', crumb_app_settings: '{"todo":false}' }],
   ['c/month-midnight', '/calendar', async (p) => { await p.getByText('Month', { exact: true }).click(); await p.waitForTimeout(400); }, null, { crumb_app_settings: '{"theme":"midnight"}', __midnight: '1' }],
   ['c/stops-midnight', '/itinerary', null, null, { crumb_app_settings: '{"theme":"midnight"}', __midnight: '1' }],
+  // Demo video (Nov 11)
+  ['v/customers', '/customers'],
+  ['v/prospects', '/prospects'],
+  ['v/cal', '/calendar'],
   ['itin', '/itinerary', null, [480, 1038]],
   ['cust', '/customers', async (p) => { await p.getByText('Ashgrove Builders').first().click(); await p.waitForTimeout(400); }, [480, 1038]],
   ['cal', '/calendar', null, [480, 1038]],

@@ -1,0 +1,112 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:720px;height:1280px;overflow:hidden;background:#03060b;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased}
+#stage{position:absolute;inset:0;overflow:hidden}
+.bg{position:absolute;inset:0;background:#03060b}
+.cglow{position:absolute;left:50%;top:600px;width:720px;height:720px;margin:-360px 0 0 -360px;border-radius:50%;background:radial-gradient(circle,rgba(0,112,210,.62) 0%,rgba(0,80,160,.28) 30%,rgba(0,40,90,.08) 52%,transparent 68%)}
+.tglow{position:absolute;left:50%;top:-330px;width:1100px;height:560px;margin-left:-550px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,120,220,.75) 0%,rgba(0,80,170,.32) 38%,transparent 70%)}
+.pglow{position:absolute;left:50%;width:700px;height:900px;margin-left:-350px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,110,210,.5) 0%,rgba(0,70,150,.18) 45%,transparent 70%)}
+.center{position:absolute;left:90px;right:90px;top:600px;transform:translateY(-50%);text-align:center}
+
+.big{word-spacing:.1em;font:700 66px/1.04 "Inter Display",Inter;letter-spacing:-.045em;color:#fff}
+.w{display:inline-block}
+
+.blue{color:#2f9bef}
+.logo{font:700 158px/1 "Inter Display",Inter;letter-spacing:-.06em;color:#f4f6f8}
+.logo i{font-style:normal;color:#2f9bef}
+.tag{font:500 28px/1.2 Inter;color:#aab7c7;margin-top:22px;letter-spacing:-.01em}
+.brand{position:absolute;left:52px;top:58px;font:700 30px/1 "Inter Display",Inter;letter-spacing:-.045em;color:#fff}
+.brand i{font-style:normal;color:#2f9bef}
+.eye{position:absolute;left:52px;top:112px;font:500 19px/1 "DejaVu Sans Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:#4aa6ee}
+.head{word-spacing:.08em;position:absolute;left:52px;right:40px;top:146px;font:700 64px/1.04 "Inter Display",Inter;letter-spacing:-.045em;color:#fff}
+
+.phone{position:absolute;left:150px;width:420px;height:1000px;border-radius:64px;background:#0b0f15;padding:10px;box-sizing:border-box;border:2px solid rgba(120,185,255,.55);box-shadow:0 0 60px rgba(0,119,204,.5),0 0 0 1px rgba(255,255,255,.06) inset}
+.screen{position:relative;width:396px;height:980px;border-radius:54px;overflow:hidden;background:#f2f2f7}
+.screen img{position:absolute;left:0;top:0;width:396px;height:auto;transform-origin:0 0}
+.ring{position:absolute;width:92px;height:92px;margin:-46px 0 0 -46px;border-radius:50%;border:4px solid rgba(255,255,255,.95);box-shadow:0 0 22px rgba(47,155,239,.95);background:rgba(47,155,239,.22)}
+.pill{display:inline-flex;align-items:center;gap:12px;font:500 19px/1 "DejaVu Sans Mono",monospace;color:#aab7c7;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:12px 20px;background:rgba(255,255,255,.04);margin-bottom:40px}
+.pill b{width:9px;height:9px;border-radius:50%;background:#2f9bef}
+.btn{display:inline-block;margin-top:44px;background:#e5383b;color:#fff;font:600 32px/1 Inter;border-radius:999px;padding:26px 50px;box-shadow:0 0 50px rgba(229,56,59,.45)}
+.url{margin-top:30px;font:500 25px/1 Inter;color:#aab7c7}
+#flash{position:absolute;inset:0;background:#cfe3f5;pointer-events:none;opacity:0}
+</style></head><body><div id="stage"></div><div id="flash"></div>
+<script>
+const B0 = 10.70, P = 2/3;
+const ease = (x) => x<0?0:x>1?1:1-Math.pow(1-x,3);
+const clamp = (x) => x<0?0:x>1?1:x;
+const pulse = (T) => T < B0 ? 0 : Math.exp(-(((T-B0)%P))/0.16);
+// App scenes, length in beats.
+const APPS = [
+ {b:6, eye:'Home', a:'Everything you need.', c:'One screen.', img:'home'},
+ {b:6, eye:'7:00 AM', a:'Your day\'s already', c:'planned.', img:'itinerary'},
+ {b:6, eye:'Optimize Route', a:'One tap.', c:'Best route.', img:'itinerary', zoom:{at:.9,fx:.5,fy:.236,s:1.7}, tap:{at:1.9}},
+ {b:4, eye:'Next Stop', a:'Next stop?', c:'One tap to Maps.', img:'itinerary', zoom:{at:.5,fx:.45,fy:.294,s:1.5}, tap:{at:1.4}},
+ {b:4, eye:'Customers', a:'Every customer,', c:'one tap away.', img:'customers', tap:{at:1.4,fx:.4,fy:.137}},
+ {b:6, eye:'The Whole Story', a:'Call. Text. Notes.', c:'All right here.', img:'cust', zoom:{at:1.0,fx:.42,fy:.36,s:1.45}},
+ {b:6, eye:'After The Visit', a:'Promised a proposal?', c:'Crumb won\'t let you forget.', img:'notes'},
+ {b:4, eye:'To-Do', a:'It lands on your', c:'To-Do.', img:'todo'},
+ {b:6, eye:'Check-Ins', a:'Haven\'t seen them lately?', c:'Crumb flags it.', img:'checkins', tap:{at:1.9,fx:.88,fy:.547}},
+ {b:4, eye:'Pipeline', a:'Every lead,', c:'every stage.', img:'prospects'},
+ {b:4, eye:'Prospects', a:'Turn prospects into', c:'customers.', img:'prospect'},
+ {b:6, eye:'Calendar', a:'Appointments that', c:'know your route.', img:'cal'},
+ {b:6, eye:'Wrap Up Today', a:'Didn\'t get to it? Move it.', c:'Done.', img:'wrapup', zoom:{at:.9,fx:.5,fy:.48,s:1.5}, tap:{at:2.0}},
+ {b:6, eye:'Midnight', a:'Prefer it dark?', c:'Midnight.', img:'home', img2:'home-mid', swap:1.75},
+];
+// Timeline (seconds, absolute).
+const SCENES = [
+ {k:'text', s:0, e:4.0, a:'You’ve got / enough on your /', c:'plate.', w0:.2},
+ {k:'text', s:4.0, e:7.37, a:'Keeping your / workday together / shouldn’t be /', c:'another job.', w0:.1},
+ {k:'text', s:7.37, e:B0, a:'That’s where / Crumb', c:'comes in.', w0:.1},
+ {k:'logo', s:B0, e:B0+6*P},
+];
+let t0 = B0+6*P;
+APPS.forEach((a,i)=>{ const prev=APPS[i-1]; SCENES.push({k:'app', s:t0, e:t0+a.b*P, ...a, cont: prev && prev.img===a.img && !prev.img2}); t0 += a.b*P; });
+SCENES.push({k:'text', s:t0, e:t0+6*P, a:'Built in the field, /', c:'for the field.', w0:.15}); t0 += 6*P;
+SCENES.push({k:'end', s:t0, e:76.6});
+
+function words(a,c,t,start,step){
+  const ws=[...a.split(' ').map(w=>[w,0]), ...c.split(' ').map(w=>[w,1])];
+  let k=0; return ws.map(([w,bl])=>{ if(w==='/') return '<br>'; const i=k++; const p=ease((t-start-i*step)/.38);
+    return `<span class="w${bl?' blue':''}" style="opacity:${p.toFixed(3)};transform:translateY(${((1-p)*18).toFixed(1)}px);filter:blur(${((1-p)*6).toFixed(1)}px)">${w}</span>`}).join(' ');
+}
+window.sceneAt = (T)=>SCENES.findIndex(s=>T>=s.s && T<s.e);
+window.render = function(T){
+  let i = sceneAt(T); if(i<0) i=SCENES.length-1;
+  const s=SCENES[i], t=T-s.s, pu=pulse(T), st=document.getElementById('stage'); let h='<div class="bg"></div>';
+  if(s.k==='text'||s.k==='logo'||s.k==='end'){
+    h+=`<div class="cglow" style="opacity:${(.85+.35*pu).toFixed(3)};transform:scale(${(1+.06*pu).toFixed(3)})"></div>`;
+  }
+  if(s.k==='text'){ h+=`<div class="center"><div class="big">${words(s.a,s.c,t,s.w0,.085)}</div></div>`; }
+  else if(s.k==='logo'){ const o2=ease((t-.45)/.5);
+    h+=`<div class="center" style="left:0;right:0"><div class="logo">Crumb<i>.</i></div><div class="tag" style="opacity:${o2};transform:translateY(${(1-o2)*10}px)">Taking Every Last Crumb.</div></div>`; }
+  else if(s.k==='end'){ const o=ease(t/.5), o2=ease((t-1.3)/.5), o3=ease((t-1.8)/.5), o4=ease((t-2.3)/.5);
+    h+=`<div class="center" style="left:0;right:0"><div class="pill" style="opacity:${o}"><b></b>Free During The Beta</div><div class="logo" style="font-size:140px;opacity:${o2};transform:translateY(${(1-o2)*14}px)">Crumb<i>.</i></div><div class="tag" style="opacity:${o3}">Taking Every Last Crumb.</div><div class="btn" style="opacity:${o4};transform:scale(${.94+.06*o4})">Join The Beta</div><div class="url" style="opacity:${o4}">crumbsales.com</div></div>`; }
+  else {
+    // Phone: slides up on a new screen, stays put when the screen carries on; drifts up slowly.
+    const pe = s.cont ? 1 : ease(t/.55);
+    let first=i; while(SCENES[first].cont) first--;
+    const drift = (T-SCENES[first].s)*4;
+    const top = 470 + (1-pe)*420 - drift;
+    let sc=1, fx=.5, fy=.3;
+    if(s.zoom){ fx=s.zoom.fx; fy=s.zoom.fy; sc=1+(s.zoom.s-1)*ease((t-s.zoom.at)/.7); }
+    const iw=396, ih=iw*1298/600, px=fx*iw, py=fy*ih;
+    const p = s.zoom ? ease((t-s.zoom.at)/.7) : 0;
+    let tx=(px+(198-px)*p)-px*sc, ty=(py+(300-py)*p)-py*sc;
+    tx=Math.min(0,Math.max(iw-iw*sc,tx)); ty=Math.min(0,ty);
+    const tf=`transform:translate(${tx}px,${ty}px) scale(${sc})`;
+    let ring='';
+    if(s.tap){ const tt=(t-s.tap.at)/.7; if(tt>0&&tt<1){ const rx=(s.tap.fx??fx)*iw*sc+tx, ry=(s.tap.fy??fy)*ih*sc+ty;
+      ring=`<div class="ring" style="left:${rx}px;top:${ry}px;opacity:${(1-tt).toFixed(3)};transform:scale(${.6+.7*ease(tt)})"></div>`; } }
+    let img2='', mid=0;
+    if(s.img2){ mid=ease((t-s.swap)/.5); img2=`<img src="img/${s.img2}.png" style="${tf};clip-path:inset(0 0 ${(100-mid*100).toFixed(2)}% 0)">`; }
+    h+=`<div class="tglow" style="opacity:${(.55+.6*pu).toFixed(3)};transform:scale(${(1+.08*pu).toFixed(3)})"></div>
+      <div class="pglow" style="top:${top-120}px;opacity:${((.7+.25*pu)*pe).toFixed(3)}"></div>
+      <div class="brand">Crumb<i>.</i></div><div class="eye">${s.eye}</div><div class="head">${words(s.a,s.c,t,.05,.07)}</div>
+      <div class="phone" style="top:${top}px;opacity:${clamp(pe*1.6)}"><div class="screen" style="background:${mid>.5?'#06101c':'#f2f2f7'}"><img src="img/${s.img}.png" style="${tf}">${img2}${ring}</div></div>`;
+  }
+  st.innerHTML=h;
+  const f = T>=B0 && T<B0+.3 ? (1-(T-B0)/.3)*.85 : 0;
+  document.getElementById('flash').style.opacity=f.toFixed(3);
+  document.getElementById('stage').style.opacity = T>76.1 ? clamp((76.6-T)/.5) : (T<.15? T/.15 : 1);
+};
+window.SCENES = SCENES;
+</script></body></html>
