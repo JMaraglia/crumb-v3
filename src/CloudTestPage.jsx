@@ -223,7 +223,7 @@ export default function CloudTestPage() {
         <p className="cl-intro">
           {testProject
             ? 'A test of Crumb’s cloud connection, with made-up demo data only. Your real customers are never sent to the test cloud.'
-            : 'Keeps your customers, notes, calendar, daily stops, to-dos and photos the same on your iPhone and iPad. Crumb always keeps a full copy on this device, so it works with no signal.'}
+            : 'Keeps your customers, notes, calendar, daily stops, to-dos and photos the same on all your devices. Crumb always keeps a full copy on this device, so it works with no signal.'}
         </p>
 
         {!cloudReady && (
@@ -245,7 +245,7 @@ export default function CloudTestPage() {
             <div className="cl-status">
               <IoCloudOutline className="cl-status-icon" /> Not signed in
             </div>
-            <div className="cl-text">Sign in to keep your iPhone and iPad in sync.</div>
+            <div className="cl-text">Sign in to keep all your devices in sync.</div>
             <div className="cl-actions">
               <button className="cl-btn" onClick={() => navigate('/sign-in', { state: { from: '/cloud-test' } })}>
                 Sign In

@@ -238,7 +238,7 @@ export async function downloadMyData(onStep = () => {}) {
   if (loadCustomers().length || loadProspects().length) throw new Error('This device already has customers or prospects, so nothing was downloaded.');
   onStep('Downloading…');
   const { answer, photoIds } = await cloudNow(sb, ws);
-  if (cloudIsEmpty(answer)) throw new Error('Your cloud is empty. Move your data from your iPhone first.');
+  if (cloudIsEmpty(answer)) throw new Error('Your cloud is empty. Move your data from your other device first.');
   const plan = planPull(answer, readText, new Set());
   if (plan.blocked) throw new Error(plan.blocked);
   quietly(() => Object.entries(plan.writes).forEach(([k, text]) => writeText(k, text)));
