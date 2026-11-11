@@ -1008,13 +1008,14 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
             : a.town && <span className="av-row-sub">{a.town}</span>}
           {!expanded && (
             <span className="av-chips">
+              {/* Founder, Nov 11: the stage always comes first, so stages line up down the left. */}
+              {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
               {a.inactive && <span className="av-chip av-chip-inactive">{inactiveLabel(a)}</span>}
               {a.inactive && a.inactive.revisit && <span className="av-chip av-chip-revisit">Revisit {revisitText({ revisit: a.inactive.revisit })}</span>}
               {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
               {lastSeen && <span className="av-chip av-chip-stale">{lastSeen.never ? 'No contact yet' : lastSeen.days === 0 ? 'Today' : lastSeen.days === 1 ? '1 day' : `${lastSeen.days} days`}</span>}
               {!a.inactive && <VisitChips account={a} config={config} onPick={pickVisit} />}
               <DeliveryChip account={a} config={config} />
-              {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
               <SnoozeChip account={a} daysField={config.visitDaysField} />
             </span>
           )}
@@ -1045,10 +1046,10 @@ function ListRow({ account: a, config, lastSeen, expanded, onToggle, onOpenFull,
             )}
           </div>
           <div className="av-chips av-summary-chips">
+            {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
             {groupOf(a) && <span className="av-chip av-chip-group">Group</span>}
             <VisitChips account={a} config={config} onPick={pickVisit} />
             <DeliveryChip account={a} config={config} />
-              {config.hasStage && <StageChip stage={a.stage} onPick={pickStage} />}
             <SnoozeChip account={a} daysField={config.visitDaysField} />
           </div>
           <div className="av-quick">
@@ -1196,6 +1197,12 @@ export function AccountList({ config, accounts, setAccounts }) {
     }));
   })();
 
+  // A group's stage: the furthest-along stage among its locations (null if none have one).
+  const groupStage = (members) => {
+    let best = -1;
+    members.forEach((m) => { best = Math.max(best, STAGES.findIndex((st) => st.key === m.stage)); });
+    return best < 0 ? null : STAGES[best].key;
+  };
   // Plain lists (no search, not split by town/group): a group's locations share one row; tap it
   // to open the locations underneath.
   const condense = !q && !sectionMode;
@@ -1230,6 +1237,8 @@ export function AccountList({ config, accounts, setAccounts }) {
               <span className="av-row-name">{displayName(a)}</span>
               {towns.length > 0 && <span className="av-row-sub">{towns.join(' · ')}</span>}
               <span className="av-chips">
+                {/* Founder, Nov 11: a group shows its stage too (the furthest-along location's), on the left. */}
+                {config.hasStage && <StageChip stage={groupStage(members)} />}
                 <span className="av-chip av-chip-group">{members.length} Locations</span>
               </span>
             </span>
