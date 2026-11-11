@@ -292,7 +292,8 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
             className={`cal-toggle ${mode === viewMode ? 'is-active' : ''}`}
             onClick={() => setViewMode(mode)}
           >
-            {mode}
+            {/* Founder, Nov 11: upright it isn't a week, so it says 3-Day; sideways (Mon–Fri) it says Week. */}
+            {mode === 'Week' && !wide ? '3-Day' : mode}
           </button>
         ))}
       </div>
