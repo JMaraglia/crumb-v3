@@ -4,7 +4,7 @@
 begin;
 
 create temp table gate_check_result (n int, ok boolean, what text) on commit drop;
-grant all on gate_check_result to anon, authenticated, supabase_auth_admin;
+grant all on gate_check_result to anon, authenticated;
 
 do $$
 declare
@@ -44,11 +44,11 @@ begin
   reset role;
   insert into gate_check_result values (6, refused, 'rep cannot call it');
 
-  -- 7. Supabase's sign-up system can call it
-  set local role supabase_auth_admin;
-  j := public.hook_before_user_created(jsonb_build_object('user', jsonb_build_object('email', mail)));
-  reset role;
-  insert into gate_check_result values (7, j = '{}'::jsonb, 'Supabase sign-up system can call it');
+  -- 7. Supabase's sign-up system is allowed to call it (checked without switching to that role,
+  --    which the SQL Editor isn't allowed to do)
+  insert into gate_check_result values (7,
+    has_function_privilege('supabase_auth_admin', 'public.hook_before_user_created(jsonb)', 'execute'),
+    'Supabase sign-up system can call it');
 end $$;
 
 select case when bool_and(ok) and count(*) = 7
