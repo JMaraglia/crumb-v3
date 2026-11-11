@@ -4,9 +4,9 @@
   inset: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   text-align: left;
 }
 .cl-header {
@@ -28,7 +28,7 @@
 .cl-page .cl-icon-btn,
 .cl-page .cl-icon-btn:hover {
   padding: 8px;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-size: 1.3rem;
 }
 .cl-content {
@@ -41,16 +41,16 @@
   text-align: left;
   font-size: 2rem;
   font-weight: 800;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 .cl-intro {
   margin: 0 0 16px;
   font-size: 0.95rem;
   line-height: 1.4;
-  color: #6e6e73;
+  color: var(--fg-6e6e73);
 }
 .cl-card {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 14px;
   padding: 16px;
 }
@@ -63,17 +63,17 @@
   margin-bottom: 8px;
 }
 .cl-status.is-on {
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
 }
 .cl-status.is-off {
-  color: #c26a00;
+  color: var(--fg-c26a00);
 }
 .cl-status-icon {
   font-size: 1.4rem;
 }
 .cl-text {
   font-size: 0.92rem;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
   margin-bottom: 12px;
   word-break: break-word;
 }
@@ -82,7 +82,7 @@
   margin: 10px 0 4px;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 .cl-page .cl-input {
   display: block;
@@ -90,11 +90,11 @@
   box-sizing: border-box;
   margin: 0;
   padding: 11px 12px;
-  border: 1px solid #d1d1d6;
+  border: 1px solid var(--line-d1d1d6);
   border-radius: 10px;
-  background: #fff;
+  background: var(--bg-ffffff);
   font-size: 16px; /* 16px stops iPhone zooming in */
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 .cl-actions {
   display: flex;
@@ -106,15 +106,15 @@
   flex: 1;
   padding: 12px 0;
   border-radius: 12px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-weight: 700;
   text-align: center;
 }
 .cl-page .cl-btn-plain,
 .cl-page .cl-btn-plain:hover {
-  background: #e5f0fa;
-  color: #0077cc;
+  background: var(--bg-e5f0fa);
+  color: var(--fg-0077cc);
 }
 .cl-page .cl-btn:disabled {
   opacity: 0.45;
@@ -122,13 +122,13 @@
 .cl-hint {
   margin-top: 10px;
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 .cl-page .cl-link,
 .cl-page .cl-link:hover {
   margin-top: 12px;
   padding: 4px 0;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -136,12 +136,12 @@
   margin-top: 14px;
   padding: 12px;
   border-radius: 10px;
-  background: #e8f5ec;
+  background: var(--bg-e8f5ec);
   font-size: 0.9rem;
 }
 .cl-check-title {
   font-weight: 800;
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
   margin-bottom: 6px;
 }
 .cl-check ul {
@@ -153,25 +153,25 @@
 .cl-msg {
   margin: 12px 4px 0;
   font-size: 0.9rem;
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
   font-weight: 600;
 }
 .cl-busy {
-  color: #6e6e73;
+  color: var(--fg-6e6e73);
 }
 .cl-err {
   margin-top: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #ffeceb;
-  color: #b3261e;
+  background: var(--bg-ffeceb);
+  color: var(--fg-b3261e);
   font-size: 0.88rem;
   line-height: 1.35;
 }
 .cl-foot {
   margin-top: 20px;
   font-size: 0.75rem;
-  color: #aeaeb2;
+  color: var(--fg-aeaeb2);
   text-align: center;
 }
 .cl-section {
@@ -180,7 +180,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 .cl-page .cl-switch-row,
 .cl-page .cl-switch-row:hover {
@@ -202,7 +202,7 @@
 }
 .cl-switch-sub {
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 .cl-switch {
   position: relative;
@@ -210,11 +210,11 @@
   width: 51px;
   height: 31px;
   border-radius: 16px;
-  background: #e5e5ea;
+  background: var(--bg-e5e5ea);
   transition: background 0.2s;
 }
 .cl-switch.is-on {
-  background: #34c759;
+  background: var(--bg-34c759);
 }
 .cl-switch-knob {
   position: absolute;
@@ -223,8 +223,8 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: var(--bg-ffffff);
+  box-shadow: 0 2px 4px var(--shadow-000000-a20);
   transition: transform 0.2s;
 }
 .cl-switch.is-on .cl-switch-knob {
@@ -233,7 +233,7 @@
 .cl-outbox {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 .cl-outbox-count {
   font-size: 0.95rem;
@@ -243,18 +243,18 @@
   padding-left: 18px;
   font-size: 0.85rem;
   line-height: 1.5;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
 }
 .cl-testcopy {
-  border: 2px solid #ff9500;
+  border: 2px solid var(--line-ff9500);
 }
 .cl-testcopy-badge {
   display: inline-block;
   margin-bottom: 10px;
   padding: 3px 8px;
   border-radius: 6px;
-  background: #fff4e5;
-  color: #b35c00;
+  background: var(--bg-fff4e5);
+  color: var(--fg-b35c00);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -273,7 +273,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   cursor: pointer;
 }
 .cl-trouble[open] > summary {

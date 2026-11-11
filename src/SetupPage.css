@@ -16,11 +16,11 @@
 .su-card {
   width: 100%;
   max-width: 380px;
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 16px;
   padding: 26px 22px;
   box-sizing: border-box;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px var(--shadow-000000-a08);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,19 +30,19 @@
 .su-title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 .su-sub {
   font-size: 0.95rem;
   line-height: 1.45;
-  color: #6e6e73;
+  color: var(--fg-6e6e73);
 }
 .su-spinner {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 3px solid #d6e7f7;
-  border-top-color: #0077cc;
+  border: 3px solid var(--line-d6e7f7);
+  border-top-color: var(--line-0077cc);
   animation: su-spin 0.9s linear infinite;
   margin-bottom: 6px;
 }
@@ -59,8 +59,8 @@
   padding: 14px;
   border: 0;
   border-radius: 12px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-size: 1rem;
   font-weight: 600;
   -webkit-tap-highlight-color: transparent;
@@ -69,7 +69,7 @@
 .su-page .su-btn-plain:hover {
   margin-top: 2px;
   background: none;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 .su-small {
   font-size: 0.85rem;
@@ -87,13 +87,13 @@
   gap: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   font-size: 0.9rem;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   text-align: right;
 }
 .su-compare span {
-  color: #6e6e73;
+  color: var(--fg-6e6e73);
   font-weight: 600;
   text-align: left;
   white-space: nowrap;

@@ -5,6 +5,10 @@
    "light": "#000",
    "role": "bg"
   },
+  "bg-000000-a25": {
+   "light": "rgba(0, 0, 0, 0.25)",
+   "role": "bg"
+  },
   "bg-000000-a30": {
    "light": "rgba(0, 0, 0, 0.3)",
    "role": "bg"
@@ -73,6 +77,10 @@
    "light": "#cfe3f5",
    "role": "bg"
   },
+  "bg-d1d1d6": {
+   "light": "#d1d1d6",
+   "role": "bg"
+  },
   "bg-e0e0e0": {
    "light": "#e0e0e0",
    "role": "bg"
@@ -111,6 +119,10 @@
   },
   "bg-e8e8ed": {
    "light": "#e8e8ed",
+   "role": "bg"
+  },
+  "bg-e8f2fb": {
+   "light": "#e8f2fb",
    "role": "bg"
   },
   "bg-e8f5ec": {
@@ -221,6 +233,10 @@
    "light": "#ff9500",
    "role": "bg"
   },
+  "bg-ffeceb": {
+   "light": "#ffeceb",
+   "role": "bg"
+  },
   "bg-fff1de": {
    "light": "#fff1de",
    "role": "bg"
@@ -269,6 +285,10 @@
    "light": "#13263a",
    "role": "fg"
   },
+  "fg-1b7f3b": {
+   "light": "#1b7f3b",
+   "role": "fg"
+  },
   "fg-1c1c1e": {
    "light": "#1c1c1e",
    "role": "fg"
@@ -281,6 +301,10 @@
    "light": "#1e8e3e",
    "role": "fg"
   },
+  "fg-222222": {
+   "light": "#222",
+   "role": "fg"
+  },
   "fg-333333": {
    "light": "#333",
    "role": "fg"
@@ -291,6 +315,10 @@
   },
   "fg-3a3a3c": {
    "light": "#3a3a3c",
+   "role": "fg"
+  },
+  "fg-3c3c43": {
+   "light": "#3c3c43",
    "role": "fg"
   },
   "fg-444444": {
@@ -467,6 +495,18 @@
   },
   "line-d3e5f5": {
    "light": "#d3e5f5",
+   "role": "line"
+  },
+  "line-d6e7f7": {
+   "light": "#d6e7f7",
+   "role": "line"
+  },
+  "line-dcdfe3": {
+   "light": "#dcdfe3",
+   "role": "line"
+  },
+  "line-e0e0e6": {
+   "light": "#e0e0e6",
    "role": "line"
   },
   "line-e3e3e8": {

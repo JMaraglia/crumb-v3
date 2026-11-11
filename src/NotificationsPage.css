@@ -4,9 +4,9 @@
   inset: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -32,7 +32,7 @@
   grid-template-columns: 44px 1fr 44px;
   align-items: center;
   padding: 10px 14px;
-  background: rgba(242, 242, 247, 0.92);
+  background: var(--bg-f2f2f7-a92);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
@@ -44,7 +44,7 @@
   display: flex;
   align-items: center;
   font-size: 1.1rem;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .nt-content {
@@ -59,11 +59,11 @@
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .nt-card {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 14px;
   padding: 16px;
 }
@@ -71,18 +71,18 @@
 .nt-status {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .nt-status.is-on {
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
 }
 
 .nt-text {
   margin: 4px 0 14px;
   font-size: 0.9rem;
   line-height: 1.4;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
 }
 
 .nt-page .nt-btn,
@@ -91,8 +91,8 @@
   width: 100%;
   height: 48px;
   border-radius: 12px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-weight: 700;
   font-size: 1rem;
   text-align: center;
@@ -109,20 +109,20 @@
 
 .nt-page .nt-btn-plain,
 .nt-page .nt-btn-plain:hover {
-  background: #e5f0fa;
-  color: #0077cc;
+  background: var(--bg-e5f0fa);
+  color: var(--fg-0077cc);
 }
 
 .nt-page .nt-danger,
 .nt-page .nt-danger:hover {
-  background: #ffeceb;
-  color: #d70015;
+  background: var(--bg-ffeceb);
+  color: var(--fg-d70015);
 }
 
 .nt-hint {
   margin-top: 10px;
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   line-height: 1.35;
 }
 
@@ -130,15 +130,15 @@
   margin: 10px 4px 0;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
 }
 
 .nt-error {
   margin: 10px 0 0;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #ffeceb;
-  color: #b3261e;
+  background: var(--bg-ffeceb);
+  color: var(--fg-b3261e);
   font-size: 0.88rem;
   line-height: 1.35;
 }
@@ -149,11 +149,11 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .nt-group {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -165,7 +165,7 @@
   gap: 12px;
   min-height: 48px;
   padding: 8px 14px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
   font-size: 1rem;
   box-sizing: border-box;
 }
@@ -179,14 +179,14 @@
   display: block;
   margin-top: 1px;
   font-size: 0.75rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .nt-select {
   flex-shrink: 0;
   font-size: 16px;
   font-family: inherit;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   background: transparent;
   border: none;
   outline: none;
@@ -203,7 +203,7 @@
   height: 31px;
   margin: 0;
   border-radius: 16px;
-  background: #e9e9eb;
+  background: var(--bg-e9e9eb);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -216,13 +216,13 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: #fff /* switch knob stays white in Midnight */;
+  box-shadow: 0 2px 4px var(--shadow-000000-a20);
   transition: transform 0.2s;
 }
 
 .nt-switch:checked {
-  background: #34c759;
+  background: var(--bg-34c759);
 }
 
 .nt-switch:checked::after {
@@ -231,13 +231,13 @@
 
 .nt-item {
   padding: 10px 14px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .nt-item-when {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -250,21 +250,21 @@
 .nt-item-body {
   margin-top: 1px;
   font-size: 0.85rem;
-  color: #6e6e73;
+  color: var(--fg-6e6e73);
 }
 
 .nt-foot {
   margin: 18px 4px 0;
   font-size: 0.78rem;
   line-height: 1.4;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 /* End-of-day reminder: which kinds it lists */
 .nt-sub-row {
   padding-left: 32px;
   font-size: 0.95rem;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
 }
 
 /* Nov 10: "On For This Phone ›" one-line card (tap to open Send A Test / Turn Off) */
@@ -281,4 +281,4 @@
   font: inherit;
 }
 .nt-on-line .nt-status { margin: 0; }
-.nt-on-chev { color: #c7c7cc; flex-shrink: 0; }
+.nt-on-chev { color: var(--fg-c7c7cc); flex-shrink: 0; }
