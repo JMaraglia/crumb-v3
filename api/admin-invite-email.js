@@ -8,7 +8,7 @@
 //   - only to an email that is already on the Sync Access list (asked with the admin's own token),
 //   - at most 20 emails an hour across all admins.
 // Sent through Resend (RESEND_API_KEY in this Vercel project's settings, never in code or chat)
-// from Crumb <no-reply@crumbsales.com>. Optional settings: INVITE_REPLY_TO (where replies go), SITE_URL.
+// from Crumb <no-reply@crumbsales.com>. Optional settings: INVITE_REPLY_TO (where replies go), APP_URL (default https://app.crumbsales.com).
 import { verifyUser, isAdminToken, readJsonBody, bump } from './_push.js';
 
 const ADMIN_ORIGINS = ['https://crumb-admin.vercel.app'];
@@ -54,27 +54,37 @@ async function rpc(token, name, args) {
   return { data };
 }
 
-// Founder's final copy (Nov 10, 2026). Greeting is "Welcome!" (no names); signed "The Crumb Team".
-// Nov 10 (step 3): only approved emails can create an account, so there's no "already have an account" version.
-export function welcomeEmail({ siteUrl = 'https://crumbsales.com' } = {}) {
+// First name for the greeting ("Hey Justin,"); "there" when no usable name is on file.
+export function firstNameOf(name) {
+  const first = String(name || '').trim().split(/\s+/)[0] || '';
+  if (!first || /[@\d]/.test(first) || first.length > 30) return 'there';
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+// Founder's copy (Nov 11, 2026): "Hey [First Name]," and the install order that works on a phone:
+// open the app address → add it to the Home Screen → open the icon → Create An Account → confirm the email
+// (Supabase "Confirm email" is on). Signed "The Crumb Team". No "already have an account" version.
+export function welcomeEmail({ appUrl = 'https://app.crumbsales.com', name = '' } = {}) {
   const subject = 'You’re In. Welcome To The Crumb Beta.';
-  const steps = [
-    ['Go to <a href="SITE" style="color:#0077cc;font-weight:bold;">CrumbSales.com</a> and tap <b>Sign In</b>.', 'Go to CrumbSales.com (SITE) and tap Sign In.'],
-    ['At the bottom of the sign-in page, tap <b>Create Account</b>.', 'At the bottom of the sign-in page, tap Create Account.'],
-    ['Use the same email address that received this invitation and create a password.', 'Use the same email address that received this invitation and create a password.'],
-  ];
-  const site = siteUrl.replace(/\/+$/, '');
+  const app = String(appUrl).replace(/\/+$/, '');
+  const appHost = app.replace(/^https?:\/\//, '');
+  const hey = `Hey ${firstNameOf(name)},`;
+  const link = `<a href="${esc(app)}" style="color:#0077cc;font-weight:bold;">${esc(appHost)}</a>`;
   const text = [
-    'Welcome!',
+    hey,
     '',
     'You’re approved for the Crumb beta. Built for outside sales reps, Crumb keeps your customers, daily stops, notes and follow-ups together on your phone.',
     '',
-    'Get Set Up:',
-    ...steps.map(([, t], i) => `${i + 1}. ${t.replace('SITE', site)}`),
+    'Get Set Up On Your Phone:',
+    `1. On your phone, go to ${app}. On an iPhone, use Safari.`,
+    '2. Add Crumb to your Home Screen:',
+    '   - iPhone: tap Share (the square with an arrow), then Add To Home Screen → Add.',
+    '   - Android: in Chrome, tap the ⋮ menu, then Add To Home Screen or Install App.',
+    '3. Open the new Crumb icon on your Home Screen.',
+    '4. Tap Create An Account. Use this email address, answer a few quick questions about how you sell, and pick a password.',
+    '5. Check your email for "Confirm Your Email," tap the link, then sign in.',
     '',
-    'Crumb works on desktop, but it’s built for your day in the field and works best on your phone. Add it to your home screen for easy access:',
-    '- iPhone: Open Crumb in Safari, tap Share → Add To Home Screen.',
-    '- Android: Open Crumb in Chrome, tap the three-dot menu → Add To Home Screen or Install App.',
+    `On a computer? Just go to ${app} and sign in. Nothing to install.`,
     '',
     'Found A Bug Or Have A Cool Idea?',
     'Go to Settings → Report A Problem or Make A Suggestion. For problems, tell us what you were doing and what happened.',
@@ -87,7 +97,7 @@ export function welcomeEmail({ siteUrl = 'https://crumbsales.com' } = {}) {
   const p = (body, extra = '') => `<p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#444444;${extra}">${body}</p>`;
   const h = (body) => `<p style="margin:0 0 10px;font-size:17px;font-weight:bold;color:#222222;">${body}</p>`;
   const row = (n, body) =>
-    `<tr><td valign="top" style="padding:0 12px 10px 0;font-size:16px;line-height:1.5;font-weight:bold;color:#0077cc;">${n}</td><td style="padding:0 0 10px;font-size:16px;line-height:1.5;color:#444444;">${body}</td></tr>`;
+    `<tr><td valign="top" style="padding:0 12px 12px 0;font-size:16px;line-height:1.5;font-weight:bold;color:#0077cc;">${n}</td><td style="padding:0 0 12px;font-size:16px;line-height:1.5;color:#444444;">${body}</td></tr>`;
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -106,17 +116,17 @@ export function welcomeEmail({ siteUrl = 'https://crumbsales.com' } = {}) {
         </tr>
         <tr>
           <td style="background:#ffffff;border-radius:16px;padding:32px 28px;font-family:Helvetica,Arial,sans-serif;color:#222222;">
-            <h1 style="margin:0 0 12px;font-size:24px;line-height:1.3;color:#222222;">Welcome!</h1>
+            <h1 style="margin:0 0 12px;font-size:24px;line-height:1.3;color:#222222;">${esc(hey)}</h1>
             ${p('You&rsquo;re approved for the Crumb beta. Built for outside sales reps, Crumb keeps your customers, daily stops, notes and follow-ups together on your phone.', 'margin-bottom:24px;')}
-            ${h('Get Set Up:')}
+            ${h('Get Set Up On Your Phone:')}
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Helvetica,Arial,sans-serif;margin:0 0 14px;">
-              ${steps.map(([b], i) => row(`${i + 1}.`, b.replace('SITE', esc(site)))).join('\n              ')}
+              ${row('1.', `On your phone, go to ${link}. On an iPhone, use Safari.`)}
+              ${row('2.', `Add Crumb to your Home Screen:<div style="margin:8px 0 0;padding:12px 14px;background:#f4f7fa;border-radius:10px;"><div style="margin:0 0 6px;"><b>iPhone:</b> tap <b>Share</b> (the square with an arrow), then <b>Add To Home Screen</b> &rarr; <b>Add</b>.</div><div><b>Android:</b> in Chrome, tap the <b>&#8942;</b> menu, then <b>Add To Home Screen</b> or <b>Install App</b>.</div></div>`)}
+              ${row('3.', 'Open the new <b>Crumb</b> icon on your Home Screen.')}
+              ${row('4.', 'Tap <b>Create An Account</b>. Use this email address, answer a few quick questions about how you sell, and pick a password.')}
+              ${row('5.', 'Check your email for &ldquo;Confirm Your Email,&rdquo; tap the link, then sign in.')}
             </table>
-            ${p('Crumb works on desktop, but it&rsquo;s built for your day in the field and works best on your phone. Add it to your home screen for easy access:', 'margin-bottom:10px;')}
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Helvetica,Arial,sans-serif;margin:0 0 24px;">
-              ${row('&bull;', '<b>iPhone:</b> Open Crumb in Safari, tap Share &rarr; Add To Home Screen.')}
-              ${row('&bull;', '<b>Android:</b> Open Crumb in Chrome, tap the three-dot menu &rarr; Add To Home Screen or Install App.')}
-            </table>
+            ${p(`<b>On a computer?</b> Just go to ${link} and sign in. Nothing to install.`, 'margin-bottom:24px;')}
             ${h('Found A Bug Or Have A Cool Idea?')}
             ${p('Go to Settings &rarr; Report A Problem or Make A Suggestion. For problems, tell us what you were doing and what happened.', 'margin-bottom:24px;')}
             ${p('You&rsquo;re getting early access, so expect a few rough edges. Your feedback will help shape Crumb.', 'margin-bottom:8px;')}
@@ -176,8 +186,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, skipped: true, email, reason: (claim.data && claim.data.reason) || 'already_sent', sent_at: claim.data && claim.data.sent_at, times: (claim.data && claim.data.times) || 0 });
     }
 
-    const siteUrl = String(process.env.SITE_URL || 'https://crumbsales.com').trim();
-    const { subject, text, html } = welcomeEmail({ siteUrl });
+    const appUrl = String(process.env.APP_URL || 'https://app.crumbsales.com').trim();
+    const name = String(body.name || '').slice(0, 120);
+    const { subject, text, html } = welcomeEmail({ appUrl, name });
     const replyTo = String(process.env.INVITE_REPLY_TO || '').trim();
     const sent = await fetch('https://api.resend.com/emails', {
       method: 'POST',
