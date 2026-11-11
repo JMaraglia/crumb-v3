@@ -8,7 +8,7 @@
 // (+ accountNumber for customers).
 import React, { useState } from 'react';
 import { FaArrowLeft, FaChevronRight, FaChevronDown, FaChevronUp, FaPhoneAlt, FaMapMarkerAlt, FaEnvelope, FaGlobe } from 'react-icons/fa';
-import { IoShareOutline } from 'react-icons/io5';
+import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
 import { shareText, shareFile, contactCards, safeFileName } from './share';
 import { makeXlsx } from './xlsx';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -603,6 +603,52 @@ export function accountShareText(account, config) {
     });
   }
   return lines.join('\n');
+}
+
+// The printout of a list (only shows when printing): what's on screen, in the same order.
+function AccountsPrint({ list, config, heading }) {
+  const main = (a) => (a.contacts || []).find((c) => c && (c.name || c.phone || c.email || c.title)) || {};
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return (
+    <div className="av-print">
+      <div className="av-print-brand">Crumb.</div>
+      <h1 className="av-print-title">{config.section || config.plural}</h1>
+      <div className="av-print-detail">
+        {heading} · {list.length} {list.length === 1 ? config.singular.toLowerCase() : config.plural.toLowerCase()} · {today}
+      </div>
+      <table className="av-print-table">
+        <thead>
+          <tr>
+            {config.hasAccountNumber && <th>Acct #</th>}
+            <th>{config.singular}</th>
+            {config.hasStage && <th>Stage</th>}
+            <th>Contact</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Visits</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((a) => {
+            const c = main(a);
+            const st = stageInfo(a.stage);
+            const v = visitSummary(a, config);
+            return (
+              <tr key={a.id}>
+                {config.hasAccountNumber && <td>{a.accountNumber || ''}</td>}
+                <td className="av-print-name">{displayName(a)}</td>
+                {config.hasStage && <td>{st ? st.label : ''}</td>}
+                <td>{[c.name, c.title].filter(Boolean).join(', ')}</td>
+                <td className="av-print-nowrap">{c.phone ? formatPhone(c.phone) : ''}</td>
+                <td>{a.address || ''}</td>
+                <td>{v ? `${v}${a.visitFrequency && a.visitFrequency !== 'weekly' ? ` (${frequencyLabel(a.visitFrequency).toLowerCase()})` : ''}` : ''}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 // A list of accounts as a formatted Excel file (what's on screen: current filter + search).
@@ -1288,31 +1334,53 @@ export function AccountList({ config, accounts, setAccounts }) {
           />
   );
 
+  // What the Share file and the printout are titled (current filter + search).
+  const listHeading = (() => {
+    const st = stageInfo(stageFilter);
+    return [
+      st
+        ? `${st.label} ${config.plural.toLowerCase()}`
+        : stageFilter === 'groups'
+        ? `${config.plural} with more than one location`
+        : stageFilter === 'none'
+        ? `${config.plural} with no stage`
+        : `All ${config.plural.toLowerCase()}`,
+      q ? `matching "${search.trim()}"` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  })();
+
   return (
     <div className="av-page">
+      <AccountsPrint list={sections.flatMap((sec) => sec.items)} config={config} heading={listHeading} />
       <Header onBack={() => navigate('/')} title="" />
 
       <div className="av-content">
         <div className="av-title-row">
           <h1 className="av-big-title">{config.section || config.plural}</h1>
+          <span className="av-title-pills">
+          {/* Founder, Nov 11: Print next to Share; prints what's on screen (same filter, sort and search). */}
+          <button
+            className="av-pill"
+            disabled={!shown.length}
+            onClick={() => {
+              setListMsg('');
+              try {
+                window.print();
+              } catch {
+                setListMsg("Printing isn't available here. Use Share instead.");
+              }
+            }}
+          >
+            <IoPrintOutline className="av-pill-icon" />
+            Print
+          </button>
           <button
             className="av-pill"
             disabled={!shown.length}
             onClick={async () => {
-              const st = stageInfo(stageFilter);
-              const heading = [
-                st
-                  ? `${st.label} ${config.plural.toLowerCase()}`
-                  : stageFilter === 'groups'
-                  ? `${config.plural} with more than one location`
-                  : stageFilter === 'none'
-                  ? `${config.plural} with no stage`
-                  : `All ${config.plural.toLowerCase()}`,
-                q ? `matching "${search.trim()}"` : '',
-              ]
-                .filter(Boolean)
-                .join(' ');
-              const blob = accountsXlsx(sections.flatMap((sec) => sec.items), config, heading);
+              const blob = accountsXlsx(sections.flatMap((sec) => sec.items), config, listHeading);
               const day = todayKey();
               setListMsg(await shareFile(blob, `Crumb ${(config.section || config.plural).toLowerCase()} ${day}.xlsx`, `Crumb ${(config.section || config.plural).toLowerCase()}`));
             }}
@@ -1320,6 +1388,7 @@ export function AccountList({ config, accounts, setAccounts }) {
             <IoShareOutline className="av-pill-icon" />
             Share
           </button>
+          </span>
         </div>
         {listMsg && <div className="av-share-msg av-share-msg-list">{listMsg}</div>}
         <input
