@@ -297,8 +297,10 @@ function Answers({ data }) {
 
 // ---------- send a nudge (founder, Nov 11): a push notification to one rep's devices ----------
 const NUDGE_DEFAULT = 'Your customers and stops are right where you left them. Anything getting in your way? Tap to open Crumb.';
-function Nudge({ email, onDone }) {
+function Nudge({ email, last, onDone }) {
   const [open, setOpen] = useState(false);
+  const [sentAt, setSentAt] = useState(null); // just now, before the next refresh
+  const when = sentAt || last;
   const [text, setText] = useState(NUDGE_DEFAULT);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -318,6 +320,7 @@ function Nudge({ email, onDone }) {
       const body = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(body.error || `Error ${r.status}`);
       setOpen(false);
+      if (body.sent > 0) setSentAt(new Date().toISOString());
       onDone(body.devices === 0
         ? `${email} doesn’t have Crumb notifications turned on, so nothing was sent.`
         : body.sent > 0 ? `Nudge sent to ${email} (${body.sent} ${body.sent === 1 ? 'device' : 'devices'}).` : `The nudge to ${email} didn’t go through. Try again later.`);
@@ -327,7 +330,14 @@ function Nudge({ email, onDone }) {
       setBusy(false);
     }
   };
-  if (!open) return <button type="button" className="ad-link-btn ad-nudge-btn" onClick={() => { setErr(''); setOpen(true); }}>Send A Nudge</button>;
+  if (!open) {
+    return (
+      <div className="ad-nudge-row">
+        <button type="button" className="ad-link-btn ad-nudge-btn" onClick={() => { setErr(''); setOpen(true); }}>Send A Nudge</button>
+        {when && <span className="ad-muted ad-small">Last Nudged {shortDate(when)} · {ago(when)}</span>}
+      </div>
+    );
+  }
   return (
     <div className="ad-nudge">
       <label className="ad-small ad-muted" htmlFor={`nudge-${email}`}>Push notification to this rep’s phone:</label>
@@ -344,7 +354,7 @@ function Nudge({ email, onDone }) {
 // ---------- users ----------
 // Beta approval: a rep is approved when their email is on the Sync Access list (admins always pass).
 // invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
-function Users({ users, log, invites = [], invitesOk = false, answers = [], onChanged, initialFilter = 'all' }) {
+function Users({ users, log, invites = [], invitesOk = false, answers = [], nudged = {}, onChanged, initialFilter = 'all' }) {
   const [q, setQ] = useState('');
   const [deleting, setDeleting] = useState('');
   const [done, setDone] = useState('');
@@ -401,7 +411,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], onCh
               <div><span>Last Change</span><b>{ago(u.last_change_at)}</b></div>
               <div><span>Devices</span><b>{u.devices_30d}</b></div>
             </div>
-            {!u.is_admin && <Nudge email={u.email} onDone={setDone} />}
+            {!u.is_admin && <Nudge email={u.email} last={nudged[String(u.email || '').toLowerCase()]} onDone={setDone} />}
             {!u.is_admin && <button type="button" className="ad-del-btn" onClick={() => { setDone(''); setDeleting(u.email); }}>Delete Account</button>}
           </div>
         ))}
@@ -787,6 +797,7 @@ export default function App() {
   const [health, setHealth] = useState({ db: null, dbMs: null, dbErr: '', rem: null, remErr: '' });
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [nudged, setNudged] = useState({}); // { email: when last nudged }
   const [usersView, setUsersView] = useState({ filter: 'all', n: 0 }); // which group a tapped Overview tile opens
 
   const load = useCallback(async () => {
@@ -819,6 +830,13 @@ export default function App() {
         next.remErr = plainError(err);
       }
       setHealth(next);
+      try {
+        const r = await fetch(`${CRM_URL}/api/admin-nudge`, { headers: { Authorization: `Bearer ${session.access_token}` }, cache: 'no-store' });
+        const body = await r.json().catch(() => ({}));
+        if (r.ok && body.nudged) setNudged(body.nudged);
+      } catch {
+        /* the dates are extra: Users still loads */
+      }
       const fb = await sb.rpc('admin_feedback_list');
       const bt = await sb.rpc('admin_beta_list');
       const si = await sb.rpc('admin_sync_invites_list');
@@ -898,7 +916,7 @@ export default function App() {
         </div>
         {msg && <p className="ad-error">{msg}</p>}
         {tab === 'overview' && overview && <Overview data={overview} users={users} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} onOpenUsers={(f) => { setUsersView({ filter: f, n: Date.now() }); pick('users'); }} />}
-        {tab === 'users' && <Users key={usersView.n} initialFilter={usersView.filter} users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
+        {tab === 'users' && <Users key={usersView.n} initialFilter={usersView.filter} nudged={nudged} users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
         {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} welcomes={inbox.welcomes} answers={inbox.answers} onChanged={load} />}
       </main>

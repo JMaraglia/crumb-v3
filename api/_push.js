@@ -172,6 +172,21 @@ export async function saveUser(uid, data) {
 export async function allUsers() {
   return (await store()('SMEMBERS', 'crumb:users')) || [];
 }
+// When each rep was last nudged from Crumb Admin (Nov 11): { email: ISO time }. Dates only, no message text.
+export async function loadNudged() {
+  const raw = await store()('GET', 'crumb:nudged');
+  try {
+    const v = raw ? JSON.parse(raw) : {};
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch {
+    return {};
+  }
+}
+export async function markNudged(email) {
+  const all = await loadNudged();
+  all[email] = new Date().toISOString();
+  await store()('SET', 'crumb:nudged', JSON.stringify(all));
+}
 // The reminder timer's last run (shown on Crumb Admin's Platform Health screen).
 export async function recordTick(info) {
   try { await store()('SET', 'crumb:tick:last', JSON.stringify({ ...info, at: new Date().toISOString() })); } catch { /* never block reminders */ }

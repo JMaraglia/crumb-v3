@@ -1,9 +1,10 @@
 // POST /api/admin-nudge  { email, message }   (Authorization: Bearer <the admin's Supabase sign-in token>)
+// GET  /api/admin-nudge  -> { nudged: { email: ISO time } }  when each rep was last nudged (admins only)
 // Crumb Admin → Users → Send A Nudge (founder, Nov 11): a push notification to ONE rep's devices, e.g. a
 // friendly "come back" note for someone who's gone quiet. Admins only. It reaches only devices where that rep
 // turned Crumb's notifications on. Limits: 30 nudges an hour in total, one per rep every 10 minutes.
 // The rep is found by email through the database's admin-only admin_user_id() (0016), with the admin's own token.
-import { verifyUser, isAdminToken, readJsonBody, bump, loadUser, sendPush } from './_push.js';
+import { verifyUser, isAdminToken, readJsonBody, bump, loadUser, sendPush, loadNudged, markNudged } from './_push.js';
 
 const ADMIN_ORIGINS = ['https://crumb-admin.vercel.app'];
 const PER_HOUR = 30;
@@ -30,13 +31,22 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   }
   if (req.method === 'OPTIONS') return res.status(204).end();
   res.setHeader('Cache-Control', 'no-store');
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-
   const token = (req.headers.authorization || '').replace(/^Bearer /, '');
+  if (req.method === 'GET') {
+    try {
+      const me = await verifyUser(token);
+      if (!me || (await isAdminToken(token)) !== true) return res.status(401).json({ error: 'Not allowed' });
+      return res.status(200).json({ nudged: await loadNudged() });
+    } catch {
+      return res.status(502).json({ error: 'Couldn’t load the nudge dates.' });
+    }
+  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
+
   const body = readJsonBody(req);
   const email = String(body.email || '').trim().toLowerCase();
   const message = clip(body.message, 160);
@@ -68,6 +78,7 @@ export default async function handler(req, res) {
         /* one device failing never stops the others */
       }
     }
+    if (sent > 0) await markNudged(email).catch(() => {}); // the date shown in Admin; never blocks the answer
     return res.status(200).json({ ok: true, sent, devices: devices.length });
   } catch {
     return res.status(502).json({ error: 'Something went wrong sending the nudge. Try again.' });
