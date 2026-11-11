@@ -54,6 +54,11 @@ input { font: inherit; }
 .ad-tile-label { font-size: 13px; color: var(--ad-muted); }
 .ad-tile-value { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .ad-tile-sub { font-size: 12px; color: var(--ad-muted); }
+/* Tappable tiles (Nov 11): open Users showing who */
+.ad-tile-btn { border: 0; text-align: left; color: inherit; width: 100%; }
+.ad-tile-btn:active { opacity: .75; }
+.ad-tile-label { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ad-tile-go { font-size: 18px; line-height: 1; color: var(--ad-muted); }
 
 /* Status rows */
 .ad-rows { overflow: hidden; }
