@@ -21,6 +21,10 @@
    "light": "#005fa3",
    "role": "bg"
   },
+  "bg-0066b0": {
+   "light": "#0066b0",
+   "role": "bg"
+  },
   "bg-0077cc": {
    "light": "#0077cc",
    "role": "bg"
@@ -49,6 +53,10 @@
    "light": "#c62828",
    "role": "bg"
   },
+  "bg-c7dff2": {
+   "light": "#c7dff2",
+   "role": "bg"
+  },
   "bg-cccccc": {
    "light": "#ccc",
    "role": "bg"
@@ -75,6 +83,10 @@
   },
   "bg-e5f0fa": {
    "light": "#e5f0fa",
+   "role": "bg"
+  },
+  "bg-e5f4ea": {
+   "light": "#e5f4ea",
    "role": "bg"
   },
   "bg-e6f1fa": {
@@ -109,6 +121,10 @@
    "light": "#eeeef0",
    "role": "bg"
   },
+  "bg-eef5fc": {
+   "light": "#eef5fc",
+   "role": "bg"
+  },
   "bg-f0f0f3": {
    "light": "#f0f0f3",
    "role": "bg"
@@ -123,6 +139,10 @@
   },
   "bg-f2f2f7-a92": {
    "light": "rgba(242, 242, 247, 0.92)",
+   "role": "bg"
+  },
+  "bg-f2f7fd": {
+   "light": "#f2f7fd",
    "role": "bg"
   },
   "bg-f4f6f8": {
@@ -143,6 +163,10 @@
   },
   "bg-faf5fe": {
    "light": "#faf5fe",
+   "role": "bg"
+  },
+  "bg-fbfbfd": {
+   "light": "#fbfbfd",
    "role": "bg"
   },
   "bg-fdecea": {
@@ -177,9 +201,17 @@
    "light": "rgba(255, 255, 255, 0.18)",
    "role": "bg"
   },
+  "bg-ffffff-a92": {
+   "light": "rgba(255, 255, 255, 0.92)",
+   "role": "bg"
+  },
   "bg-ffffff-a97": {
    "light": "rgba(255, 255, 255, 0.97)",
    "role": "bg"
+  },
+  "fg-000000": {
+   "light": "#000",
+   "role": "fg"
   },
   "fg-0077cc": {
    "light": "#0077cc",
@@ -205,8 +237,16 @@
    "light": "#333",
    "role": "fg"
   },
+  "fg-34c759": {
+   "light": "#34c759",
+   "role": "fg"
+  },
   "fg-3a3a3c": {
    "light": "#3a3a3c",
+   "role": "fg"
+  },
+  "fg-444444": {
+   "light": "#444",
    "role": "fg"
   },
   "fg-555555": {
@@ -225,6 +265,10 @@
    "light": "#636366",
    "role": "fg"
   },
+  "fg-64b5ff": {
+   "light": "#64b5ff",
+   "role": "fg"
+  },
   "fg-6b4200": {
    "light": "#6b4200",
    "role": "fg"
@@ -237,6 +281,10 @@
    "light": "#8a3fb5",
    "role": "fg"
   },
+  "fg-8a4b00": {
+   "light": "#8a4b00",
+   "role": "fg"
+  },
   "fg-8a8a8e": {
    "light": "#8a8a8e",
    "role": "fg"
@@ -247,6 +295,10 @@
   },
   "fg-aeaeb2": {
    "light": "#aeaeb2",
+   "role": "fg"
+  },
+  "fg-b0b0b0": {
+   "light": "#b0b0b0",
    "role": "fg"
   },
   "fg-b0b0b5": {
@@ -265,8 +317,16 @@
    "light": "#c26a00",
    "role": "fg"
   },
+  "fg-c62828": {
+   "light": "#c62828",
+   "role": "fg"
+  },
   "fg-c7c7cc": {
    "light": "#c7c7cc",
+   "role": "fg"
+  },
+  "fg-d70015": {
+   "light": "#d70015",
    "role": "fg"
   },
   "fg-d93025": {
@@ -275,6 +335,10 @@
   },
   "fg-d96b00": {
    "light": "#d96b00",
+   "role": "fg"
+  },
+  "fg-d96b00-a45": {
+   "light": "rgba(217, 107, 0, 0.45)",
    "role": "fg"
   },
   "fg-ff3b30": {
@@ -293,8 +357,32 @@
    "light": "white",
    "role": "fg"
   },
+  "line-000000": {
+   "light": "#000",
+   "role": "line"
+  },
   "line-0077cc": {
    "light": "#0077cc",
+   "role": "line"
+  },
+  "line-34c759": {
+   "light": "#34c759",
+   "role": "line"
+  },
+  "line-5e35b1": {
+   "light": "#5e35b1",
+   "role": "line"
+  },
+  "line-999999": {
+   "light": "#999",
+   "role": "line"
+  },
+  "line-c4c4c4": {
+   "light": "#c4c4c4",
+   "role": "line"
+  },
+  "line-c62828": {
+   "light": "#c62828",
    "role": "line"
   },
   "line-c7c7cc": {
@@ -329,6 +417,14 @@
    "light": "#e3e9f0",
    "role": "line"
   },
+  "line-e5e5ea": {
+   "light": "#e5e5ea",
+   "role": "line"
+  },
+  "line-e5f0fa": {
+   "light": "#e5f0fa",
+   "role": "line"
+  },
   "line-ecd9f7": {
    "light": "#ecd9f7",
    "role": "line"
@@ -337,8 +433,24 @@
    "light": "#ececf0",
    "role": "line"
   },
+  "line-f0f0f3": {
+   "light": "#f0f0f3",
+   "role": "line"
+  },
+  "line-ff9500": {
+   "light": "#ff9500",
+   "role": "line"
+  },
+  "shadow-000000-a08": {
+   "light": "rgba(0, 0, 0, 0.08)",
+   "role": "shadow"
+  },
   "shadow-000000-a10": {
    "light": "rgba(0, 0, 0, 0.1)",
+   "role": "shadow"
+  },
+  "shadow-000000-a14": {
+   "light": "rgba(0, 0, 0, 0.14)",
    "role": "shadow"
   },
   "shadow-000000-a18": {
@@ -347,6 +459,10 @@
   },
   "shadow-000000-a20": {
    "light": "rgba(0,0,0,.2)",
+   "role": "shadow"
+  },
+  "shadow-000000-a25": {
+   "light": "rgba(0, 0, 0, 0.25)",
    "role": "shadow"
   },
   "shadow-0077cc": {

@@ -1154,7 +1154,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             {stop.tag.label}
                           </span>
                           {stop.revisit && (
-                            <span className="it-tag" style={{ color: '#c62828', borderColor: '#c62828' }}>
+                            <span className="it-tag" style={{ color: 'var(--fg-c62828, #c62828)', borderColor: 'var(--line-c62828, #c62828)' }}>
                               Revisit
                             </span>
                           )}
@@ -1174,7 +1174,7 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
                             </span>
                           )}
                           {acct && groupOf(acct) && (
-                            <span className="it-tag" style={{ color: '#5e35b1', borderColor: '#5e35b1' }}>
+                            <span className="it-tag" style={{ color: 'var(--fg-5e35b1, #5e35b1)', borderColor: 'var(--line-5e35b1, #5e35b1)' }}>
                               Group
                             </span>
                           )}

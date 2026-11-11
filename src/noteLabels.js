@@ -47,11 +47,25 @@ const CUSTOM_COLORS = [
   { bg: '#f3e8fb', fg: '#8a3fb5' }, { bg: '#fbeaf0', fg: '#993556' }, { bg: '#e0f4f6', fg: '#0e7c86' },
 ];
 
-export function labelColor(label) {
+function lightColor(label) {
   if (COLORS[label]) return COLORS[label];
   let h = 0;
   String(label || '').split('').forEach((ch) => (h = (h * 31 + ch.charCodeAt(0)) >>> 0));
   return label ? CUSTOM_COLORS[h % CUSTOM_COLORS.length] : COLORS.General;
+}
+
+// Midnight (Nov 11): the same hue as a dark tint with brighter text. solid = the strong color for a picked chip.
+function midnightColor(c) {
+  const n = parseInt(c.fg.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const up = (x) => Math.round(x + (255 - x) * 0.5);
+  return { bg: `rgba(${r}, ${g}, ${b}, 0.22)`, fg: `rgb(${up(r)}, ${up(g)}, ${up(b)})`, solid: c.fg };
+}
+
+export function labelColor(label) {
+  const c = lightColor(label);
+  const dark = typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'midnight';
+  return dark ? midnightColor(c) : c;
 }
 
 // The labels in use, in order. Before Nov 10 the setting was a list of hidden labels; that still works.

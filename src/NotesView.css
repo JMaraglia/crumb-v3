@@ -7,9 +7,9 @@
   inset: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -36,7 +36,7 @@
   grid-template-columns: 44px 1fr 44px;
   align-items: center;
   padding: 10px 14px;
-  background: rgba(242, 242, 247, 0.92);
+  background: var(--bg-f2f2f7-a92);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
@@ -48,7 +48,7 @@
   display: flex;
   align-items: center;
   font-size: 1.1rem;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .nv-header-text {
@@ -66,7 +66,7 @@
 
 .nv-header-sub {
   font-size: 0.78rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .nv-content {
@@ -77,8 +77,8 @@
 
 /* ---------- Pinned background ---------- */
 .nv-pinned {
-  background: #faf5fe;
-  border: 1px solid #ecd9f7;
+  background: var(--bg-faf5fe);
+  border: 1px solid var(--line-ecd9f7);
   border-radius: 12px;
   padding: 10px 12px;
   margin-bottom: 12px;
@@ -89,7 +89,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8a3fb5;
+  color: var(--fg-8a3fb5);
   margin-bottom: 4px;
 }
 
@@ -100,13 +100,13 @@
   padding: 5px 0;
   font-size: 0.95rem;
   line-height: 1.35;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   white-space: pre-wrap;
 }
 
 /* ---------- Compose ---------- */
 .nv-compose {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 14px;
@@ -122,7 +122,7 @@
   font-family: inherit;
   font-size: 16px;   /* 16px stops iPhone from zooming in */
   line-height: 1.4;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   background: transparent;
 }
 
@@ -158,8 +158,8 @@
 /* Meeting sits at the end of the label row (orange, opens "Set a meeting") */
 .nv-page .nv-cat-meeting,
 .nv-page .nv-cat-meeting:hover {
-  background: #fff1e0;
-  color: #d96b00;
+  background: var(--bg-fff1e0);
+  color: var(--fg-d96b00);
 }
 
 .nv-compose-actions,
@@ -181,43 +181,43 @@
   gap: 6px;
   padding: 8px 12px;
   border-radius: 18px;
-  background: #f0f6fc;
-  color: #0077cc;
+  background: var(--bg-f0f6fc);
+  color: var(--fg-0077cc);
   font-size: 0.9rem;
   font-weight: 600;
 }
 
 .nv-page .nv-mic.is-on {
-  background: #ff3b30;
-  color: #fff;
+  background: var(--bg-ff3b30);
+  color: var(--fg-ffffff);
 }
 
 .nv-page .nv-btn-primary,
 .nv-page .nv-btn-primary:hover {
   padding: 9px 16px;
   border-radius: 18px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-weight: 600;
   font-size: 0.95rem;
 }
 
 .nv-page .nv-btn-primary:disabled {
-  background: #c7dff2;
+  background: var(--bg-c7dff2);
   cursor: default;
 }
 
 .nv-page .nv-btn-plain,
 .nv-page .nv-btn-plain:hover {
   padding: 9px 6px;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-size: 0.95rem;
 }
 
 .nv-page .nv-btn-delete,
 .nv-page .nv-btn-delete:hover {
   padding: 9px 4px;
-  color: #ff3b30;
+  color: var(--fg-ff3b30);
   font-size: 0.95rem;
   font-weight: 600;
 }
@@ -240,8 +240,8 @@
   flex: 0 0 auto;
   padding: 6px 12px;
   border-radius: 14px;
-  background: #e3e3e8;
-  color: #3a3a3c;
+  background: var(--bg-e3e3e8);
+  color: var(--fg-3a3a3c);
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
@@ -249,13 +249,13 @@
 
 .nv-page .nv-filter.is-on,
 .nv-page .nv-filter.is-on:hover {
-  background: #1c1c1e;
-  color: #fff;
+  background: var(--bg-1c1c1e);
+  color: var(--fg-ffffff);
 }
 
 /* ---------- Notes ---------- */
 .nv-list {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -265,7 +265,7 @@
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .nv-list > .nv-note:first-child {
@@ -274,11 +274,11 @@
 
 .nv-note-editing {
   display: block;
-  background: #fbfbfd;
+  background: var(--bg-fbfbfd);
 }
 
 .nv-pinned .nv-note-editing {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 10px;
   border: none;
   margin: 4px 0;
@@ -308,7 +308,7 @@
 
 .nv-date {
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .nv-note-text {
@@ -319,7 +319,7 @@
 }
 
 .nv-note.is-done .nv-note-text {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   text-decoration: line-through;
 }
 
@@ -329,8 +329,8 @@
   height: 24px;
   margin-top: 1px;
   border-radius: 50%;
-  border: 2px solid #ff9500;
-  color: #fff;
+  border: 2px solid var(--line-ff9500);
+  color: var(--fg-ffffff);
   font-size: 0.85rem;
   font-weight: 700;
   line-height: 20px;
@@ -339,27 +339,27 @@
 
 .nv-page .nv-check.is-checked,
 .nv-page .nv-check.is-checked:hover {
-  background: #34c759;
-  border-color: #34c759;
+  background: var(--bg-34c759);
+  border-color: var(--line-34c759);
 }
 
 .nv-empty {
   text-align: center;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   padding: 24px 0;
 }
 
 .nv-hint {
   text-align: center;
   font-size: 0.8rem;
-  color: #aeaeb2;
+  color: var(--fg-aeaeb2);
   padding: 10px 0;
 }
 
 .nv-cats-label {
   align-self: center;
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   margin-right: 2px;
 }
 
@@ -372,8 +372,8 @@
   order: 10;
   flex-basis: 100%;
   font-size: 0.9rem;
-  color: #3a3a3c;
-  background: #f6f6f8;
+  color: var(--fg-3a3a3c);
+  background: var(--bg-f6f6f8);
   border-radius: 8px;
   padding: 8px 10px;
   line-height: 1.35;
@@ -383,7 +383,7 @@
 .nv-page .nv-btn-share,
 .nv-page .nv-btn-share:hover {
   padding: 9px 4px;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-size: 0.95rem;
   font-weight: 600;
 }
@@ -398,8 +398,8 @@
   margin: 0 16px 8px;
   padding: 8px 12px;
   border-radius: 10px;
-  background: #e8f5ec;
-  color: #1e8e3e;
+  background: var(--bg-e8f5ec);
+  color: var(--fg-1e8e3e);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -418,8 +418,8 @@
   height: 30px;
   padding: 0 11px;
   border-radius: 15px;
-  background: #f2f2f7;
-  color: #3a3a3c;
+  background: var(--bg-f2f2f7);
+  color: var(--fg-3a3a3c);
   font-size: 0.82rem;
   font-weight: 600;
   overflow: hidden;
@@ -428,8 +428,8 @@
 
 .nv-page .nv-due-chip.is-on,
 .nv-due-chip.is-on {
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
 }
 
 .nv-due-input {
@@ -443,16 +443,16 @@
 .nv-due {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .nv-due.is-late {
-  color: #d70015;
+  color: var(--fg-d70015);
 }
 
 /* Swipe a note left to delete */
 .nv-list .sw-wrap {
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .nv-list > .sw-wrap:first-child {
@@ -461,16 +461,16 @@
 
 .nv-list .sw-wrap > .nv-note {
   border-top: none;
-  background: #fff;
+  background: var(--bg-ffffff);
 }
 
 /* When a Meeting note's meeting is */
 .nv-meeting-when {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #d96b00;
+  color: var(--fg-d96b00);
   text-decoration: underline;
-  text-decoration-color: rgba(217, 107, 0, 0.45);
+  text-decoration-color: var(--fg-d96b00-a45);
   text-underline-offset: 2px;
   cursor: pointer;
 }
@@ -478,9 +478,9 @@
 /* Edit a note's date/time */
 .nv-when-row {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  margin-top: 10px; font-size: 0.9rem; color: #6e6e73; font-weight: 600;
+  margin-top: 10px; font-size: 0.9rem; color: var(--fg-6e6e73); font-weight: 600;
 }
 .nv-when-input {
-  border: 1px solid #e3e3e8; border-radius: 10px; padding: 7px 10px; font-size: 16px;
-  font-family: inherit; color: #1c1c1e; background: #f7f7fa;
+  border: 1px solid var(--line-e3e3e8); border-radius: 10px; padding: 7px 10px; font-size: 16px;
+  font-family: inherit; color: var(--fg-1c1c1e); background: var(--bg-f7f7fa);
 }

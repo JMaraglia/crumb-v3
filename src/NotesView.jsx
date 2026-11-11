@@ -64,7 +64,7 @@ function CategoryChips({ value, onChange, extra = null, labels = [] }) {
             key={c}
             type="button"
             className={`nv-cat ${on ? 'is-on' : ''}`}
-            style={on ? { background: st.fg, color: '#fff' } : { background: st.bg, color: st.fg }}
+            style={on ? { background: st.solid || st.fg, color: '#fff' } : { background: st.bg, color: st.fg }}
             onClick={() => onChange(on ? 'General' : c)}  // tap again to remove the label
           >
             {c}
