@@ -35,7 +35,24 @@ export default async function handler(req, res) {
     let r = await call({ ...basic, p_industry: clip(body.industry, 60), p_state: clip(body.state, 40) });
     // Before 0011_beta_industry.sql is run, the database only knows the old 3-field version: still save the sign-up.
     if (!r.ok && r.status === 404) r = await call(basic);
-    if (r.ok) return res.status(200).json({ ok: true });
+    if (r.ok) {
+      // Founder, Nov 11: push an alert to the admins' phones (Crumb's own server sends it). Never blocks the sign-up.
+      try {
+        const app = String(process.env.APP_URL || 'https://app.crumbsales.com').trim().replace(/\/+$/, '');
+        const ctl = new AbortController();
+        const timer = setTimeout(() => ctl.abort(), 4000);
+        await fetch(`${app}/api/beta-alert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: basic.p_name, industry: clip(body.industry, 60), state: clip(body.state, 40) }),
+          signal: ctl.signal,
+        }).catch(() => {});
+        clearTimeout(timer);
+      } catch {
+        /* the alert is extra; the sign-up already saved */
+      }
+      return res.status(200).json({ ok: true });
+    }
     const err = await r.json().catch(() => ({}));
     const msg = String(err.message || '');
     // Only the database's own plain-English messages are passed on.
