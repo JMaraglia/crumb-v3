@@ -295,6 +295,52 @@ function Answers({ data }) {
   );
 }
 
+// ---------- send a nudge (founder, Nov 11): a push notification to one rep's devices ----------
+const NUDGE_DEFAULT = 'Your customers and stops are right where you left them. Anything getting in your way? Tap to open Crumb.';
+function Nudge({ email, onDone }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(NUDGE_DEFAULT);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const send = async () => {
+    if (busy || !text.trim()) return;
+    setBusy(true); setErr('');
+    try {
+      const sb = cloud();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) throw new Error('Signed out. Sign in again.');
+      const r = await fetch(`${CRM_URL}/api/admin-nudge`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, message: text.trim() }),
+        cache: 'no-store',
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || `Error ${r.status}`);
+      setOpen(false);
+      onDone(body.devices === 0
+        ? `${email} doesn’t have Crumb notifications turned on, so nothing was sent.`
+        : body.sent > 0 ? `Nudge sent to ${email} (${body.sent} ${body.sent === 1 ? 'device' : 'devices'}).` : `The nudge to ${email} didn’t go through. Try again later.`);
+    } catch (e) {
+      setErr(plainError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!open) return <button type="button" className="ad-link-btn ad-nudge-btn" onClick={() => { setErr(''); setOpen(true); }}>Send A Nudge</button>;
+  return (
+    <div className="ad-nudge">
+      <label className="ad-small ad-muted" htmlFor={`nudge-${email}`}>Push notification to this rep’s phone:</label>
+      <textarea id={`nudge-${email}`} className="ad-nudge-text" rows={3} maxLength={160} value={text} onChange={(e) => setText(e.target.value)} />
+      {err && <p className="ad-error" role="alert">{err}</p>}
+      <span className="ad-resend-ask">
+        <button type="button" className="ad-link-btn" onClick={send} disabled={busy || !text.trim()}>{busy ? 'Sending…' : 'Send'}</button>
+        <button type="button" className="ad-link-btn" onClick={() => setOpen(false)} disabled={busy}>Cancel</button>
+      </span>
+    </div>
+  );
+}
+
 // ---------- users ----------
 // Beta approval: a rep is approved when their email is on the Sync Access list (admins always pass).
 // invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
@@ -355,6 +401,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], onCh
               <div><span>Last Change</span><b>{ago(u.last_change_at)}</b></div>
               <div><span>Devices</span><b>{u.devices_30d}</b></div>
             </div>
+            {!u.is_admin && <Nudge email={u.email} onDone={setDone} />}
             {!u.is_admin && <button type="button" className="ad-del-btn" onClick={() => { setDone(''); setDeleting(u.email); }}>Delete Account</button>}
           </div>
         ))}

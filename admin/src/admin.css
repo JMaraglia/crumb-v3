@@ -230,6 +230,9 @@ input { font: inherit; }
 
 /* Welcome email record + Resend Welcome Email (asks first) — Nov 10 */
 .ad-welcome-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 10px 0 4px; }
+.ad-nudge-btn { padding: 4px 0; text-align: left; align-self: flex-start; }
+.ad-nudge { display: flex; flex-direction: column; gap: 8px; }
+.ad-nudge-text { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--ad-line); background: var(--ad-bg, #0f1a29); color: inherit; font: inherit; font-size: 15px; resize: vertical; }
 .ad-resend-btn { padding: 4px 0; text-align: left; align-self: flex-start; }
 .ad-resend-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 0; }
 .ad-answers { margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.04); display: flex; flex-direction: column; gap: 3px; color: #c9d4e2; }
