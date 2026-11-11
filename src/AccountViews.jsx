@@ -1434,6 +1434,8 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const [newAccountNumber, setNewAccountNumber] = useState('');
   const [visitOpen, setVisitOpen] = useState(false); // quick visit panel
   const [askInactive, setAskInactive] = useState(false); // "Mark inactive" reason picker
+  const [meetingOpen, setMeetingOpen] = useState(false); // Meeting button (Nov 11: replaces Contact here too)
+  const [meetingMsg, setMeetingMsg] = useState('');
   const [revisitOpen, setRevisitOpen] = useState(false); // revisit date panel (inactive accounts)
   const [shareMsg, setShareMsg] = useState('');
   // Top card can fold to just the name + buttons; the choice is remembered on this device.
@@ -1600,9 +1602,17 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
           </Fold>
 
           <div className="av-quick">
-            <button className="av-quick-btn" disabled={reachableContacts.length === 0} onClick={openCallText}>
-              Contact
-            </button>
+            {/* Nov 11: Meeting replaces Contact (same as list rows). Tapping a contact's name or number below
+                still gives Call / Text. */}
+            {setAccounts ? (
+              <button className="av-quick-btn" onClick={() => setMeetingOpen(true)}>
+                Meeting
+              </button>
+            ) : (
+              <button className="av-quick-btn" disabled={reachableContacts.length === 0} onClick={openCallText}>
+                Contact
+              </button>
+            )}
             <button
               className="av-quick-btn"
               disabled={!account.address}
@@ -1852,6 +1862,20 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
         />
       )}
 
+      {meetingMsg && <div className="av-toast" onClick={() => setMeetingMsg('')}>{meetingMsg}</div>}
+      {meetingOpen && (
+        <MeetingSheet
+          account={{ type: typeOf(config), id: account.id, name: account.name, address: account.address }}
+          onCancel={() => setMeetingOpen(false)}
+          onSaved={(msg, note) => {
+            // Also saved on the account as a "Meeting" note (same as from the list row, Notes or Daily Stops)
+            setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, notes: [...(x.notes || []), note] } : x)));
+            setMeetingOpen(false);
+            setMeetingMsg(msg);
+            setTimeout(() => setMeetingMsg(''), 4000);
+          }}
+        />
+      )}
       {askInactive && (
         <AskSheet
           title={`Why is ${displayName(account)} Inactive?`}

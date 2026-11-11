@@ -3,7 +3,7 @@
 // so whoever covers for you knows who to call, how, and what to know.
 // Order day = the day before a delivery day (Monday delivery → Sunday order).
 // Share as a formatted Excel file (opens in Excel / Google Sheets / Numbers) or print / save as PDF.
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoPrintOutline } from 'react-icons/io5';
@@ -145,6 +145,22 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
     setSettings(loadCallSheetSettings());
   });
   const columns = columnsFor(settings);
+  // "Swipe sideways" hint only when the grid is wider than the screen (Nov 11: not on a tablet where it all fits).
+  const scrollRef = useRef(null);
+  const [overflows, setOverflows] = useState(true);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    const check = () => setOverflows(el.scrollWidth > el.clientWidth + 2);
+    check();
+    window.addEventListener('resize', check);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
+    if (ro) ro.observe(el);
+    return () => {
+      window.removeEventListener('resize', check);
+      if (ro) ro.disconnect();
+    };
+  });
   const dateKeyForDay = keyOf(dateThisWeek(day));
   const dateText = dateThisWeek(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const orderedIds = orderedMap[dateKeyForDay] || [];
@@ -274,7 +290,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
             Set <strong>Delivery days</strong> on a customer and they'll show up the day before.
           </div>
         ) : (
-          <div className="cs-scroll">
+          <div className="cs-scroll" ref={scrollRef}>
             {/* Title only shows on the printed / PDF copy */}
             <div className="cs-print-title">
               <div className="cs-print-top">
@@ -388,7 +404,7 @@ export default function CallSheetPage({ contacts = [], setContacts }) {
             </table>
           </div>
         )}
-        {rows.length > 0 && <div className="cs-hint">Swipe the grid sideways to see every column</div>}
+        {rows.length > 0 && overflows && <div className="cs-hint">Swipe the grid sideways to see every column</div>}
       </div>
 
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
