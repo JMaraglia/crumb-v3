@@ -9,6 +9,7 @@ import { IoShareOutline, IoAddCircleOutline, IoPhonePortraitOutline } from 'reac
 import { cloud, cloudProblem } from './cloud';
 import { plainError } from './cloudErrors';
 import { needsSignIn, isRealSynced } from './syncMode';
+import { SALES_RANGES, COLD_CALL_HOW, EMPTY_ANSWERS, missingAnswer, answersToSave, passwordProblem } from './signupQuestions';
 import './SignInPage.css';
 
 // iPhone or iPad, in a browser tab (not the Home Screen app). iPads report themselves as a Mac, so they're
@@ -32,6 +33,9 @@ export default function SignInPage() {
   const [mode, setMode] = useState('signin'); // 'signin' | 'create'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Create Account questions (Nov 10): all required, saved with the new account.
+  const [answers, setAnswers] = useState(EMPTY_ANSWERS);
+  const setAnswer = (patch) => setAnswers((a) => ({ ...a, ...patch }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [ok, setOk] = useState('');
@@ -70,7 +74,7 @@ export default function SignInPage() {
   }, [sb, navigate, backTo]);
 
   const creating = mode === 'create';
-  const canSubmit = email.trim() && password.length >= (creating ? 6 : 1) && !busy;
+  const canSubmit = email.trim() && password.length >= 1 && !busy;
 
   const submit = async (e) => {
     if (e) e.preventDefault();
@@ -80,10 +84,16 @@ export default function SignInPage() {
     setBusy(true);
     try {
       if (creating) {
+        const missing = missingAnswer(answers) || passwordProblem(password);
+        if (missing) {
+          setErr(missing);
+          setBusy(false);
+          return;
+        }
         const { data, error } = await sb.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: `${window.location.origin}/setup` },
+          options: { emailRedirectTo: `${window.location.origin}/setup`, data: { crumb_signup: answersToSave(answers) } },
         });
         if (error) throw error;
         if (data && data.session) {
@@ -173,6 +183,7 @@ export default function SignInPage() {
           <div className="si-msg si-err">{cloudProblem ? `The cloud settings in this version look wrong: ${cloudProblem}` : 'The cloud isn’t set up in this version.'}</div>
         ) : (
           <form className="si-form" onSubmit={submit} noValidate>
+            {creating && <div className="si-section">Your Sign-In</div>}
             <input
               id="si-email"
               className="si-input"
@@ -190,12 +201,72 @@ export default function SignInPage() {
               id="si-pass"
               className="si-input"
               type="password"
-              placeholder={creating ? 'Password (6+ characters)' : 'Password'}
+              placeholder={creating ? 'Password (8+ characters, a letter and a number)' : 'Password'}
               aria-label="Password"
               autoComplete={creating ? 'new-password' : 'current-password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+
+            {creating && (
+              <>
+                <div className="si-section">Tell Us How You Sell</div>
+                <label className="si-q">
+                  <span className="si-q-label">How Many Active Customers Do You Currently Have?</span>
+                  <input className="si-input" type="text" inputMode="numeric" pattern="[0-9]*" value={answers.customers}
+                    onChange={(e) => setAnswer({ customers: e.target.value.replace(/\D/g, '').slice(0, 6) })} />
+                </label>
+                <label className="si-q">
+                  <span className="si-q-label">Annual Sales Per Year</span>
+                  <select className="si-input si-select" value={answers.sales} onChange={(e) => setAnswer({ sales: e.target.value })}>
+                    <option value="" disabled>Choose One</option>
+                    {SALES_RANGES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </label>
+                <div className="si-q">
+                  <span className="si-q-label">Do You Cold Call?</span>
+                  <div className="si-choices" role="radiogroup" aria-label="Do You Cold Call?">
+                    {[['yes', 'Yes'], ['no', 'No']].map(([v, label]) => (
+                      <button key={v} type="button" role="radio" aria-checked={answers.coldCall === v}
+                        className={`si-choice ${answers.coldCall === v ? 'is-on' : ''}`} onClick={() => setAnswer({ coldCall: v })}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+                {answers.coldCall === 'yes' && (
+                  <div className="si-q">
+                    <span className="si-q-label">How Do You Cold Call?</span>
+                    <div className="si-choices" role="radiogroup" aria-label="How Do You Cold Call?">
+                      {COLD_CALL_HOW.map(([v, label]) => (
+                        <button key={v} type="button" role="radio" aria-checked={answers.coldHow === v}
+                          className={`si-choice ${answers.coldHow === v ? 'is-on' : ''}`} onClick={() => setAnswer({ coldHow: v })}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="si-q">
+                  <span className="si-q-label">Are You Required To Make Daily Customer Or Prospect Stops?</span>
+                  <div className="si-choices" role="radiogroup" aria-label="Are You Required To Make Daily Customer Or Prospect Stops?">
+                    {[['yes', 'Yes'], ['no', 'No']].map(([v, label]) => (
+                      <button key={v} type="button" role="radio" aria-checked={answers.stops === v}
+                        className={`si-choice ${answers.stops === v ? 'is-on' : ''}`} onClick={() => setAnswer({ stops: v })}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+                {answers.stops === 'yes' && (
+                  <label className="si-q">
+                    <span className="si-q-label">Average Stops Per Day</span>
+                    <input className="si-input" type="text" inputMode="numeric" pattern="[0-9]*" value={answers.stopsPerDay}
+                      onChange={(e) => setAnswer({ stopsPerDay: e.target.value.replace(/\D/g, '').slice(0, 3) })} />
+                  </label>
+                )}
+                <label className="si-q">
+                  <span className="si-q-label">What CRM Do You Currently Use?</span>
+                  <input className="si-input" type="text" autoCapitalize="words" maxLength={80} value={answers.crm}
+                    onChange={(e) => setAnswer({ crm: e.target.value })} />
+                </label>
+                <p className="si-q-note">Your name, industry and state come from your beta application.</p>
+              </>
+            )}
 
             <button type="submit" className="si-btn" disabled={!canSubmit}>
               {busy ? (creating ? 'Creating…' : 'Signing In…') : creating ? 'Create Account' : 'Sign In'}

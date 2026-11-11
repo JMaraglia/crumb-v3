@@ -254,10 +254,35 @@ function logText(l) {
   return `${l.action} ${l.target_email || ''}`;
 }
 
+// Create Account answers (Nov 10; saved with each new account, read with admin_signup_answers).
+// Same wording as the app's src/signupQuestions.js.
+const COLD_HOW = { phone: 'Phone', in_person: 'In Person', both: 'Both' };
+function answerLines(s) {
+  if (!s || typeof s !== 'object') return [];
+  return [
+    `Active Customers: ${s.customers}`,
+    `Annual Sales: ${s.annual_sales}`,
+    `Cold Calls: ${s.cold_call ? `Yes${COLD_HOW[s.cold_call_how] ? ` (${COLD_HOW[s.cold_call_how]})` : ''}` : 'No'}`,
+    `Daily Stops: ${s.daily_stops ? `Yes (${s.stops_per_day} A Day)` : 'No'}`,
+    `Current CRM: ${s.crm}`,
+  ];
+}
+const answersFor = (answers, email) =>
+  ((answers || []).find((a) => String(a.email || '').toLowerCase() === String(email || '').toLowerCase()) || {}).answers || null;
+function Answers({ data }) {
+  const lines = answerLines(data);
+  if (!lines.length) return null;
+  return (
+    <div className="ad-answers">
+      {lines.map((l) => <div key={l} className="ad-small">{l}</div>)}
+    </div>
+  );
+}
+
 // ---------- users ----------
 // Beta approval: a rep is approved when their email is on the Sync Access list (admins always pass).
 // invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
-function Users({ users, log, invites = [], invitesOk = false, onChanged }) {
+function Users({ users, log, invites = [], invitesOk = false, answers = [], onChanged }) {
   const [q, setQ] = useState('');
   const [deleting, setDeleting] = useState('');
   const [done, setDone] = useState('');
@@ -299,6 +324,7 @@ function Users({ users, log, invites = [], invitesOk = false, onChanged }) {
                   : <span className="ad-pill ad-pill-ok ad-user-pill">APPROVED</span>)}
               </div>
             </div>
+            <Answers data={answersFor(answers, u.email)} />
             <div className="ad-user-stats">
               <div><span>Last Sign-In</span><b>{ago(u.last_sign_in_at)}</b></div>
               <div><span>Last Change</span><b>{ago(u.last_change_at)}</b></div>
@@ -492,7 +518,7 @@ function ResendWelcome({ email, name, welcome, onDone, disabled }) {
 const BETA_STATUSES = [['new', 'New'], ['invited', 'Invited'], ['declined', 'Declined']];
 const betaWord = (st) => (BETA_STATUSES.find(([v]) => v === st) || [st, st])[1];
 
-function BetaSheet({ item, welcome, onClose, onSaved }) {
+function BetaSheet({ item, welcome, answers, onClose, onSaved }) {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [mail, setMail] = useState(true);
@@ -512,6 +538,7 @@ function BetaSheet({ item, welcome, onClose, onSaved }) {
         <h2 id="ad-beta-title" className="ad-sheet-title">{item.name}</h2>
         <p className="ad-sheet-email">{item.email}</p>
         <p className="ad-muted ad-small">{[item.industry, item.state, item.company, `Joined ${shortDate(item.created_at)}`].filter(Boolean).join(' · ')}</p>
+        <Answers data={answers} />
         <div className="ad-status-list" role="group" aria-label="Status">
           {BETA_STATUSES.map(([v, label]) => (
             <button key={v} type="button" className={`ad-status-btn ${item.status === v ? 'is-on' : ''}`} disabled={Boolean(busy)} onClick={() => pick(v)}>
@@ -613,7 +640,7 @@ function SyncAccess({ invites, err, beta = [], welcomes = [], onChanged }) {
   );
 }
 
-function Inbox({ items, err, beta = [], betaErr = '', invites = [], invitesErr = '', welcomes = [], onChanged }) {
+function Inbox({ items, err, beta = [], betaErr = '', invites = [], invitesErr = '', welcomes = [], answers = [], onChanged }) {
   const [kind, setKind] = useState('problem');
   const [open, setOpen] = useState(null);
   const [openBeta, setOpenBeta] = useState(null);
@@ -649,7 +676,7 @@ function Inbox({ items, err, beta = [], betaErr = '', invites = [], invitesErr =
           </div>
           {betaNote && <p className="ad-done" role="status">{betaNote}</p>}
           <SyncAccess invites={invites} err={invitesErr} beta={beta} welcomes={welcomes} onChanged={onChanged} />
-          {openBeta && <BetaSheet item={openBeta} welcome={welcomeFor(welcomes, openBeta.email)} onClose={() => setOpenBeta(null)} onSaved={(note) => { setOpenBeta(null); setBetaNote(note || ''); onChanged(); }} />}
+          {openBeta && <BetaSheet item={openBeta} welcome={welcomeFor(welcomes, openBeta.email)} answers={answersFor(answers, openBeta.email)} onClose={() => setOpenBeta(null)} onSaved={(note) => { setOpenBeta(null); setBetaNote(note || ''); onChanged(); }} />}
         </>
       ) : (
       <>
@@ -684,7 +711,7 @@ export default function App() {
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
   const [log, setLog] = useState([]);
-  const [inbox, setInbox] = useState({ items: [], err: '', beta: [], betaErr: '', invites: [], invitesErr: '', welcomes: [] });
+  const [inbox, setInbox] = useState({ items: [], err: '', beta: [], betaErr: '', invites: [], invitesErr: '', welcomes: [], answers: [] });
   const [health, setHealth] = useState({ db: null, dbMs: null, dbErr: '', rem: null, remErr: '' });
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -722,6 +749,7 @@ export default function App() {
       const fb = await sb.rpc('admin_feedback_list');
       const bt = await sb.rpc('admin_beta_list');
       const si = await sb.rpc('admin_sync_invites_list');
+      const sa = await sb.rpc('admin_signup_answers'); // before 0014 is run: no answers shown
       const wl = await sb.rpc('admin_welcome_list'); // before 0012 is run there's no record yet (shows No Welcome Email Yet)
       const siMissing = si.error && (si.error.code === 'PGRST202' || /could not find the function/i.test(si.error.message || ''));
       setInbox({
@@ -729,6 +757,7 @@ export default function App() {
         beta: bt.error ? [] : (bt.data || []), betaErr: bt.error ? plainError(bt.error) : '',
         invites: si.error ? [] : (si.data || []),
         welcomes: wl.error ? [] : (wl.data || []),
+        answers: sa.error ? [] : (sa.data || []),
         invitesErr: siMissing ? 'Not turned on yet: the invite list SQL (0010) hasn’t been run in Supabase.' : si.error ? plainError(si.error) : '',
       });
       setMsg('');
@@ -796,9 +825,9 @@ export default function App() {
         </div>
         {msg && <p className="ad-error">{msg}</p>}
         {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} />}
-        {tab === 'users' && <Users users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} onChanged={load} />}
+        {tab === 'users' && <Users users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
-        {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} welcomes={inbox.welcomes} onChanged={load} />}
+        {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} welcomes={inbox.welcomes} answers={inbox.answers} onChanged={load} />}
       </main>
 
       <nav className="ad-tabs" aria-label="Admin sections">

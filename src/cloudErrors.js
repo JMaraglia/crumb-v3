@@ -7,7 +7,8 @@ export function plainError(err) {
   // Nov 10: Supabase's sign-up check (0013) refuses emails that aren't approved yet.
   if (/approved for the Crumb beta/i.test(m)) return 'This email isn’t approved for the Crumb beta yet. Join the beta waitlist at CrumbSales.com.';
   if (/already registered/i.test(m)) return 'That email already has an account. Sign in instead.';
-  if (/Password should be/i.test(m)) return 'Use a longer password (at least 6 characters).';
+  if (/known to be weak|pwned|leaked/i.test(m)) return 'That password has shown up in a data leak somewhere. Pick a different one.';
+  if (/Password should (be|contain)/i.test(m) || /weak.?password/i.test(m)) return 'Use at least 8 characters, with a letter and a number.';
   if (/only request this after|security purposes/i.test(m)) return 'An email was just sent. Wait a minute before asking for another.';
   if (/rate limit|too many/i.test(m)) return 'Too many tries for now. Wait a few minutes and try again.';
   if (/fetch|network|load failed/i.test(m)) return 'Couldn’t reach the cloud. Check your signal and try again.';

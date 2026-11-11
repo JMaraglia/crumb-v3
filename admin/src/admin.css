@@ -227,3 +227,4 @@ input { font: inherit; }
 .ad-welcome-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 10px 0 4px; }
 .ad-resend-btn { padding: 4px 0; text-align: left; align-self: flex-start; }
 .ad-resend-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 0; }
+.ad-answers { margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.04); display: flex; flex-direction: column; gap: 3px; color: #c9d4e2; }
