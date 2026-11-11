@@ -704,6 +704,39 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
     setOpenKey(null);
   };
 
+  // Change the day from the time panel (Nov 11): an appointment moves on the Calendar too, a hand-added
+  // stop moves to that day, a scheduled visit moves just this once (same as Move). With Undo.
+  const moveToDay = (stop, toDay, time) => {
+    const nice = fromKey(toDay).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    let restore = null;
+    if (stop.kind === 'event') {
+      const before = loadEvents();
+      saveEvents(
+        before.map((ev) => {
+          if (`e-${ev.id}` !== stop.key) return ev;
+          const length = typeof ev.end === 'number' && typeof ev.start === 'number' ? ev.end - ev.start : 60;
+          const start = typeof time === 'number' ? time : ev.start;
+          return { ...ev, date: toDay, start, end: Math.min(start + length, 1440) };
+        })
+      );
+      restore = () => saveEvents(before);
+    } else if (stop.kind === 'manual') {
+      const before = visits;
+      saveVisits(visits.map((v, i) => (i === stop.index ? { ...v, date: toDay, time: time == null ? '' : minutesToHhmm(time), origTime: undefined } : v)));
+      restore = () => saveVisits(before);
+    } else {
+      const acct = findAccount(stop.accountType, stop.accountId);
+      if (!acct) return;
+      saveMove(stop, acct, toDay, time);
+      restore = () => saveMove(stop, acct, null);
+    }
+    if (lockMap[date] && typeof lockMap[date][stop.key] === 'number') saveLock(stop, null); // no lock left behind
+    setOpenKey(null);
+    if (undoIt && undoIt.timer) clearTimeout(undoIt.timer);
+    const timer = setTimeout(() => setUndoIt(null), 8000);
+    setUndoIt({ text: `Moved ${stop.title} to ${nice}`, restore, timer });
+  };
+
   // Lock (or unlock, with time = null) one stop's time for this day only.
   const saveLock = (stop, time) => {
     const forDay = { ...(lockMap[date] || {}) };
@@ -1582,10 +1615,12 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             const acct = findAccount(timing.accountType, timing.accountId);
             return acct ? visitTimeOn(acct, date) : null;
           })()}
+          viewDate={date}
           onCancel={() => setTiming(null)}
-          onSave={(time, length, lock) => {
+          onSave={(time, length, lock, toDay) => {
             const st = timing;
             setTiming(null);
+            if (toDay) return moveToDay(st, toDay, time);
             const lengthChanged = st.kind !== 'event' && typeof length === 'number' && length !== stopLen(st);
             withClashCheck(time, st.key, (t) => {
               if (!lengthChanged || typeof t !== 'number') return saveTime(st, t, lock);
@@ -1721,32 +1756,52 @@ function LockSheet({ stop, onSave, onCancel }) {
 const LENGTH_OPTIONS = [15, 30, 45, 60, 75, 90, 120, 150, 180, 240];
 const lengthLabel = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m / 60} hr`);
 
-function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) {
+function TimeSheet({ stop, usual, viewDate, length: startLength = 30, onSave, onCancel }) {
   const [time, setTime] = useState(typeof stop.time === 'number' ? stop.time : stop.kind === 'manual' ? '' : 9 * 60);
+  // Change the day too (Nov 11): meetings / appointments, hand-added stops and scheduled visits.
+  const [day, setDay] = useState(viewDate);
+  const dayOk = /^\d{4}-\d{2}-\d{2}$/.test(day || '');
+  const moving = dayOk && day !== viewDate;
+  const niceDay = (k) => fromKey(k).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const [length, setLength] = useState(startLength);
   const [lock, setLock] = useState(stop.locked === 'day');
   // Visits and stops: the iPhone time wheel, any minute. Calendar events keep 30-minute steps.
   const wheel = stop.kind !== 'event';
   const nice = (m) => (typeof m === 'number' ? timeLabel(m) : 'no set time');
-  const help =
-    stop.kind === 'manual'
-      ? 'Changes the time for this stop.'
-      : stop.kind === 'event'
-      ? 'Changes the time of this calendar event. It keeps the same length.'
-      : `For this day only. The usual time (${nice(usual)}) stays the same.`;
+  const help = moving
+    ? stop.kind === 'event'
+      ? `Moves this appointment to ${niceDay(day)}, on your Calendar too. It keeps the same length.`
+      : stop.kind === 'manual'
+      ? `Moves this stop to ${niceDay(day)}.`
+      : `Moves only this one visit to ${niceDay(day)}. The regular schedule stays the same.`
+    : stop.kind === 'manual'
+    ? 'Changes the time for this stop.'
+    : stop.kind === 'event'
+    ? 'Changes the time of this calendar event. It keeps the same length.'
+    : `For this day only. The usual time (${nice(usual)}) stays the same.`;
   return (
     <div className="it-sheet-backdrop" onClick={onCancel}>
       <div className="it-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="it-sheet-top">
           <button className="it-link" onClick={onCancel}>Cancel</button>
-          <div className="it-sheet-title">Change time</div>
-          <button className="it-link it-bold" onClick={() => onSave(time === '' ? null : Number(time), length, lock && time !== '')}>Save</button>
+          <div className="it-sheet-title">{moving ? 'Change day' : 'Change time'}</div>
+          <button
+            className="it-link it-bold"
+            disabled={!dayOk}
+            onClick={() => onSave(time === '' ? null : Number(time), length, lock && time !== '' && !moving, moving ? day : null)}
+          >
+            Save
+          </button>
         </div>
         <div className="it-move-who">
           <strong>{stop.title}</strong>
           <span>{help}</span>
         </div>
         <div className="it-sheet-group">
+          <label className="it-sheet-row">
+            <span>Day</span>
+            <input type="date" className="it-move-date" value={day} onChange={(e) => setDay(e.target.value)} />
+          </label>
           <label className="it-sheet-row">
             <span>Time</span>
             {wheel ? (
@@ -1766,7 +1821,7 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
                 ))}
               </select>
             )}
-            {stop.kind !== 'event' && (
+            {stop.kind !== 'event' && !moving && (
               <button
                 type="button"
                 className={`it-lock-toggle ${lock || stop.locked === 'always' ? 'is-on' : ''}`}
@@ -1781,7 +1836,7 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
               </button>
             )}
           </label>
-          {stop.kind !== 'event' && (
+          {stop.kind !== 'event' && !moving && (
             <label className="it-sheet-row">
               <span>Visit length</span>
               <select className="it-sheet-select" value={length} onChange={(e) => setLength(Number(e.target.value))}>
@@ -1797,7 +1852,7 @@ function TimeSheet({ stop, usual, length: startLength = 30, onSave, onCancel }) 
             No set time (Anytime)
           </button>
         )}
-        {stop.kind === 'scheduled' && stop.locked === 'day' && (
+        {stop.kind === 'scheduled' && stop.locked === 'day' && !moving && (
           <button className="it-move-undo" onClick={() => onSave(null)}>
             Back to usual time{typeof usual === 'number' ? ` (${timeLabel(usual)})` : ''}
           </button>
