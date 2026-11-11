@@ -159,6 +159,8 @@
   --shadow-ffffff: #fff;
 }
 
+/* Screens only (Nov 11): printing always uses the Light colors, so paper is readable in Midnight too. */
+@media screen {
 :root[data-theme="midnight"] {
   color-scheme: dark;
   --bg-000000: #000000;
@@ -315,4 +317,5 @@
   --shadow-1c1c1e: rgba(0, 0, 0, 0.6);
   --shadow-e5e5ea: #e5e5ea;
   --shadow-ffffff: #ffffff;
+}
 }

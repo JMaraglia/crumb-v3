@@ -196,7 +196,8 @@ def write_css(db):
             '   change tools/theme-tokens.json ("overrides" for a hand-tuned Midnight color) and rerun.\n'
             '   Light values are exactly the colors each screen had before, so Light never changes. */\n')
     body = (':root {\n  color-scheme: light;\n' + '\n'.join(light) + '\n}\n\n'
-            ':root[data-theme="midnight"] {\n  color-scheme: dark;\n' + '\n'.join(dark) + '\n}\n')
+            '/* Screens only (Nov 11): printing always uses the Light colors, so paper is readable in Midnight too. */\n'
+            '@media screen {\n:root[data-theme="midnight"] {\n  color-scheme: dark;\n' + '\n'.join(dark) + '\n}\n}\n')
     open(OUT, 'w').write(head + body)
 
 
