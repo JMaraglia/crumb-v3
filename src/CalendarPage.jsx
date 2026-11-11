@@ -1,7 +1,7 @@
 // file: src/CalendarPage.jsx
 // Owns the page-level pieces: header, Day/Week/Month switch, month label,
 // and the single floating "+" button. WeekView only draws the grid and swiping.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaArrowLeft, FaCog } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import WeekView, { DAYS_PER_PAGE, dateKey } from './WeekView';
@@ -59,6 +59,18 @@ function visibleRangeLabel(start, dayCount) {
 export default function CalendarPage({ contacts = [], prospects = [] }) {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('Week');
+  // Sideways phone or wide screen → full Mon–Fri week; upright phone → 3 days.
+  const isWide = () => typeof window !== 'undefined' && (window.innerWidth > window.innerHeight || window.innerWidth >= 700);
+  const [wide, setWide] = useState(isWide);
+  useEffect(() => {
+    const on = () => setWide(isWide());
+    window.addEventListener('resize', on);
+    window.addEventListener('orientationchange', on);
+    return () => {
+      window.removeEventListener('resize', on);
+      window.removeEventListener('orientationchange', on);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // First day shown in Week view. Opens on today.
   const [viewStart, setViewStart] = useState(startOfToday);
 
@@ -232,7 +244,9 @@ export default function CalendarPage({ contacts = [], prospects = [] }) {
     setSheet(null);
   };
 
-  const weekDays = settings.weekDays === 3 ? 3 : 5;
+  // Week view (founder, Nov 11, like Apple Calendar): 3 days with the phone upright; Mon–Fri when it's
+  // turned sideways or on a wide screen (iPad, computer).
+  const weekDays = wide ? 5 : 3;
   // 5-day Week view always starts on a Monday: this week's, or next week's on a Saturday/Sunday.
   const mondayFor = (d) => {
     const wd = d.getDay(); // 0 = Sun … 6 = Sat
@@ -407,17 +421,6 @@ function CalendarSettings({ settings, onChange, onClose }) {
         </div>
 
         <div className="cal-set-group">
-          <label className="cal-set-row">
-            <span>Week view shows</span>
-            <select
-              className="cal-set-select"
-              value={settings.weekDays === 3 ? 3 : 5}
-              onChange={(e) => onChange({ weekDays: Number(e.target.value) })}
-            >
-              <option value={5}>Mon–Fri</option>
-              <option value={3}>3 days</option>
-            </select>
-          </label>
           <label className="cal-set-row">
             <span>New events last</span>
             <select
