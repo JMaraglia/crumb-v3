@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--bg-000000-a35);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -17,7 +17,7 @@
 }
 
 .ask-group {
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--bg-ffffff-a97);
   border-radius: 14px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -26,19 +26,19 @@
 .ask-head {
   padding: 14px 16px 12px;
   text-align: center;
-  border-bottom: 1px solid #e3e3e8;
+  border-bottom: 1px solid var(--line-e3e3e8);
 }
 
 .ask-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
 }
 
 .ask-message {
   margin-top: 4px;
   font-size: 0.82rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   line-height: 1.35;
 }
 
@@ -49,11 +49,11 @@
   margin: 0;
   padding: 16px;
   border: none;
-  border-top: 1px solid #e3e3e8;
+  border-top: 1px solid var(--line-e3e3e8);
   border-radius: 0;
   box-shadow: none;
   background: transparent;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-size: 1.05rem;
   font-weight: 400;
   text-align: center;
@@ -64,12 +64,12 @@
 }
 
 .ask-sheet .ask-btn.is-danger {
-  color: #ff3b30;
+  color: var(--fg-ff3b30);
 }
 
 .ask-sheet .ask-cancel,
 .ask-sheet .ask-cancel:hover {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 14px;
   border-top: none;
   font-weight: 600;

@@ -8,9 +8,9 @@
   inset: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -40,7 +40,7 @@
   grid-template-columns: 80px 1fr 80px;
   align-items: center;
   padding: 10px 14px;
-  background: rgba(242, 242, 247, 0.92);
+  background: var(--bg-f2f2f7-a92);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
@@ -66,12 +66,12 @@
   display: flex;
   align-items: center;
   font-size: 1.1rem;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .av-page .av-link-btn,
 .av-page .av-link-btn:hover {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-size: 1rem;
   padding: 6px 0;
 }
@@ -101,10 +101,10 @@
   padding: 10px 12px;
   border: none;
   border-radius: 10px;
-  background: #e3e3e8;
+  background: var(--bg-e3e3e8);
   font-size: 16px;   /* 16px stops iPhone from zooming in */
   outline: none;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .av-list-bar {
@@ -116,18 +116,18 @@
 
 .av-count {
   font-size: 0.85rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .av-empty {
   text-align: center;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   padding: 40px 20px;
 }
 
 /* White rounded group of rows (iPhone Settings style) */
 .av-group {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 14px;
@@ -142,9 +142,9 @@
   box-sizing: border-box;
   min-height: 48px;
   padding: 10px 14px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
   text-decoration: none;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .av-group > .av-row:first-child,
@@ -153,7 +153,7 @@
 }
 
 .av-page .av-row:active {
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
 }
 
 .av-row-text {
@@ -173,13 +173,13 @@
 
 .av-row-name.is-blank,
 .av-hero-name.is-blank {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   font-style: italic;
 }
 
 .av-row-sub {
   font-size: 0.85rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -188,7 +188,7 @@
 
 .av-row-label {
   font-size: 0.78rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .av-row-value {
@@ -197,28 +197,28 @@
 }
 
 .av-blue {
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .av-row-icon {
   flex: 0 0 auto;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   font-size: 0.95rem;
 }
 
 .av-row-chevron {
   flex: 0 0 auto;
-  color: #c7c7cc;
+  color: var(--fg-c7c7cc);
   font-size: 0.8rem;
 }
 
 .av-row-count {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .av-muted-row {
   padding: 14px;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 /* ---------- Detail ---------- */
@@ -237,7 +237,7 @@
 
 .av-hero-sub {
   margin-top: 8px;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   font-size: 0.95rem;
 }
 
@@ -245,8 +245,8 @@
   display: inline-block;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #0077cc;
-  background: #e6f1fa;
+  color: var(--fg-0077cc);
+  background: var(--bg-e6f1fa);
   border-radius: 6px;
   padding: 2px 8px;
 }
@@ -256,7 +256,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   padding: 6px 4px 6px;
 }
 
@@ -275,7 +275,7 @@
 
 .av-contact-title {
   font-size: 0.85rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .av-days {
@@ -289,15 +289,15 @@
   text-align: center;
   padding: 8px 0;
   border-radius: 8px;
-  background: #fff;
-  color: #8e8e93;
+  background: var(--bg-ffffff);
+  color: var(--fg-8e8e93);
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .av-day.is-on {
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
 }
 
 .av-page .av-day-btn,
@@ -308,16 +308,16 @@
   text-align: center;
   padding: 10px 0;
   border-radius: 8px;
-  background: #fff;
-  color: #8e8e93;
+  background: var(--bg-ffffff);
+  color: var(--fg-8e8e93);
 }
 
 .av-page .av-day-btn.is-on,
 .av-page .av-day-btn.is-on:hover,
 .av-vs-sheet .av-day-btn.is-on,
 .av-vs-sheet .av-day-btn.is-on:hover {
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
 }
 
 /* ---------- Edit form ---------- */
@@ -327,10 +327,10 @@
   box-sizing: border-box;
   padding: 13px 14px;
   border: none;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
   font-size: 16px;   /* 16px stops iPhone from zooming in */
   font-family: inherit;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   background: transparent;
   outline: none;
 }
@@ -355,7 +355,7 @@
   text-align: center;
   font-size: 1.4rem;
   line-height: 32px;
-  color: #c7c7cc;
+  color: var(--fg-c7c7cc);
 }
 
 .av-contact-edit > .av-input:nth-child(2) {
@@ -369,8 +369,8 @@
   padding: 13px 14px;
   margin-bottom: 18px;
   border-radius: 12px;
-  background: #fff;
-  color: #0077cc;
+  background: var(--bg-ffffff);
+  color: var(--fg-0077cc);
   font-weight: 600;
 }
 
@@ -381,8 +381,8 @@
   padding: 13px 0;
   margin-top: 10px;
   border-radius: 12px;
-  background: #fff;
-  color: #ff3b30;
+  background: var(--bg-ffffff);
+  color: var(--fg-ff3b30);
   font-weight: 600;
   text-align: center;
 }
@@ -396,12 +396,12 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-size: 2rem;
   line-height: 56px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 119, 204, 0.35);
+  box-shadow: 0 4px 12px var(--shadow-0077cc-a35);
   z-index: 10;
 }
 
@@ -410,7 +410,7 @@
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-000000-a30);
   display: flex;
   align-items: flex-end;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -423,7 +423,7 @@
 }
 
 .av-sheet-group {
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--bg-ffffff-a97);
   border-radius: 14px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -433,8 +433,8 @@
   padding: 12px 16px;
   text-align: center;
   font-size: 0.85rem;
-  color: #8e8e93;
-  border-bottom: 1px solid #ececf0;
+  color: var(--fg-8e8e93);
+  border-bottom: 1px solid var(--line-ececf0);
 }
 
 .av-sheet-action {
@@ -442,9 +442,9 @@
   padding: 16px;
   text-align: center;
   font-size: 1.1rem;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   text-decoration: none;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .av-sheet-title + .av-sheet-action,
@@ -458,8 +458,8 @@
   width: 100%;
   padding: 16px;
   border-radius: 14px;
-  background: #fff;
-  color: #0077cc;
+  background: var(--bg-ffffff);
+  color: var(--fg-0077cc);
   font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
@@ -470,7 +470,7 @@
   flex: 0 0 auto;
   display: inline-block;
   border-radius: 50%;
-  color: #fff;
+  color: var(--fg-ffffff);
   font-weight: 700;
   text-align: center;
 }
@@ -491,9 +491,9 @@
   white-space: nowrap;
 }
 
-.av-chip-blue { background: #e6f1fa; color: #0077cc; }
-.av-chip-gray { background: #eeeef0; color: #636366; }
-.av-chip-orange { background: #fff1de; color: #b25e00; }
+.av-chip-blue { background: var(--bg-e6f1fa); color: var(--fg-0077cc); }
+.av-chip-gray { background: var(--bg-eeeef0); color: var(--fg-636366); }
+.av-chip-orange { background: var(--bg-fff1de); color: var(--fg-b25e00); }
 
 .av-page .av-list-row,
 .av-page .av-list-row:hover {
@@ -526,13 +526,13 @@
 }
 
 .av-summary-name.is-blank {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   font-style: italic;
 }
 
 .av-summary-sub {
   font-size: 0.88rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   margin-top: 2px;
 }
 
@@ -543,14 +543,14 @@
   margin-top: 12px;
   padding: 9px 11px;
   border-radius: 9px;
-  background: #f6f6f8;
+  background: var(--bg-f6f6f8);
   font-size: 0.92rem;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
   line-height: 1.35;
 }
 
 .av-last-note-date {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   font-weight: 600;
   margin-right: 6px;
 }
@@ -572,16 +572,16 @@
   padding: 9px 10px;
   white-space: nowrap;
   border-radius: 9px;
-  background: #f0f6fc;
-  color: #0077cc;
+  background: var(--bg-f0f6fc);
+  color: var(--fg-0077cc);
   font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
 }
 
 .av-page .av-quick-btn:disabled {
-  color: #c7c7cc;
-  background: #f6f6f8;
+  color: var(--fg-c7c7cc);
+  background: var(--bg-f6f6f8);
   cursor: default;
 }
 
@@ -594,13 +594,13 @@
 
 .av-row-label-inline {
   font-size: 1rem;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .av-select {
   font-size: 16px;
   font-family: inherit;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   border: none;
   background: transparent;
   outline: none;
@@ -614,12 +614,12 @@
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 /* ---------- List rows that open in place ---------- */
 .av-item {
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
   -webkit-touch-callout: none;   /* no iPhone pop-up menu when holding a row */
   user-select: none;
   -webkit-user-select: none;
@@ -634,8 +634,8 @@
 }
 
 .av-item.is-open {
-  background: #fff;
-  box-shadow: inset 3px 0 0 #0077cc;
+  background: var(--bg-ffffff);
+  box-shadow: inset 3px 0 0 var(--shadow-0077cc);
 }
 
 .av-row-name.is-big {
@@ -668,12 +668,12 @@
 .av-hint {
   text-align: center;
   font-size: 0.8rem;
-  color: #aeaeb2;
+  color: var(--fg-aeaeb2);
   padding: 2px 0 10px;
 }
 
 .av-page .av-list-row.is-held {
-  background: #e6f1fa;
+  background: var(--bg-e6f1fa);
 }
 
 /* Pinned Background notes on the opened card / detail screen */
@@ -684,8 +684,8 @@
   margin-top: 12px;
   padding: 8px 11px;
   border-radius: 9px;
-  background: #faf5fe;
-  border: 1px solid #ecd9f7;
+  background: var(--bg-faf5fe);
+  border: 1px solid var(--line-ecd9f7);
 }
 
 .av-expand .av-background {
@@ -699,7 +699,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8a3fb5;
+  color: var(--fg-8a3fb5);
   margin-bottom: 2px;
 }
 
@@ -707,7 +707,7 @@
   display: block;
   font-size: 0.9rem;
   line-height: 1.35;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   padding: 1px 0;
 }
 
@@ -736,16 +736,16 @@
   gap: 5px;
   padding: 6px 11px;
   border-radius: 14px;
-  background: #e3e3e8;
-  color: #3a3a3c;
+  background: var(--bg-e3e3e8);
+  color: var(--fg-3a3a3c);
   font-size: 0.82rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .av-page .av-stage-filter.is-on {
-  background: #1c1c1e;
-  color: #fff;
+  background: var(--bg-1c1c1e);
+  color: var(--fg-ffffff);
 }
 
 .av-stage-dot {
@@ -771,7 +771,7 @@
   padding: 8px 13px;
   border-radius: 16px;
   border: 2px solid;
-  background: #fff;
+  background: var(--bg-ffffff);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -781,8 +781,8 @@
   font-size: 16px;   /* 16px stops iPhone from zooming in */
   font-family: inherit;
   font-weight: 600;
-  color: #1c1c1e;
-  background: #e3e3e8;
+  color: var(--fg-1c1c1e);
+  background: var(--bg-e3e3e8);
   border: none;
   border-radius: 9px;
   padding: 7px 10px;
@@ -802,7 +802,7 @@
   width: 51px;
   height: 31px;
   border-radius: 16px;
-  background: #e3e3e8;
+  background: var(--bg-e3e3e8);
   position: relative;
   cursor: pointer;
   outline: none;
@@ -819,13 +819,13 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: var(--bg-ffffff);
+  box-shadow: 0 2px 4px var(--shadow-000000-a20);
   transition: transform 0.2s;
 }
 
 .av-switch:checked {
-  background: #34c759;
+  background: var(--bg-34c759);
 }
 
 .av-switch:checked::after {
@@ -834,8 +834,8 @@
 
 /* Snooze */
 .av-chip-snooze {
-  background: #fff1de;
-  color: #b25e00;
+  background: var(--bg-fff1de);
+  color: var(--fg-b25e00);
 }
 
 /* Pop-up choices that are buttons (Snooze) look the same as the link ones */
@@ -844,9 +844,9 @@
   display: block;
   width: 100%;
   padding: 16px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
   font-size: 1.1rem;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   text-align: center;
 }
 
@@ -857,15 +857,15 @@
 
 .av-sheet-backdrop button.av-sheet-action.is-danger,
 .av-sheet-backdrop button.av-sheet-action.is-danger:hover {
-  color: #ff3b30;
+  color: var(--fg-ff3b30);
 }
 
 /* Customers: delivery days in green so they don't look like visit days */
 .av-day.is-delivery.is-on,
 .av-page .av-day-btn.is-delivery.is-on,
 .av-page .av-day-btn.is-delivery.is-on:hover {
-  background: #1e8e3e;
-  color: #fff;
+  background: var(--bg-1e8e3e);
+  color: var(--fg-ffffff);
 }
 
 /* Convert prospect → customer */
@@ -876,8 +876,8 @@
   padding: 13px 0;
   margin-top: 4px;
   border-radius: 12px;
-  background: #1e8e3e;
-  color: #fff;
+  background: var(--bg-1e8e3e);
+  color: var(--fg-ffffff);
   font-weight: 700;
   text-align: center;
 }
@@ -885,10 +885,10 @@
 .av-convert-sheet {
   width: 100%;
   box-sizing: border-box;
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 14px 14px 0 0;
   padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .av-convert-title {
@@ -899,7 +899,7 @@
 
 .av-convert-sub {
   font-size: 0.9rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   margin-bottom: 14px;
   line-height: 1.35;
 }
@@ -909,7 +909,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
-  border: 1px solid #d1d1d6;
+  border: 1px solid var(--line-d1d1d6);
   border-radius: 10px;
   font-size: 16px;
   outline: none;
@@ -934,18 +934,18 @@
 
 .av-sheet-backdrop .av-convert-cancel,
 .av-sheet-backdrop .av-convert-cancel:hover {
-  background: #f2f2f7;
-  color: #0077cc;
+  background: var(--bg-f2f2f7);
+  color: var(--fg-0077cc);
 }
 
 .av-sheet-backdrop .av-convert-go,
 .av-sheet-backdrop .av-convert-go:hover {
-  background: #1e8e3e;
-  color: #fff;
+  background: var(--bg-1e8e3e);
+  color: var(--fg-ffffff);
 }
 
 .av-sheet-backdrop .av-convert-go:disabled {
-  background: #a8d5b5;
+  background: var(--bg-a8d5b5);
 }
 
 /* Call sheet note */
@@ -963,14 +963,14 @@
 
 /* Customers' delivery days tag (green, "Del:") — visit tag stays blue */
 .av-chip-delivery {
-  background: #e3f6e8;
-  color: #1e8e3e;
+  background: var(--bg-e3f6e8);
+  color: var(--fg-1e8e3e);
 }
 
 /* Town / State / ZIP on one line under the street */
 .av-addr-row {
   display: flex;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .av-addr-row > .av-input {
@@ -979,7 +979,7 @@
 }
 
 .av-addr-row > .av-input + .av-input {
-  border-left: 1px solid #ececf0;
+  border-left: 1px solid var(--line-ececf0);
 }
 
 .av-addr-town {
@@ -1001,7 +1001,7 @@
   margin-top: 1px;
   font-size: 0.75rem;
   font-weight: 400;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .av-group-gap {
@@ -1025,8 +1025,8 @@
   margin: 0 16px 8px;
   padding: 8px 12px;
   border-radius: 10px;
-  background: #e8f5ec;
-  color: #1e8e3e;
+  background: var(--bg-e8f5ec);
+  color: var(--fg-1e8e3e);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -1052,15 +1052,15 @@
   height: 32px;
   padding: 0 12px;
   border-radius: 16px;
-  background: #e5f0fa;
-  color: #0077cc;
+  background: var(--bg-e5f0fa);
+  color: var(--fg-0077cc);
   font-size: 0.85rem;
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .av-page .av-pill:active {
-  background: #cfe3f5;
+  background: var(--bg-cfe3f5);
 }
 
 .av-page .av-pill:disabled {
@@ -1078,12 +1078,12 @@
 
 /* Prospects list: swipe left to delete */
 .av-item .av-swipe-row {
-  background: #fff;
+  background: var(--bg-ffffff);
 }
 
 .av-item.is-open:not(.av-gl) .av-swipe-row,
 .av-gl-members .av-item.is-open .av-swipe-row {
-  box-shadow: inset 3px 0 0 #0077cc;
+  box-shadow: inset 3px 0 0 var(--shadow-0077cc);
 }
 
 .av-item .av-swipe-row > .av-row {
@@ -1102,7 +1102,7 @@
 
 /* Quick visit panel */
 .av-vs-sheet {
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   padding-top: 12px;
 }
 
@@ -1129,7 +1129,7 @@
   background: none;
   border: none;
   padding: 4px 2px;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-size: 1rem;
   font-weight: 400;
   width: auto;
@@ -1141,7 +1141,7 @@
 }
 
 .av-vs-group {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 12px;
   padding: 10px 14px;
   margin-bottom: 12px;
@@ -1149,7 +1149,7 @@
 
 .av-vs-label {
   font-size: 0.85rem;
-  color: #6e6e73;
+  color: var(--fg-6e6e73);
   margin-bottom: 8px;
 }
 
@@ -1162,13 +1162,13 @@
 }
 
 .av-vs-row + .av-vs-row {
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .av-vs-select {
   border: none;
-  background: #e9f2fb;
-  color: #0077cc;
+  background: var(--bg-e9f2fb);
+  color: var(--fg-0077cc);
   font: inherit;
   font-weight: 600;
   font-size: 0.95rem;
@@ -1180,7 +1180,7 @@
 
 .av-vs-hint {
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   text-align: center;
   padding: 0 10px 6px;
 }
@@ -1192,12 +1192,12 @@
 
 /* Groups (multiple locations) */
 .av-chip-group {
-  background: #ede7f6;
-  color: #5e35b1;
+  background: var(--bg-ede7f6);
+  color: var(--fg-5e35b1);
 }
 .av-chip-stale {
-  background: #f0f0f3;
-  color: #6e6e73;
+  background: var(--bg-f0f0f3);
+  color: var(--fg-6e6e73);
 }
 
 .av-group-pick {
@@ -1211,8 +1211,8 @@
 .av-page .av-group-choice:hover {
   padding: 6px 11px;
   border-radius: 14px;
-  background: #ede7f6;
-  color: #5e35b1;
+  background: var(--bg-ede7f6);
+  color: var(--fg-5e35b1);
   font-size: 0.85rem;
   font-weight: 600;
   width: auto;
@@ -1221,17 +1221,17 @@
 /* Edit screen: add another location */
 .av-page .av-add-loc,
 .av-page .av-add-loc:hover {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: 600;
 }
 
 .av-loc-form {
   padding: 10px 14px 12px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .av-loc-form .av-input {
-  border: 1px solid #e3e3e8;
+  border: 1px solid var(--line-e3e3e8);
   border-radius: 8px;
   margin-bottom: 8px;
 }
@@ -1251,8 +1251,8 @@
 .av-page .av-loc-cancel:hover {
   padding: 8px 14px;
   border-radius: 999px;
-  background: #eeeef0;
-  color: #3a3a3c;
+  background: var(--bg-eeeef0);
+  color: var(--fg-3a3a3c);
   font-weight: 600;
   width: auto;
 }
@@ -1261,8 +1261,8 @@
 .av-page .av-loc-add:hover {
   padding: 8px 16px;
   border-radius: 999px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-weight: 700;
   width: auto;
 }
@@ -1274,7 +1274,7 @@
 .av-loc-msg {
   margin: -6px 4px 14px;
   font-size: 0.82rem;
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
 }
 
 .av-loc-contacts {
@@ -1283,12 +1283,12 @@
 }
 
 .av-loc-owner {
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
   margin-bottom: 6px;
 }
 
 .av-loc-q {
-  color: #6e6e73;
+  color: var(--fg-6e6e73);
   margin-bottom: 4px;
 }
 
@@ -1302,13 +1302,13 @@
 .av-loc-check input {
   width: 20px;
   height: 20px;
-  accent-color: #0077cc;
+  accent-color: var(--fg-0077cc);
 }
 
 /* Inactive accounts */
 .av-chip-inactive {
-  background: #3a3a3c;
-  color: #fff;
+  background: var(--bg-3a3a3c);
+  color: var(--fg-ffffff);
 }
 
 .av-inactive-banner {
@@ -1318,8 +1318,8 @@
   padding: 12px 14px;
   margin-bottom: 12px;
   border-radius: 12px;
-  background: #3a3a3c;
-  color: #fff;
+  background: var(--bg-3a3a3c);
+  color: var(--fg-ffffff);
   font-size: 0.85rem;
 }
 
@@ -1334,8 +1334,8 @@
   padding: 13px 0;
   margin-bottom: 10px;
   border-radius: 12px;
-  background: #fff;
-  color: #636366;
+  background: var(--bg-ffffff);
+  color: var(--fg-636366);
   font-weight: 600;
   text-align: center;
 }
@@ -1347,16 +1347,16 @@
   padding: 13px 0;
   margin-bottom: 10px;
   border-radius: 12px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-weight: 700;
   text-align: center;
 }
 
 /* Revisit (inactive accounts) */
 .av-chip-revisit {
-  background: #e8e8ed;
-  color: #3a3a3c;
+  background: var(--bg-e8e8ed);
+  color: var(--fg-3a3a3c);
 }
 
 .av-page .av-revisit-btn,
@@ -1365,8 +1365,8 @@
   margin-top: 8px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  background: var(--bg-ffffff-a18);
+  color: var(--fg-ffffff);
   font-weight: 600;
   font-size: 0.85rem;
   width: auto;
@@ -1385,21 +1385,21 @@
   padding: 12px 0;
   margin-bottom: 10px;
   border-radius: 12px;
-  background: #fff;
-  color: #ff3b30;
+  background: var(--bg-ffffff);
+  color: var(--fg-ff3b30);
   font-weight: 600;
   text-align: center;
 }
 
 .av-vs-sheet .av-revisit-quick .av-day-btn {
-  background: #f2f2f7;
-  color: #3a3a3c;
+  background: var(--bg-f2f2f7);
+  color: var(--fg-3a3a3c);
   font-weight: 600;
 }
 
 .av-vs-sheet .av-revisit-quick .av-day-btn.is-on {
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
 }
 
 /* Inactive drop-down at the bottom of Customers / Prospects */
@@ -1412,15 +1412,15 @@
   margin: 18px 0 8px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #e8e8ed;
-  color: #3a3a3c;
+  background: var(--bg-e8e8ed);
+  color: var(--fg-3a3a3c);
   font-weight: 700;
   font-size: 0.95rem;
 }
 
 .av-inactive-chev {
   transition: transform 0.2s;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .av-inactive-chev.is-open {
@@ -1441,14 +1441,14 @@
 .av-loc-hint {
   margin: -6px 4px 14px;
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 /* Sort menu (A–Z, Z–A, by town, by group) */
 .av-sort-select {
   border: none;
   background: transparent;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font: inherit;
   font-size: 0.95rem;
   font-weight: 600;
@@ -1466,7 +1466,7 @@
 .av-page a.av-row {
   text-decoration: none;
   color: inherit;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .av-page .av-group > a.av-row:first-child {
@@ -1476,7 +1476,7 @@
 /* Condensed group in the list: one row, its locations open underneath */
 .av-gl-members {
   margin-left: 18px;
-  border-left: 3px solid #d1c4e9;
+  border-left: 3px solid var(--line-d1c4e9);
 }
 .av-gl.is-open {
   box-shadow: none;
@@ -1485,23 +1485,23 @@
 /* Opened row: owner + phone, address (tap to call/text or map) */
 .av-quickinfo { padding: 2px 0 8px; display: flex; flex-direction: column; gap: 4px; }
 .av-qi-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.av-qi-who { font-size: 0.95rem; font-weight: 600; color: #1c1c1e; min-width: 0; }
-.av-qi-muted { color: #8e8e93; font-weight: 500; }
+.av-qi-who { font-size: 0.95rem; font-weight: 600; color: var(--fg-1c1c1e); min-width: 0; }
+.av-qi-muted { color: var(--fg-8e8e93); font-weight: 500; }
 .av-page .av-qi-link,
 .av-page .av-qi-link:hover {
   margin: 0; padding: 0; border: 0; background: none; box-shadow: none; width: auto;
-  color: #1c1c1e; font-size: 0.95rem; font-weight: 600; text-align: left; white-space: nowrap; /* tappable, not blue */
+  color: var(--fg-1c1c1e); font-size: 0.95rem; font-weight: 600; text-align: left; white-space: nowrap; /* tappable, not blue */
 }
 .av-page .av-qi-addr,
-.av-page .av-qi-addr:hover { font-weight: 500; white-space: normal; color: #3a3a3c; }
+.av-page .av-qi-addr:hover { font-weight: 500; white-space: normal; color: var(--fg-3a3a3c); }
 
 /* Quick-Add To Itinerary: confirmation under the quick buttons */
 .av-added {
   margin-top: 8px;
   padding: 8px 12px;
   border-radius: 10px;
-  background: #e8f5ec;
-  color: #1e7a3a;
+  background: var(--bg-e8f5ec);
+  color: var(--fg-1e7a3a);
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -1522,7 +1522,7 @@
   margin: 0;
   padding: 4px 0;
   background: none;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   border: 0;
   border-radius: 0;
   font-size: 0.8rem;
@@ -1531,7 +1531,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .av-page .av-info-toggle:hover,
-.av-page .av-info-toggle:active { background: none; color: #0077cc; font-size: 0.8rem; font-weight: 600; padding: 4px 0; }
+.av-page .av-info-toggle:active { background: none; color: var(--fg-0077cc); font-size: 0.8rem; font-weight: 600; padding: 4px 0; }
 .av-page .av-info-toggle svg { font-size: 0.7rem; }
 
 /* Customer screen: Hide Details / Show Details slides content shut (nothing is removed) */
@@ -1569,10 +1569,10 @@
   z-index: 60;
   padding: 13px 16px;
   border-radius: 14px;
-  background: #1e8e3e;
-  color: #fff;
+  background: var(--bg-1e8e3e);
+  color: var(--fg-ffffff);
   font-size: 15px;
   font-weight: 600;
   text-align: center;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 20px var(--shadow-000000-a18);
 }
