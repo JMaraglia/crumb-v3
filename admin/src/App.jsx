@@ -112,7 +112,13 @@ function Tile({ label, value, sub, onClick }) {
   );
 }
 
-function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, newBeta = 0, onOpenInbox, onOpenUsers = () => {} }) {
+function Overview({ data, users = [], onSignOut, email, newTickets = 0, newSuggestions = 0, newBeta = 0, onOpenInbox, onOpenUsers = () => {} }) {
+  // Founder, Nov 11: the first three tiles count reps only (admins left out), matching the lists they open.
+  const reps = users.filter((u) => !u.is_admin);
+  const recent = (d, ms) => d && Date.now() - new Date(d).getTime() < ms;
+  const repNew = reps.filter((u) => recent(u.joined_at, 7 * DAY)).length;
+  const repActive = reps.filter((u) => recent(u.last_change_at, 7 * DAY)).length;
+  const repDevices = reps.reduce((n, u) => n + (Number(u.devices_30d) || 0), 0);
   const attention = [];
   if (newTickets > 0) attention.push(`${newTickets} New ${newTickets === 1 ? 'Ticket' : 'Tickets'} In The Inbox`);
   if (newSuggestions > 0) attention.push(`${newSuggestions} New ${newSuggestions === 1 ? 'Suggestion' : 'Suggestions'} In The Inbox`);
@@ -122,9 +128,9 @@ function Overview({ data, onSignOut, email, newTickets = 0, newSuggestions = 0, 
     <>
       <h1 className="ad-h1">How's The Business?</h1>
       <div className="ad-grid">
-        <Tile label="Registered Users" value={data.users_total} sub={data.users_new_7d ? `${data.users_new_7d} New This Week` : 'None New This Week'} onClick={() => onOpenUsers(data.users_new_7d ? 'new' : 'all')} />
-        <Tile label="Active This Week" value={data.users_active_7d} sub="Synced A Change" onClick={() => onOpenUsers('active')} />
-        <Tile label="Devices Syncing" value={data.devices_30d} sub="Last 30 Days" onClick={() => onOpenUsers('devices')} />
+        <Tile label="Registered Reps" value={reps.length} sub={repNew ? `${repNew} New This Week` : 'None New This Week'} onClick={() => onOpenUsers(repNew ? 'new' : 'all')} />
+        <Tile label="Active This Week" value={repActive} sub="Synced A Change" onClick={() => onOpenUsers('active')} />
+        <Tile label="Devices Syncing" value={repDevices} sub="Last 30 Days" onClick={() => onOpenUsers('devices')} />
         <Tile label="Changes Today" value={data.changes_24h} sub={`${data.changes_7d} This Week`} onClick={() => onOpenUsers('today')} />
       </div>
 
@@ -298,11 +304,12 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], onCh
   const [done, setDone] = useState('');
   const [filter, setFilter] = useState(initialFilter);
   const within = (d, ms) => d && Date.now() - new Date(d).getTime() < ms;
-  const active = (u) => within(u.last_change_at, 7 * DAY);
-  // The Overview tiles' groups (Nov 11): joined this week, a device synced in 30 days, a change in the last 24 hours.
-  const isNew = (u) => within(u.joined_at, 7 * DAY);
-  const syncing = (u) => Number(u.devices_30d) > 0;
-  const today = (u) => within(u.last_change_at, DAY);
+  // The Overview tiles' groups (Nov 11): joined this week, active this week, a device synced in 30 days, a change in
+  // the last 24 hours. Founder, Nov 11: admins are left out of these (they're always active); they still show under All.
+  const active = (u) => !u.is_admin && within(u.last_change_at, 7 * DAY);
+  const isNew = (u) => !u.is_admin && within(u.joined_at, 7 * DAY);
+  const syncing = (u) => !u.is_admin && Number(u.devices_30d) > 0;
+  const today = (u) => !u.is_admin && within(u.last_change_at, DAY);
   const invited = new Set(invites.map((i) => String(i.email || '').toLowerCase()));
   const approved = (u) => u.is_admin || invited.has(String(u.email || '').toLowerCase());
   const waiting = (u) => invitesOk && !approved(u);
@@ -843,7 +850,7 @@ export default function App() {
           <button className="ad-refresh" type="button" onClick={load} disabled={refreshing}>{refreshing ? 'Updating…' : todayLabel()}</button>
         </div>
         {msg && <p className="ad-error">{msg}</p>}
-        {tab === 'overview' && overview && <Overview data={overview} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} onOpenUsers={(f) => { setUsersView({ filter: f, n: Date.now() }); pick('users'); }} />}
+        {tab === 'overview' && overview && <Overview data={overview} users={users} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} onOpenUsers={(f) => { setUsersView({ filter: f, n: Date.now() }); pick('users'); }} />}
         {tab === 'users' && <Users key={usersView.n} initialFilter={usersView.filter} users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
         {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} welcomes={inbox.welcomes} answers={inbox.answers} onChanged={load} />}
