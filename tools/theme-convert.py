@@ -70,6 +70,20 @@ def css(r, g, b, a=1.0):
     return '#%02x%02x%02x' % (r, g, b) if a >= 1 else 'rgba(%d, %d, %d, %s)' % (r, g, b, ('%.3f' % a).rstrip('0').rstrip('.'))
 
 
+def hsl(r, g, b):
+    import colorsys
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    return h, s, l
+
+
+def tinted_dark(r, g, b, alpha):
+    # A pale color with a real hue (light green, light red, light blue...) -> the same hue, strong, see-through.
+    import colorsys
+    h, s, l = hsl(r, g, b)
+    rr, gg, bb = colorsys.hls_to_rgb(h, 0.5, max(0.55, min(0.8, s)))
+    return css(int(rr * 255), int(gg * 255), int(bb * 255), alpha)
+
+
 def mix(c, t, k):
     return tuple(int(round(c[i] + (t[i] - c[i]) * k)) for i in range(3))
 
@@ -82,6 +96,10 @@ def midnight(role, rgba):
             return css(0, 0, 0, min(0.6, max(a * 3.2, 0.25)))
         return css(r, g, b, a)
     if role == 'bg':
+        # Pale tints (Nov 11 fix): highlight rows like Ordered (#eef7ee) and Did Not Order (#fde8e6) are
+        # nearly white, so judge them by their hue, not by how gray they look.
+        if L >= 0.78 and hsl(r, g, b)[1] >= 0.28 and max(r, g, b) - min(r, g, b) >= 9:
+            return tinted_dark(r, g, b, 0.26 * a)
         if S < 0.12:
             if L >= 0.985:
                 return css(14, 27, 44, a)          # cards / white panels
