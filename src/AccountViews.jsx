@@ -1104,7 +1104,7 @@ function Header({ onBack, title, right }) {
 export function AccountList({ config, accounts, setAccounts }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('az'); // az | za | town | group | contact
+  const [sortBy, setSortBy] = useState('az'); // az | za | town | group | contact (Customers) | stageDown | stageUp (Pipeline)
   const [openId, setOpenId] = useState(null); // the one row that's opened up
   const [stageFilter, setStageFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false); // the Inactive drop-down at the bottom
@@ -1149,6 +1149,17 @@ export function AccountList({ config, accounts, setAccounts }) {
       const bn = (b.name || '').trim();
       if (!an && bn) return 1; // unnamed ones go last
       if (an && !bn) return -1;
+      if (sortBy === 'stageUp' || sortBy === 'stageDown') {
+        // Founder, Nov 11: Pipeline sorts by stage both ways; no stage goes last either way.
+        const rank = (x) => { const n = STAGES.findIndex((st) => st.key === x.stage); return n < 0 ? null : n; };
+        const ra = rank(a), rb = rank(b);
+        if (ra !== rb) {
+          if (ra === null) return 1;
+          if (rb === null) return -1;
+          return sortBy === 'stageUp' ? ra - rb : rb - ra;
+        }
+        return an.localeCompare(bn);
+      }
       if (sortBy === 'contact') {
         // Never contacted first, then the longest since last contact
         const na = lastOf[a.id] && lastOf[a.id].never ? 1 : 0;
@@ -1334,8 +1345,18 @@ export function AccountList({ config, accounts, setAccounts }) {
             <option value="az">A–Z</option>
             <option value="za">Z–A</option>
             <option value="town">By town</option>
-            <option value="group">By group</option>
-            <option value="contact">Last contact</option>
+            {config.hasStage ? (
+              <>
+                {/* Founder, Nov 11: Pipeline sorts by stage; By group and Last contact removed here (Customers keep them). */}
+                <option value="stageDown">Stage: Ready → Cold</option>
+                <option value="stageUp">Stage: Cold → Ready</option>
+              </>
+            ) : (
+              <>
+                <option value="group">By group</option>
+                <option value="contact">Last contact</option>
+              </>
+            )}
           </select>
         </div>
 
