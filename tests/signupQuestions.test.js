@@ -25,12 +25,14 @@ describe('Create Account questions', () => {
   it('saves clean values', () => {
     expect(answersToSave({ ...full, coldCall: 'no' })).toEqual({ v: 1, customers: 0, annual_sales: '$5 Million+', cold_call: false, cold_call_how: null, daily_stops: true, stops_per_day: 12, crm: 'None' });
   });
-  it('password: 8+ with a letter, a number and a special character', () => {
-    expect(passwordProblem('ab1!')).not.toBe('');
+  it('password: 8+ with a capital, a lowercase, a number and a special character', () => {
+    expect(passwordProblem('Ab1!')).not.toBe('');
     expect(passwordProblem('abcdefgh')).not.toBe('');
     expect(passwordProblem('12345678')).not.toBe('');
-    expect(passwordProblem('crumb2026')).not.toBe('');
-    expect(passwordProblem('crumb2026!')).toBe('');
+    expect(passwordProblem('crumb2026!')).not.toBe('');
+    expect(passwordProblem('CRUMB2026!')).not.toBe('');
+    expect(passwordProblem('Crumb2026')).not.toBe('');
+    expect(passwordProblem('Crumb2026!')).toBe('');
   });
   it('admin lines', () => {
     expect(answerLines(answersToSave(full))).toContain('Cold Calls: Yes (Both)');

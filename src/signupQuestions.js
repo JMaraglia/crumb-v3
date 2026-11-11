@@ -46,10 +46,13 @@ export function answersToSave(a) {
   };
 }
 
-// Password rule (founder, Nov 10): 8+ characters with at least one letter, one number and one special character.
+// Password rule (founder, Nov 11): 8+ characters with a capital letter, a lowercase letter, a number and
+// a special character. Matches Supabase's "Lowercase, uppercase letters, digits and symbols" setting.
 export function passwordProblem(p) {
-  if (String(p).length < 8) return 'Use at least 8 characters.';
-  if (!/[A-Za-z]/.test(p) || !/\d/.test(p) || !/[^A-Za-z0-9]/.test(p)) return 'Use at least one letter, one number and one special character (like ! or #).';
+  const v = String(p);
+  if (v.length < 8) return 'Use at least 8 characters.';
+  if (!/[A-Z]/.test(v) || !/[a-z]/.test(v) || !/\d/.test(v) || !/[^A-Za-z0-9]/.test(v))
+    return 'Use a capital letter, a lowercase letter, a number and a special character (like ! or #).';
   return '';
 }
 
