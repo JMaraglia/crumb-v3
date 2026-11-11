@@ -17,7 +17,7 @@ export default function HomePage() {
   // "Keep Separate" was picked at sign-in: say so plainly until this device is set up with the account.
   const separate = readText('crumb_setup_separate') === '1' && !isRealSynced();
 
-  const iconStyle = { fontSize: '3rem', marginBottom: '10px', transition: 'transform 0.3s' };
+  const iconStyle = { transition: 'transform 0.3s' };
 
   const handleHover = e => e.currentTarget.style.transform = 'scale(1.2)';
   const handleLeave = e => e.currentTarget.style.transform = 'scale(1)';
@@ -34,7 +34,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="home-container">
+    <div className="home-container home-page">
       <div
         className={`home-gear ${backupDue ? 'is-due' : ''}`}
         role="button"
@@ -45,23 +45,21 @@ export default function HomePage() {
       >
         <IoSettingsOutline />
       </div>
-      <h1 className="crumb-logo" style={{ textAlign: 'center', fontSize: '4rem', marginBottom: '10px' }}>
-        Crumb.
-      </h1>
-      <h2 style={{ textAlign: 'center', marginTop: 0, marginBottom: '30px' }}>
-        Taking every last Crumb.
-      </h2>
+      {/* Nov 11 refresh: smaller header, so all the tools fit on one screen */}
+      <h1 className="crumb-logo home-logo">Crumb.</h1>
+      <p className="home-tagline">Taking every last Crumb.</p>
       {separate && (
         <div className="home-separate" role="note">
           <span>This device isn’t syncing with your account. Its information stays on this device.</span>
           <button type="button" onClick={() => navigate('/setup')}>Set Up</button>
         </div>
       )}
-      <div className="tile-grid">
-        {tiles.map(tile => (
+      <div className="home-grid">
+        {tiles.map((tile, i) => (
           <div
             key={tile.label}
-            className="tile"
+            // An odd number of tools showing: the last one goes full width, so the grid stays even.
+            className={`home-tile ${tiles.length % 2 === 1 && i === tiles.length - 1 ? 'is-wide' : ''}`}
             role="button"
             tabIndex={0}
             onClick={() => navigate(tile.path)}  // directly navigate
@@ -69,8 +67,8 @@ export default function HomePage() {
             onMouseEnter={handleHover}
             onMouseLeave={handleLeave}
           >
-            <div style={iconStyle}>{tile.icon}</div>
-            <span>{tile.label}</span>
+            <div className="home-tile-icon" style={iconStyle}>{tile.icon}</div>
+            <span className="home-tile-label">{tile.label}</span>
           </div>
         ))}
       </div>

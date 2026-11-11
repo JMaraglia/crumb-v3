@@ -251,3 +251,93 @@ button:hover {
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+/* Home refresh (Nov 11): the original light look with tighter proportions. Home only (home-page);
+   Sign In, Setup and Waitlist share home-container / crumb-logo and are untouched. */
+.home-page {
+  padding: calc(env(safe-area-inset-top) + 18px) 0 24px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.home-page .home-gear {
+  top: calc(env(safe-area-inset-top) + 8px);
+  right: -6px;
+}
+.home-page .home-logo {
+  margin: 0;
+  text-align: center;
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.home-page .home-tagline {
+  margin: 4px 0 22px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5f7286;
+}
+.home-page .home-separate {
+  margin: 0 auto 16px;
+}
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+.home-tile {
+  height: 132px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 12px;
+  border: 1px solid #e3e9f0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 40, 70, 0.05), 0 10px 24px rgba(16, 40, 70, 0.09);
+  color: #13263a;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.home-tile:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 2px rgba(16, 40, 70, 0.05), 0 4px 12px rgba(16, 40, 70, 0.08);
+}
+.home-tile.is-wide {
+  grid-column: span 2;
+  height: 76px;
+  flex-direction: row;
+  gap: 14px;
+}
+.home-tile-icon {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: #eaf3fb;
+  border: 1px solid #d3e5f5;
+  color: #0077cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 0;
+}
+.home-tile.is-wide .home-tile-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  font-size: 22px;
+}
+.home-tile-label {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
