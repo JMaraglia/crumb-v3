@@ -1,4 +1,4 @@
-// POST /api/join-beta  { name, email, industry, state, company, website }
+// POST /api/join-beta  { name, email, industry, state, heard, company, website }
 // The Join The Beta form on crumbsales.com. Saves the sign-up in Crumb's database (join_beta), where it
 // shows up in Crumb Admin → Inbox → Beta. "website" is a hidden trap field: real people never fill it in.
 // The database address and its public key come from this Vercel project's settings, never from the code.
@@ -23,6 +23,7 @@ export default async function handler(req, res) {
   if (clip(body.name, 100).split(/\s+/).length < 2) return res.status(400).json({ error: 'Please enter your first and last name.' });
   if (!clip(body.industry, 60)) return res.status(400).json({ error: 'Please enter your industry.' });
   if (!clip(body.state, 40)) return res.status(400).json({ error: 'Please pick your state.' });
+  if (!clip(body.heard, 80)) return res.status(400).json({ error: 'Please pick how you heard about Crumb.' });
 
   try {
     const call = (args) =>
@@ -32,7 +33,10 @@ export default async function handler(req, res) {
         body: JSON.stringify(args),
       });
     const basic = { p_name: clip(body.name, 100), p_email: clip(body.email, 200), p_company: clip(body.company, 120) };
-    let r = await call({ ...basic, p_industry: clip(body.industry, 60), p_state: clip(body.state, 40) });
+    const five = { ...basic, p_industry: clip(body.industry, 60), p_state: clip(body.state, 40) };
+    let r = await call({ ...five, p_heard: clip(body.heard, 80) });
+    // Before 0015_beta_heard.sql is run, the database only knows the 5-field version: still save the sign-up.
+    if (!r.ok && r.status === 404) r = await call(five);
     // Before 0011_beta_industry.sql is run, the database only knows the old 3-field version: still save the sign-up.
     if (!r.ok && r.status === 404) r = await call(basic);
     if (r.ok) {

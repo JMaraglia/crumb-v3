@@ -112,6 +112,12 @@
         <input id="f-industry" name="industry" type="text" maxlength="60" required>
         <label for="f-state">State <span class="req">*</span></label>
         <select id="f-state" name="state" required><option value="" selected disabled>Pick Your State</option><option>Alabama</option><option>Alaska</option><option>Arizona</option><option>Arkansas</option><option>California</option><option>Colorado</option><option>Connecticut</option><option>Delaware</option><option>District Of Columbia</option><option>Florida</option><option>Georgia</option><option>Hawaii</option><option>Idaho</option><option>Illinois</option><option>Indiana</option><option>Iowa</option><option>Kansas</option><option>Kentucky</option><option>Louisiana</option><option>Maine</option><option>Maryland</option><option>Massachusetts</option><option>Michigan</option><option>Minnesota</option><option>Mississippi</option><option>Missouri</option><option>Montana</option><option>Nebraska</option><option>Nevada</option><option>New Hampshire</option><option>New Jersey</option><option>New Mexico</option><option>New York</option><option>North Carolina</option><option>North Dakota</option><option>Ohio</option><option>Oklahoma</option><option>Oregon</option><option>Pennsylvania</option><option>Rhode Island</option><option>South Carolina</option><option>South Dakota</option><option>Tennessee</option><option>Texas</option><option>Utah</option><option>Vermont</option><option>Virginia</option><option>Washington</option><option>West Virginia</option><option>Wisconsin</option><option>Wyoming</option><option>Outside The US</option></select>
+        <label for="f-heard">How Did You Hear About Crumb? <span class="req">*</span></label>
+        <select id="f-heard" name="heard" required><option value="" selected disabled>Pick One</option><option>Friend Or Coworker</option><option>LinkedIn</option><option>Facebook</option><option>Instagram</option><option>TikTok</option><option>Google Search</option><option>Other</option></select>
+        <div id="f-heard-other-wrap" hidden>
+          <label for="f-heard-other">Where Did You Hear About Us? <span class="req">*</span></label>
+          <input id="f-heard-other" name="heardOther" type="text" maxlength="60">
+        </div>
         <label for="f-company">Company <span class="opt">(Optional)</span></label>
         <input id="f-company" name="company" type="text" autocomplete="organization" maxlength="120">
         <div class="trap" aria-hidden="true">
@@ -164,6 +170,9 @@
   var btn = document.getElementById('f-send');
   var msg = document.getElementById('f-msg');
   function show(text, ok) { msg.textContent = text; msg.className = 'msg ' + (ok ? 'ok' : 'err'); }
+  // "Other" opens a box to type where.
+  var otherWrap = document.getElementById('f-heard-other-wrap');
+  form.heard.addEventListener('change', function () { otherWrap.hidden = form.heard.value !== 'Other'; });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var name = form.name.value.trim();
@@ -175,16 +184,24 @@
     if (!industry) { show('Please enter your industry.', false); form.industry.focus(); return; }
     var state = form.state.value;
     if (!state) { show('Please pick your state.', false); return; }
+    var heard = form.heard.value;
+    if (!heard) { show('Please pick how you heard about Crumb.', false); return; }
+    if (heard === 'Other') {
+      var where = form.heardOther.value.trim();
+      if (!where) { show('Please tell us where you heard about Crumb.', false); form.heardOther.focus(); return; }
+      heard = 'Other: ' + where;
+    }
     btn.disabled = true; btn.textContent = 'Sending…'; msg.textContent = ''; msg.className = 'msg';
     fetch('/api/join-beta', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, email: email, industry: industry, state: state, company: form.company.value.trim(), website: form.website.value })
+      body: JSON.stringify({ name: name, email: email, industry: industry, state: state, heard: heard, company: form.company.value.trim(), website: form.website.value })
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, b: b }; });
     }).then(function (x) {
       if (x.ok) {
         form.reset();
+        otherWrap.hidden = true;
         show('Thanks for your interest in Crumb. We’ll be in touch.', true);
         btn.textContent = 'Thank You ✓';
         return;
