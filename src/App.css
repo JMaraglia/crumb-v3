@@ -11,7 +11,7 @@ html {
 
 body {
   font-family: Arial, sans-serif;
-  background-color: #f4f6f8;
+  background-color: var(--bg-f4f6f8);
   margin: 0;
   padding: 20px;
 }
@@ -20,17 +20,17 @@ body {
 h1 {
   text-align: center;
   font-size: 2.5rem;
-  color: #333;
+  color: var(--fg-333333);
 }
 
 .crumb-logo {
   font-weight: bold;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .crumb-subtitle {
   font-weight: normal;
-  color: #555;
+  color: var(--fg-555555);
 }
 
 /* Search */
@@ -40,7 +40,7 @@ h1 {
   padding: 10px;
   font-size: 1rem;
   width: 300px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--line-cccccc);
   border-radius: 4px;
 }
 
@@ -50,22 +50,22 @@ button {
   padding: 8px 12px;
   font-size: 0.9rem;
   cursor: pointer;
-  background-color: #0077cc;
-  color: white;
+  background-color: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   border: none;
   border-radius: 4px;
   transition: background-color 0.2s;
 }
 
 button:hover {
-  background-color: #005fa3;
+  background-color: var(--bg-005fa3);
 }
 
 /* Contact Cards */
 .contact-card {
-  background-color: white;
+  background-color: var(--bg-ffffff);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--shadow-000000-a10);
   padding: 15px;
   margin: 15px auto;
   max-width: 700px;
@@ -93,8 +93,8 @@ button:hover {
   font-size: 0.8rem;
   border: none;
   border-radius: 4px;
-  color: white;
-  background-color: #ccc;
+  color: var(--fg-ffffff);
+  background-color: var(--bg-cccccc);
   cursor: pointer;
 }
 
@@ -106,7 +106,7 @@ button:hover {
 .notes-page {
   max-width: 700px;
   margin: 0 auto;
-  background-color: white;
+  background-color: var(--bg-ffffff);
   padding: 20px;
   border-radius: 8px;
 }
@@ -119,8 +119,8 @@ button:hover {
 .notes-page li {
   margin-bottom: 15px;
   padding: 10px;
-  border-left: 4px solid #0077cc;
-  background-color: #f9f9f9;
+  border-left: 4px solid var(--line-0077cc);
+  background-color: var(--bg-f9f9f9);
 }
 
 /* Homepage Tiles */
@@ -140,9 +140,9 @@ button:hover {
 }
 
 .tile {
-  background-color: white;
+  background-color: var(--bg-ffffff);
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow-000000-a10);
   padding: 20px;
   text-align: center;
   cursor: pointer;
@@ -150,7 +150,7 @@ button:hover {
 }
 
 .tile:hover {
-  background-color: #e0e0e0;
+  background-color: var(--bg-e0e0e0);
   transform: scale(1.05);
 }
 /* Home: Backup & Restore link under the tiles */
@@ -158,8 +158,8 @@ button:hover {
   margin-top: 28px;
   padding: 10px 16px;
   border-radius: 20px;
-  background: #e8f5ec;
-  color: #1e8e3e;
+  background: var(--bg-e8f5ec);
+  color: var(--fg-1e8e3e);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -167,8 +167,8 @@ button:hover {
 }
 
 .home-backup.is-stale {
-  background: #fff4e5;
-  color: #c26a00;
+  background: var(--bg-fff4e5);
+  color: var(--fg-c26a00);
 }
 
 /* Home: Notifications + Backup links under the tiles */
@@ -185,8 +185,8 @@ button:hover {
 }
 
 .home-backup.home-notify {
-  background: #e5f0fa;
-  color: #0077cc;
+  background: var(--bg-e5f0fa);
+  color: var(--fg-0077cc);
 }
 
 /* Settings gear, top-right of Home */
@@ -200,28 +200,28 @@ button:hover {
   right: 4px;
   padding: 8px;
   font-size: 1.7rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   cursor: pointer;
   line-height: 0;
 }
 
 /* Gear goes orange when a backup is due */
 .home-gear.is-due {
-  color: #ff9500;
+  color: var(--fg-ff9500);
 }
 
 /* Save failed banner + screen error message */
 .app-savefail {
   position: fixed; left: 10px; right: 10px; top: calc(env(safe-area-inset-top) + 8px); z-index: 200;
   display: flex; gap: 10px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px;
-  background: #c62828; color: #fff; font-size: 0.9rem; line-height: 1.35; box-shadow: 0 6px 20px rgba(0,0,0,.2);
+  background: var(--bg-c62828); color: var(--fg-ffffff); font-size: 0.9rem; line-height: 1.35; box-shadow: 0 6px 20px var(--shadow-000000-a20);
 }
 .app-savefail .app-savefail-x, .app-savefail .app-savefail-x:hover {
-  margin: 0; padding: 0 4px; width: auto; border: 0; background: none; box-shadow: none; color: #fff; font-size: 1.3rem; line-height: 1;
+  margin: 0; padding: 0 4px; width: auto; border: 0; background: none; box-shadow: none; color: var(--fg-ffffff); font-size: 1.3rem; line-height: 1;
 }
 .app-error { padding: 80px 24px; text-align: center; }
-.app-error-title { font-size: 1.2rem; font-weight: 700; color: #1c1c1e; }
-.app-error-text { margin-top: 8px; color: #6e6e73; }
+.app-error-title { font-size: 1.2rem; font-weight: 700; color: var(--fg-1c1c1e); }
+.app-error-text { margin-top: 8px; color: var(--fg-6e6e73); }
 .app-error .app-error-btn { margin-top: 20px; width: auto; padding: 12px 22px; }
 
 /* Home: "Keep Separate" note (this device isn't syncing with the account) */
@@ -230,8 +230,8 @@ button:hover {
   margin: -14px auto 22px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #fff4e5;
-  color: #6b4200;
+  background: var(--bg-fff4e5);
+  color: var(--fg-6b4200);
   font-size: 0.9rem;
   line-height: 1.4;
   display: flex;
@@ -246,8 +246,8 @@ button:hover {
   padding: 8px 12px;
   border: 0;
   border-radius: 8px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -276,7 +276,7 @@ button:hover {
   text-align: center;
   font-size: 14px;
   font-weight: 500;
-  color: #5f7286;
+  color: var(--fg-5f7286);
 }
 .home-page .home-separate {
   margin: 0 auto 16px;
@@ -296,18 +296,18 @@ button:hover {
   justify-content: center;
   gap: 12px;
   padding: 0 12px;
-  border: 1px solid #e3e9f0;
+  border: 1px solid var(--line-e3e9f0);
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(16, 40, 70, 0.05), 0 10px 24px rgba(16, 40, 70, 0.09);
-  color: #13263a;
+  background: var(--bg-ffffff);
+  box-shadow: 0 1px 2px var(--shadow-102846-a05), 0 10px 24px var(--shadow-102846-a09);
+  color: var(--fg-13263a);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .home-tile:active {
   transform: scale(0.97);
-  box-shadow: 0 1px 2px rgba(16, 40, 70, 0.05), 0 4px 12px rgba(16, 40, 70, 0.08);
+  box-shadow: 0 1px 2px var(--shadow-102846-a05), 0 4px 12px var(--shadow-102846-a08);
 }
 .home-tile.is-wide {
   grid-column: span 2;
@@ -321,9 +321,9 @@ button:hover {
   flex: none;
   box-sizing: border-box;
   border-radius: 16px;
-  background: #eaf3fb;
-  border: 1px solid #d3e5f5;
-  color: #0077cc;
+  background: var(--bg-eaf3fb);
+  border: 1px solid var(--line-d3e5f5);
+  color: var(--fg-0077cc);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,4 +340,27 @@ button:hover {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+/* Midnight Home (Nov 11): the approved mockup's depth: navy glow, gradient cards, soft blue icon glow */
+:root[data-theme="midnight"] body {
+  background: radial-gradient(120% 60% at 50% -10%, #0d2a4d 0%, #06101c 55%, #03070d 100%) fixed;
+}
+:root[data-theme="midnight"] .home-tile {
+  border-color: #1d3049;
+  background: linear-gradient(180deg, #0f1d30 0%, #0a1524 100%);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+:root[data-theme="midnight"] .home-tile-icon {
+  background: rgba(58, 160, 236, 0.12);
+  border-color: rgba(58, 160, 236, 0.3);
+  color: #5bb4f3;
+  box-shadow: 0 0 22px rgba(0, 119, 204, 0.25);
+}
+:root[data-theme="midnight"] .home-page .crumb-logo {
+  color: #2f98e8;
+  text-shadow: 0 0 26px rgba(0, 119, 204, 0.45);
+}
+:root[data-theme="midnight"] .home-page .home-tagline {
+  color: #94a7bd;
 }

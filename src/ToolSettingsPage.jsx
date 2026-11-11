@@ -4,9 +4,10 @@
 // Uses the Settings page's look (st- classes).
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
+import { FaArrowLeft, FaChevronRight, FaCheck } from 'react-icons/fa';
 import { loadAppSettings, saveAppSettings, loadCallSheetSettings, saveCallSheetSettings } from './store';
 import { useCloudRefresh } from './useCloudRefresh';
+import { applyTheme } from './theme';
 import { LIBRARY, MAX_IN_USE, MAX_LABEL_LENGTH, MAX_CUSTOM, labelsInUse, customLabels, saveLabels, labelColor } from './noteLabels';
 import './SettingsPage.css';
 
@@ -31,6 +32,11 @@ const TOOLS = {
   'note-labels': {
     title: 'Note Labels',
     labels: true,
+    switches: [],
+  },
+  appearance: {
+    title: 'Appearance',
+    appearance: true,
     switches: [],
   },
   todo: {
@@ -85,6 +91,29 @@ export default function ToolSettingsPage() {
       <div className="st-content">
         <h1 className="st-title">{t.title}</h1>
         {t.labels && <NoteLabelsEditor />}
+        {t.appearance && (
+          <div className="st-group" role="radiogroup" aria-label="Appearance">
+            {[['light', 'Light'], ['midnight', 'Midnight']].map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={app.theme === v}
+                className="st-row st-choice-row"
+                onClick={() => {
+                  setApp({ ...app, theme: v });
+                  saveAppSettings({ theme: v });
+                  applyTheme(v);
+                }}
+              >
+                <span className="st-row-text">
+                  <span className="st-row-label">{label}</span>
+                </span>
+                {app.theme === v && <FaCheck className="st-choice-check" aria-hidden="true" />}
+              </button>
+            ))}
+          </div>
+        )}
         {shown.length > 0 && <div className="st-group">
           {shown.map((s) => (
             <label key={s.k} className="st-row st-switch-row">
@@ -107,7 +136,7 @@ export default function ToolSettingsPage() {
             </button>
           </div>
         )}
-        {!t.labels && <p className="st-note">Turning something off only hides it. Nothing is deleted, and turning it back on brings it all back.</p>}
+        {!t.labels && !t.appearance && <p className="st-note">Turning something off only hides it. Nothing is deleted, and turning it back on brings it all back.</p>}
       </div>
     </div>
   );

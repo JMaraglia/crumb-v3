@@ -408,6 +408,8 @@ export function loadAppSettings() {
     // Labels in use, in order, and your own labels (see noteLabels.js). null = not set yet.
     labels: Array.isArray(o.labels) ? o.labels.filter((x) => typeof x === 'string' && x.trim()) : null,
     customLabels: Array.isArray(o.customLabels) ? o.customLabels.filter((x) => typeof x === 'string' && x.trim()) : [],
+    // Appearance (Nov 11): 'light' (default) or 'midnight'.
+    theme: o.theme === 'midnight' ? 'midnight' : 'light',
   };
 }
 export function saveAppSettings(patch) {

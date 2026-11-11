@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
-import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline, IoBugOutline, IoBulbOutline, IoLocationOutline, IoCallOutline, IoCheckboxOutline, IoPricetagOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline, IoBugOutline, IoBulbOutline, IoLocationOutline, IoCallOutline, IoCheckboxOutline, IoPricetagOutline, IoContrastOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
@@ -79,6 +79,11 @@ export default function SettingsPage() {
         ? 'Morning summary, end-of-day reminder (to-dos and Daily Stops), heads-ups before visits'
         : 'Off · tap to turn on reminders',
       go: () => navigate('/notifications'),
+    },
+    {
+      icon: <IoContrastOutline />,
+      label: 'Appearance',
+      go: () => navigate('/settings/appearance'),
     },
     // Each tool has its own settings page (Nov 10): a Show switch now, more settings later.
     {

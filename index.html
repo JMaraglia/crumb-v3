@@ -13,6 +13,16 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#f2f2f7" />
+    <script>
+      // Light / Midnight (Nov 11, 2026): set before Crumb draws, so there's no white flash.
+      try {
+        var s = JSON.parse(localStorage.getItem('crumb_app_settings') || '{}');
+        if (s && s.theme === 'midnight') {
+          document.documentElement.setAttribute('data-theme', 'midnight');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#06101c');
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
