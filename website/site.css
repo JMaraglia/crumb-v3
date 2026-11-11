@@ -209,6 +209,11 @@ h1 { background: linear-gradient(100deg, #8f99a5 0%, #ffffff 30%, #ffffff 55%, #
 .fp-shots figure { margin: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .fp-shots img { width: 100%; height: auto; aspect-ratio: 600 / 1100; object-fit: cover; object-position: top; border-radius: 26px; border: 1px solid var(--line-hi); padding: 6px; background: #0d1726; box-shadow: 0 20px 60px rgba(0,119,204,.12); }
 .fp-shots figcaption { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); text-align: center; }
+/* Call Sheet: a sideways tablet with a phone leaning on it (Nov 10) */
+.fp-device { position: relative; width: 100%; max-width: 900px; padding: 0 10% 17% 0; }
+.fp-tablet { background: #0b0f15; border-radius: clamp(14px, 3vw, 34px); padding: clamp(8px, 1.6vw, 18px); border: 1px solid var(--line-hi); box-shadow: 0 30px 80px rgba(0,119,204,.18), inset 0 0 0 1px rgba(255,255,255,.05); }
+.fp-tablet img { display: block; width: 100%; height: auto; border-radius: clamp(6px, 1.4vw, 16px); }
+.fp-phone { position: absolute; right: 0; bottom: 0; width: 27%; height: auto; border-radius: clamp(12px, 2.6vw, 30px); background: #0b0f15; padding: clamp(4px, .7vw, 8px); border: 1px solid var(--line-hi); transform: rotate(-7deg); transform-origin: bottom right; box-shadow: -18px 24px 50px rgba(0,0,0,.55); }
 .fp-end { padding-top: 24px; }
 .fp-end .ctas { margin-top: 6px; }
 .fp-back-end { margin: 18px 0 0; }
