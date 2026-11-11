@@ -82,6 +82,12 @@ describe('which devices sync (S7)', () => {
   });
   it('off by default, and the kill switch stops everything', () => {
     expect(syncBlockReason('prodref', read({}), false)).toBe('off');
+    // Nov 11: a device set up for one account doesn't sync for another; no owner saved or nobody signed in changes nothing.
+    const owned = { crumb_sync_mode: 'real', crumb_sync_project: 'prodref', crumb_sync_owner: 'user-a' };
+    expect(syncBlockReason('prodref', read(owned), false, 'user-a')).toBe('');
+    expect(syncBlockReason('prodref', read(owned), false, 'user-b')).toBe('other-account');
+    expect(syncBlockReason('prodref', read(owned), false, '')).toBe('');
+    expect(syncBlockReason('prodref', read({ crumb_sync_mode: 'real', crumb_sync_project: 'prodref' }), false, 'user-b')).toBe('');
     expect(syncBlockReason('prodref', read({ crumb_sync_mode: 'real', crumb_sync_project: 'prodref' }), true)).toBe('kill-switch');
   });
 });

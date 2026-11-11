@@ -26,7 +26,7 @@ const FeedbackPage = React.lazy(() => import('./FeedbackPage'));
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
-import { needsSignIn, needsSetup, firstOpenSignIn, accessState, checkInvited, signedInEmail } from './syncMode';
+import { needsSignIn, needsSetup, firstOpenSignIn, accessState, checkInvited, signedInEmail, otherAccountSignedIn, rememberOwner } from './syncMode';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
@@ -105,6 +105,12 @@ function SignInGate() {
     const access = accessState();
     if (access === 'signin') {
       navigate('/sign-in', { replace: true, state: { from: '/setup', gate: true } });
+      return;
+    }
+    // Nov 11: a device set up for one account never opens for another (Setup shows why, with Sign Out).
+    rememberOwner();
+    if (otherAccountSignedIn()) {
+      if (location.pathname !== '/setup') navigate('/setup', { replace: true });
       return;
     }
     if ((access === 'denied' || access === 'unknown') && !OPEN_PATHS.includes(location.pathname)) {

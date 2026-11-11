@@ -25,6 +25,9 @@ export const TEST_DEVICE_KEY = 'crumb_sync_test_device'; // '1' = this copy hold
 export const MODE_KEY = 'crumb_sync_mode';               // 'real' = this device syncs your real data
 export const PROJECT_KEY = 'crumb_sync_project';         // which cloud project it syncs with
 export const PAUSED_KEY = 'crumb_sync_paused';           // '1' = paused
+// Whose account this device was set up for (the account's ID; Nov 11 beta review). If someone ELSE signs in
+// here, nothing syncs and Crumb doesn't open: the first person's data is never shown to, or sent as, another account.
+export const OWNER_KEY = 'crumb_sync_owner';
 
 // Who may sync (invite-only beta). Since Nov 8 the real list lives in the cloud (Admin → Inbox → Beta →
 // Sync Access), and the cloud itself refuses anyone not on it. SYNC_EMAILS is only the fallback for a
@@ -65,11 +68,13 @@ export const isRealSynced = () => readText(MODE_KEY) === 'real';
 export const isPaused = () => readText(PAUSED_KEY) === '1';
 
 // '' = syncing. Otherwise why not: 'kill-switch' | 'test-copy-locked' | 'other-project' | 'paused' | 'off'
-export function syncBlockReason(ref = projectRef(), read = readText, killed = KILL_SWITCH) {
+export function syncBlockReason(ref = projectRef(), read = readText, killed = KILL_SWITCH, userId = signedInUserId(ref)) {
   if (killed) return 'kill-switch';
   if (read(TEST_DEVICE_KEY) === '1') return ref === TEST_PROJECT ? '' : 'test-copy-locked';
   if (read(MODE_KEY) === 'real') {
     if (!ref || read(PROJECT_KEY) !== ref) return 'other-project';
+    const owner = read(OWNER_KEY);
+    if (owner && userId && owner !== userId) return 'other-account';
     return read(PAUSED_KEY) === '1' ? 'paused' : '';
   }
   return 'off';
@@ -112,6 +117,7 @@ export const BLOCK_TEXT = {
   'kill-switch': 'Syncing is switched off for now. Crumb keeps working on this device, and your changes wait here.',
   'test-copy-locked': 'This is a test copy with made-up demo data, so it can never sync with your real account.',
   'other-project': 'This device was set up with a different cloud, so it isn’t syncing.',
+  'other-account': 'This device is set up for another account, so it isn’t syncing.',
   paused: 'Paused. Crumb keeps working on this device, and your changes wait here until you resume.',
   off: '',
 };
@@ -128,6 +134,30 @@ export function signedInEmail(ref = projectRef()) {
   } catch {
     return '';
   }
+}
+
+// ID of whoever is signed in on this device ('' if nobody).
+export function signedInUserId(ref = projectRef()) {
+  try {
+    const s = JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) || 'null');
+    return String((s && s.user && s.user.id) || '');
+  } catch {
+    return '';
+  }
+}
+// A syncing device with someone signed in who isn't the account it was set up for.
+export function otherAccountSignedIn() {
+  if (!isRealSynced()) return false;
+  const owner = readText(OWNER_KEY);
+  const me = signedInUserId();
+  return Boolean(owner && me && owner !== me);
+}
+// Remember whose device this is. Devices set up before Nov 11 have no owner saved yet: the person signed in
+// now becomes the owner. Never changes an owner that's already saved.
+export function rememberOwner() {
+  if (!isRealSynced() || readText(OWNER_KEY)) return;
+  const me = signedInUserId();
+  if (me) writeText(OWNER_KEY, me);
 }
 
 // A brand-new device (nothing on it, nobody signed in, not syncing): Crumb opens on Sign In, like any app.

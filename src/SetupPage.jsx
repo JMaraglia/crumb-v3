@@ -27,6 +27,18 @@ export default function SetupPage() {
   const [ask, setAsk] = useState(null); // { testCopy, cloudHasData, device, cloud }
   const [busy, setBusy] = useState('');
   const [separated, setSeparated] = useState(false);
+  const [otherAccount, setOtherAccount] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const signOut = async () => {
+    setSigningOut(true);
+    try {
+      const { signOutThisDevice } = await import('./cloud');
+      await signOutThisDevice(); // this device only; nothing saved on it changes
+    } catch {
+      /* the app restarts below either way */
+    }
+    window.location.replace('/sign-in');
+  };
   const [tries, setTries] = useState(0);
   const running = useRef(false);
   const step = useRef('starting');
@@ -54,6 +66,10 @@ export default function SetupPage() {
         running.current = false;
         if (r.status === 'downloaded' || r.status === 'fresh') {
           window.location.replace('/'); // every screen starts over with the account's data
+          return;
+        }
+        if (r.status === 'other-account') {
+          setOtherAccount(true);
           return;
         }
         if (r.status === 'ask') {
@@ -102,7 +118,18 @@ export default function SetupPage() {
   };
 
   let card;
-  if (separated) {
+  if (otherAccount) {
+    card = (
+      <div className="su-card" role="alert">
+        <div className="su-title">This Device Is Set Up For Another Account</div>
+        <div className="su-sub">
+          Crumb on this device belongs to a different account, so it can’t open with this one. Sign out, then sign in with
+          the account this device was set up with. Nothing on this device was changed.
+        </div>
+        <button className="su-btn" onClick={signOut} disabled={signingOut}>{signingOut ? 'Signing Out…' : 'Sign Out'}</button>
+      </div>
+    );
+  } else if (separated) {
     card = (
       <div className="su-card">
         <div className="su-title">Kept Separate</div>
