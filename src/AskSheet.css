@@ -40,6 +40,7 @@
   font-size: 0.82rem;
   color: var(--fg-8e8e93);
   line-height: 1.35;
+  white-space: pre-line; /* line breaks in a message show (Activate lists its canceled appointments) */
 }
 
 .ask-sheet .ask-btn,

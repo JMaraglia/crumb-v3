@@ -20,7 +20,7 @@ import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
 import MeetingSheet from './MeetingSheet';
-import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, keyOf, fromKey, addDaysToKey, onItinerary } from './schedule';
+import { DAYS, FREQUENCIES, STAGES, stageInfo, nextVisitDate, snoozeUntilFor, isSnoozed, keyOf, fromKey, addDaysToKey, onItinerary, reactivatedFields, canceledAhead, linkedItemKey } from './schedule';
 
 /* ---------- Groups: one business, several locations ----------
    Each location is its own customer or prospect. Locations share a `group` name
@@ -161,6 +161,53 @@ export function inactiveLabel(account) {
 export function deleteWarning(account, config) {
   return `Permanently delete ${displayName(account)}?\n\nThis deletes the ${config.singular.toLowerCase()} and everything with it: notes, photos, its meetings on the Calendar, its Daily Stops and To-Do tasks.\n\nIt can't be undone.`;
 }
+// Activate an inactive account (amendment 3.2, Nov 11): its schedule resumes from today, visits from the
+// inactive period don't come back, and appointments / stops it canceled stay off unless you choose to
+// bring back the ones still ahead. Nothing is deleted either way.
+function linkedItemsOf(type, id) {
+  const same = (x) =>
+    x && String(x.accountId) === String(id) && (x.accountType === type || (type === 'customer' && x.type === 'contact') || (type === 'prospect' && x.type === 'prospect' && !x.accountType));
+  return [...loadEvents().filter(same), ...loadStops().filter(same)];
+}
+function ActivateButton({ account, config, setAccounts }) {
+  const [ahead, setAhead] = useState(null); // canceled appointments still ahead, while asking
+  const finish = (restore) => {
+    const linked = linkedItemsOf(typeOf(config), account.id);
+    const restoreIds = restore ? canceledAhead(account, linked).map(linkedItemKey) : [];
+    const fields = reactivatedFields(account, linked, restoreIds);
+    setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, ...fields } : x)));
+    setAhead(null);
+  };
+  const start = () => {
+    const list = canceledAhead(account, linkedItemsOf(typeOf(config), account.id));
+    if (list.length) setAhead(list);
+    else finish(false);
+  };
+  const when = (it) => new Date(it.date + 'T00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return (
+    <>
+      <button className="av-reactivate" onClick={start}>
+        Activate
+      </button>
+      {ahead && (
+        <AskSheet
+          title={`Bring Back ${ahead.length === 1 ? 'Its Canceled Appointment' : `Its ${ahead.length} Canceled Appointments`}?`}
+          message={ahead
+            .slice(0, 6)
+            .map((it) => `${when(it)} · ${it.title || it.name || 'Stop'}`)
+            .join('\n') + (ahead.length > 6 ? `\n+ ${ahead.length - 6} more` : '')}
+          choices={[
+            { value: 'back', label: 'Bring Them Back' },
+            { value: 'off', label: 'Leave Them Off' },
+          ]}
+          onPick={(v) => finish(v === 'back')}
+          onCancel={() => setAhead(null)}
+        />
+      )}
+    </>
+  );
+}
+
 export function deleteAccountExtras(type, id) {
   const same = (x) => x && x.accountType === type && String(x.accountId) === String(id);
   // Saved only when something was actually removed.
@@ -1767,14 +1814,7 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
 
         {setAccounts &&
           (account.inactive ? (
-            <button
-              className="av-reactivate"
-              onClick={() =>
-                setAccounts((prev) => prev.map((x) => (x.id === account.id ? { ...x, inactive: null } : x)))
-              }
-            >
-              Activate
-            </button>
+            <ActivateButton account={account} config={config} setAccounts={setAccounts} />
           ) : (
             <button className="av-inactive-btn" onClick={() => setAskInactive(true)}>
               Make Inactive
@@ -2467,12 +2507,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
         {!isNew &&
           setAccounts &&
           (existing.inactive ? (
-            <button
-              className="av-reactivate"
-              onClick={() => setAccounts((prev) => prev.map((x) => (x.id === existing.id ? { ...x, inactive: null } : x)))}
-            >
-              Activate
-            </button>
+            <ActivateButton account={existing} config={config} setAccounts={setAccounts} />
           ) : (
             <button className="av-inactive-btn" onClick={() => setAskInactiveEdit(true)}>
               Make Inactive

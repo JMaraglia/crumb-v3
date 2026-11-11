@@ -101,9 +101,55 @@ function movedAway(account, dateKey) {
   return Boolean(m && m.to && m.to !== dateKey);
 }
 
+/* ---------- Inactive periods (amendment 3.2, Nov 11, 2026) ----------
+   account.inactive = { reason, since, revisit? } while inactive.
+   On Activate, the inactive period is saved in account.inactiveSpans ([{ from, to }]) so visits from that
+   period never come back as backdated visits, and the appointments / stops it canceled are listed in
+   account.canceledWhileInactive (['e:<event id>', 's:<stop id>']) so they don't reappear by themselves.
+   Visits from BEFORE the account went inactive always stay, as history. Nothing is ever deleted. */
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function inactiveSince(account) {
+  const s = account.inactive && account.inactive.since;
+  return DATE_RE.test(s || '') ? s : '0000-00-00';
+}
+// Inactive right now and this date is on or after the day it went inactive.
+function offWhileInactive(account, dateKey) {
+  return Boolean(account.inactive) && dateKey >= inactiveSince(account);
+}
+// This date falls in an earlier inactive period (the account has been activated again since).
+export function inPastInactiveSpan(account, dateKey) {
+  return (account.inactiveSpans || []).some((sp) => sp && sp.from && sp.to && dateKey >= sp.from && dateKey <= sp.to);
+}
+const itemKey = (item) => (item && item.start !== undefined && item.title !== undefined ? 'e:' : 's:') + String(item && item.id);
+
+// What to save when an inactive account is activated again. restoreIds = item keys the person chose to
+// bring back. Returns the account's new fields.
+export function reactivatedFields(account, linkedItems = [], restoreIds = [], today = todayKeyLocal()) {
+  const since = inactiveSince(account);
+  const yesterday = addDaysToKey(today, -1);
+  const spans = (account.inactiveSpans || []).slice();
+  if (account.inactive && since !== '0000-00-00' && since <= yesterday) spans.push({ from: since, to: yesterday });
+  const revisit = account.inactive && account.inactive.revisit;
+  const canceled = new Set(account.canceledWhileInactive || []);
+  linkedItems
+    .filter((it) => it && it.date && it.date >= since && it.date !== revisit)
+    .map(itemKey)
+    .filter((k) => !restoreIds.includes(k))
+    .forEach((k) => canceled.add(k));
+  return { inactive: null, inactiveSpans: spans, canceledWhileInactive: [...canceled] };
+}
+// The appointments / stops linked to this account that being inactive canceled and that are still ahead
+// (today or later): the ones Activate offers to bring back.
+export function canceledAhead(account, linkedItems = [], today = todayKeyLocal()) {
+  const since = inactiveSince(account);
+  const revisit = account.inactive && account.inactive.revisit;
+  return linkedItems.filter((it) => it && it.date && it.date >= since && it.date >= today && it.date !== revisit);
+}
+export { itemKey as linkedItemKey };
+
 // The visit time for that date (a moved visit can have its own time).
 export function visitTimeOn(account, dateKey) {
-  if (account.inactive) {
+  if (offWhileInactive(account, dateKey)) {
     const r = account.inactive;
     return r.revisit === dateKey && typeof r.revisitTime === 'number' ? r.revisitTime : null;
   }
@@ -127,8 +173,12 @@ export function pruneMoves(moves) {
 // Due on this date, and not snoozed (snoozeUntil = first date visits come back).
 // A visit moved INTO this date always counts; one moved AWAY never does.
 export function isDueOn(account, dateKey, daysField = PROSPECT_DAYS_FIELD) {
-  // Closed / dead accounts drop off the Itinerary, Calendar and reminders, except on their revisit day.
-  if (account.inactive) return Boolean(account.inactive.revisit && account.inactive.revisit === dateKey);
+  // Closed / dead accounts drop off the Itinerary, Calendar and reminders from the day they went inactive,
+  // except on their revisit day. Earlier visits stay as history (amendment 3.2).
+  if (account.inactive && account.inactive.revisit === dateKey) return true;
+  if (offWhileInactive(account, dateKey)) return false;
+  // A period it was inactive (activated again since): those visits never come back.
+  if (inPastInactiveSpan(account, dateKey)) return false;
   if (visitMoveInto(account, dateKey)) return true;
   if (movedAway(account, dateKey)) return false;
   if (account.snoozeUntil && dateKey < account.snoozeUntil) return false;
@@ -183,10 +233,12 @@ export function hiddenByInactive(item, customers = [], prospects = []) {
   const isCustomer = item.accountType === 'customer' || item.type === 'contact';
   const list = isCustomer ? customers : prospects;
   const acct = (list || []).find((a) => a && String(a.id) === String(item.accountId));
-  if (!acct || !acct.inactive) return false;
+  if (!acct) return false;
+  // Canceled by an earlier inactive period and not brought back: stays off (never deleted).
+  if ((acct.canceledWhileInactive || []).includes(itemKey(item))) return true;
+  if (!acct.inactive) return inPastInactiveSpan(acct, item.date);
   if (acct.inactive.revisit && acct.inactive.revisit === item.date) return false;
-  const since = /^\d{4}-\d{2}-\d{2}$/.test(acct.inactive.since || '') ? acct.inactive.since : '0000-00-00';
-  return item.date >= since;
+  return item.date >= inactiveSince(acct);
 }
 
 // A scheduled visit's time on one day: a time locked for that day, else a time moved on the Itinerary
