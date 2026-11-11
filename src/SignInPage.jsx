@@ -96,6 +96,15 @@ export default function SignInPage() {
           options: { emailRedirectTo: `${window.location.origin}/setup`, data: { crumb_signup: answersToSave(answers) } },
         });
         if (error) throw error;
+        // Nov 11: when the email already has an account, Supabase doesn't say so (it answers as if it worked,
+        // with a user that has no sign-in methods, and sends no email). Say it plainly instead.
+        if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setErr('That email already has an account. Sign in instead.');
+          setMode('signin');
+          setPassword('');
+          setBusy(false);
+          return;
+        }
         if (data && data.session) {
           navigate('/setup', { replace: true });
           return;
