@@ -5,7 +5,7 @@
 .es-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-000000-a30);
   display: flex;
   align-items: flex-end;
   z-index: 50;
@@ -17,7 +17,7 @@
   max-height: 88%;
   overflow-y: auto;
   box-sizing: border-box;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   border-radius: 14px 14px 0 0;
   padding: 6px 16px calc(24px + env(safe-area-inset-bottom));
   animation: es-slide 0.25s ease-out;
@@ -30,7 +30,7 @@
   width: 36px;
   height: 5px;
   border-radius: 3px;
-  background: #c7c7cc;
+  background: var(--bg-c7c7cc);
   margin: 2px auto 8px;
 }
 
@@ -62,12 +62,12 @@
 
 .es-sheet .es-text-btn,
 .es-sheet .es-text-btn:hover {
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .es-sheet .es-save-btn,
 .es-sheet .es-save-btn:hover {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: 600;
 }
 
@@ -76,17 +76,17 @@
   box-sizing: border-box;
   border: none;
   border-radius: 10px;
-  background: #fff;
+  background: var(--bg-ffffff);
   padding: 12px 14px;
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 14px;
   outline: none;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .es-group {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 10px;
   margin-bottom: 14px;
   overflow: hidden;
@@ -99,7 +99,7 @@
   padding: 6px 14px;
   min-height: 44px;
   box-sizing: border-box;
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
 }
 
 .es-row:last-child {
@@ -108,13 +108,13 @@
 
 .es-label {
   font-size: 16px;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .es-input {
   font-size: 16px;
   font-family: inherit;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   border: none;
   background: transparent;
   outline: none;
@@ -122,7 +122,7 @@
 
 .es-row .es-input {
   text-align: right;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .es-full {
@@ -130,7 +130,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px 14px;
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
 }
 
 .es-notes {
@@ -144,8 +144,8 @@
   width: 100%;
   padding: 13px 0;
   border-radius: 10px;
-  background: #fff;
-  color: #ff3b30;
+  background: var(--bg-ffffff);
+  color: var(--fg-ff3b30);
   font-weight: 500;
   text-align: center;
 }
@@ -165,19 +165,19 @@
   height: 34px;
   padding: 0;
   border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 1px #e5e5ea;
+  border: 3px solid var(--line-ffffff);
+  box-shadow: 0 0 0 1px var(--shadow-e5e5ea);
 }
 
 .es-sheet .es-swatch.is-picked,
 .es-sheet .es-swatch.is-picked:hover {
-  box-shadow: 0 0 0 2px #1c1c1e;
+  box-shadow: 0 0 0 2px var(--shadow-1c1c1e);
 }
 
 /* Double-booking warning box */
 .es-warning {
-  background: #fff4e5;
-  border: 1px solid #ffcc80;
+  background: var(--bg-fff4e5);
+  border: 1px solid var(--line-ffcc80);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 14px;
@@ -186,7 +186,7 @@
 .es-warning-title {
   font-weight: 600;
   font-size: 0.95rem;
-  color: #8a4b00;
+  color: var(--fg-8a4b00);
   margin-bottom: 6px;
 }
 
@@ -195,7 +195,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.9rem;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   padding: 2px 0;
 }
 
@@ -225,15 +225,15 @@
 
 .es-sheet .es-warning-change,
 .es-sheet .es-warning-change:hover {
-  background: #fff;
-  color: #0077cc;
-  border: 1px solid #d1d1d6;
+  background: var(--bg-ffffff);
+  color: var(--fg-0077cc);
+  border: 1px solid var(--line-d1d1d6);
 }
 
 .es-sheet .es-warning-save,
 .es-sheet .es-warning-save:hover {
-  background: #ff9500;
-  color: #fff;
+  background: var(--bg-ff9500);
+  color: var(--fg-ffffff);
 }
 
 /* Linked customer / prospect */
@@ -242,7 +242,7 @@
 }
 
 .es-account-list {
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
 }
 
 .es-sheet .es-account-option,
@@ -252,13 +252,13 @@
   align-items: flex-start;
   width: 100%;
   padding: 9px 14px;
-  border-top: 1px solid #f2f2f5;
+  border-top: 1px solid var(--line-f2f2f5);
   text-align: left;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .es-sheet .es-account-option:active {
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
 }
 
 .es-account-option-name {
@@ -268,15 +268,15 @@
 
 .es-account-option-detail {
   font-size: 0.82rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   margin-top: 1px;
 }
 
 .es-account-none {
   padding: 8px 14px 10px;
   font-size: 0.85rem;
-  color: #8e8e93;
-  border-bottom: 1px solid #e5e5ea;
+  color: var(--fg-8e8e93);
+  border-bottom: 1px solid var(--line-e5e5ea);
 }
 
 .es-account-chip {
@@ -284,7 +284,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
 }
 
 .es-account-name {
@@ -300,8 +300,8 @@
 .es-account-type {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #0077cc;
-  background: #e6f1fa;
+  color: var(--fg-0077cc);
+  background: var(--bg-e6f1fa);
   border-radius: 6px;
   padding: 2px 7px;
 }
@@ -311,7 +311,7 @@
   padding: 0 4px;
   font-size: 1.3rem;
   line-height: 1;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 /* Directions links under the location */
@@ -320,23 +320,23 @@
   align-items: center;
   gap: 14px;
   padding: 8px 14px 10px;
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
   font-size: 0.9rem;
 }
 
 .es-maps-label {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .es-maps-link {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: 600;
   text-decoration: none;
 }
 
 /* Show in itinerary switch (iPhone style) */
 .es-switch-row {
-  border-top: 1px solid #e5e5ea;
+  border-top: 1px solid var(--line-e5e5ea);
 }
 
 .es-switch {
@@ -345,7 +345,7 @@
   width: 51px;
   height: 31px;
   border-radius: 16px;
-  background: #e3e3e8;
+  background: var(--bg-e3e3e8);
   position: relative;
   cursor: pointer;
   outline: none;
@@ -361,13 +361,13 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: #fff /* switch knob stays white in Midnight */;
+  box-shadow: 0 2px 4px var(--shadow-000000-a20);
   transition: transform 0.2s;
 }
 
 .es-switch:checked {
-  background: #34c759;
+  background: var(--bg-34c759);
 }
 
 .es-switch:checked::after {
@@ -382,8 +382,8 @@
   margin-bottom: 10px;
   padding: 13px 0;
   border-radius: 10px;
-  background: #fff;
-  color: #0077cc;
+  background: var(--bg-ffffff);
+  color: var(--fg-0077cc);
   font-weight: 600;
   text-align: center;
 }
@@ -395,7 +395,7 @@
 .es-invite-msg {
   margin: -4px 0 10px;
   font-size: 0.85rem;
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
   font-weight: 600;
   text-align: center;
 }
@@ -410,7 +410,7 @@
   padding-top: 4px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .es-color-dot {
@@ -422,5 +422,5 @@
 
 .es-color-sub {
   font-weight: 400;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }

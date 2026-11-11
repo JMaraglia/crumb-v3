@@ -8,9 +8,9 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--bg-ffffff);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -40,7 +40,7 @@
   margin: 0;
   font-size: 1.15rem;
   font-weight: 600;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   text-align: center;
 }
 
@@ -52,12 +52,12 @@
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .calendar-page .cal-back,
 .calendar-page .cal-back:hover {
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 /* Day / Week / Month segmented switch */
@@ -65,7 +65,7 @@
   display: flex;
   margin: 4px 14px 0;
   padding: 2px;
-  background: #eeeef0;
+  background: var(--bg-eeeef0);
   border-radius: 9px;
 }
 
@@ -76,15 +76,15 @@
   border-radius: 7px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .calendar-page .cal-toggle.is-active,
 .calendar-page .cal-toggle.is-active:hover {
-  background: #fff;
-  color: #0077cc;
+  background: var(--bg-ffffff);
+  color: var(--fg-0077cc);
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px var(--shadow-000000-a12);
 }
 
 /* Month label */
@@ -108,8 +108,8 @@
   padding: 5px 10px;
   border: none;
   border-radius: 999px;
-  background: #fff4e5;
-  color: #b35c00;
+  background: var(--bg-fff4e5);
+  color: var(--fg-b35c00);
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.2;
@@ -138,7 +138,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 /* The one floating + button */
@@ -150,12 +150,12 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-size: 2rem;
   line-height: 56px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 119, 204, 0.35);
+  box-shadow: 0 4px 12px var(--shadow-0077cc-a35);
   z-index: 20;
 }
 
@@ -164,7 +164,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-000000-a30);
   display: flex;
   align-items: flex-end;
 }
@@ -175,7 +175,7 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   border-radius: 14px 14px 0 0;
   padding: 12px 16px calc(28px + env(safe-area-inset-bottom));
 }
@@ -196,7 +196,7 @@
 .calendar-page .cal-set-done:hover {
   justify-self: end;
   padding: 6px 0;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: 700;
   font-size: 1rem;
 }
@@ -207,18 +207,18 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .cal-set-hint {
   margin: -2px 4px 8px;
   font-size: 0.8rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   line-height: 1.35;
 }
 
 .cal-set-group {
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -230,7 +230,7 @@
   gap: 12px;
   min-height: 46px;
   padding: 8px 14px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
   font-size: 1rem;
   box-sizing: border-box;
 }
@@ -244,13 +244,13 @@
   display: block;
   margin-top: 1px;
   font-size: 0.75rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .cal-set-select {
   font-size: 16px;
   font-family: inherit;
-  color: #0077cc;
+  color: var(--fg-0077cc);
   background: transparent;
   border: none;
   outline: none;
@@ -267,7 +267,7 @@
   height: 31px;
   margin: 0;
   border-radius: 16px;
-  background: #e9e9eb;
+  background: var(--bg-e9e9eb);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -280,13 +280,13 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: #fff /* switch knob stays white in Midnight */;
+  box-shadow: 0 2px 4px var(--shadow-000000-a20);
   transition: transform 0.2s;
 }
 
 .cal-set-switch:checked {
-  background: #34c759;
+  background: var(--bg-34c759);
 }
 
 .cal-set-switch:checked::after {
@@ -298,7 +298,7 @@
   align-items: center;
   gap: 12px;
   padding: 7px 14px;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--line-ececf0);
 }
 
 .calendar-page .cal-set-swatch,
@@ -307,7 +307,7 @@
   height: 30px;
   flex-shrink: 0;
   border-radius: 50%;
-  color: #fff;
+  color: var(--fg-ffffff);
   font-size: 0.85rem;
   font-weight: 800;
   display: flex;
@@ -316,7 +316,7 @@
 }
 
 .calendar-page .cal-set-swatch.is-default {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1c1c1e;
+  box-shadow: 0 0 0 2px var(--shadow-ffffff), 0 0 0 4px var(--shadow-1c1c1e);
 }
 
 .cal-set-name {
@@ -324,7 +324,7 @@
   min-width: 0;
   font-size: 16px;
   font-family: inherit;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   border: none;
   outline: none;
   background: transparent;
@@ -334,5 +334,5 @@
 .cal-set-default {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }

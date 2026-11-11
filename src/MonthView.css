@@ -14,7 +14,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding: 0 4px 4px;
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
   flex-shrink: 0;
 }
 
@@ -22,7 +22,7 @@
   text-align: center;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 /* Sliding strip: previous, current, next month */
@@ -30,7 +30,7 @@
   flex-shrink: 0;
   overflow: hidden;
   touch-action: pan-y;
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
 }
 
 .mv-strip {
@@ -53,7 +53,7 @@
   flex-direction: column;
   align-items: center;
   padding-top: 6px;
-  border-top: 1px solid #f2f2f5;
+  border-top: 1px solid var(--line-f2f2f5);
   cursor: pointer;
 }
 
@@ -65,27 +65,27 @@
   text-align: center;
   font-size: 1.05rem;
   font-weight: 500;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .mv-cell.is-outside .mv-num {
-  color: #c7c7cc;
+  color: var(--fg-c7c7cc);
 }
 
 .mv-num.is-today {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: 700;
 }
 
 .mv-num.is-selected {
-  background: #1c1c1e;
-  color: #fff;
+  background: var(--bg-1c1c1e);
+  color: var(--fg-ffffff);
   font-weight: 600;
 }
 
 .mv-num.is-today.is-selected {
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
 }
 
 .mv-dots {
@@ -105,7 +105,7 @@
 .mv-more {
   font-size: 0.6rem;
   line-height: 6px;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   font-weight: 700;
 }
 
@@ -120,12 +120,12 @@
 .mv-list-heading {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   margin-bottom: 8px;
 }
 
 .mv-empty {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   font-size: 0.95rem;
   padding: 8px 0;
 }
@@ -135,7 +135,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid #f2f2f5;
+  border-bottom: 1px solid var(--line-f2f2f5);
   cursor: pointer;
 }
 
@@ -155,7 +155,7 @@
 .mv-item-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -163,7 +163,7 @@
 
 .mv-item-location {
   font-size: 0.85rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -174,10 +174,10 @@
   flex-direction: column;
   align-items: flex-end;
   font-size: 0.9rem;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   white-space: nowrap;
 }
 
 .mv-item-end {
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }

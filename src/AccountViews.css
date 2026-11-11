@@ -819,7 +819,7 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: var(--bg-ffffff);
+  background: #fff /* switch knob stays white in Midnight */;
   box-shadow: 0 2px 4px var(--shadow-000000-a20);
   transition: transform 0.2s;
 }

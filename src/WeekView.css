@@ -16,7 +16,7 @@
 .wv-head {
   display: flex;
   flex-shrink: 0;
-  border-bottom: 1px solid #e5e5ea;
+  border-bottom: 1px solid var(--line-e5e5ea);
 }
 
 .wv-corner {
@@ -53,11 +53,11 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
 }
 
 .wv-weekday.is-today {
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .wv-date {
@@ -69,12 +69,12 @@
   text-align: center;
   font-size: 1.2rem;
   font-weight: 500;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 .wv-date.is-today {
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-weight: 600;
 }
 
@@ -110,7 +110,7 @@
   right: 8px;
   transform: translateY(-50%);  /* label centered on its hour line */
   font-size: 0.68rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   white-space: nowrap;
 }
 
@@ -120,11 +120,11 @@
   /* width is set in WeekView.jsx (depends on Day vs Week view) */
   box-sizing: border-box;
   position: relative;
-  border-left: 1px solid #e5e5ea;
-  border-bottom: 1px solid #e5e5ea;
+  border-left: 1px solid var(--line-e5e5ea);
+  border-bottom: 1px solid var(--line-e5e5ea);
   background-image:
-    linear-gradient(to bottom, #e5e5ea 1px, transparent 1px),
-    linear-gradient(to bottom, #f2f2f5 1px, transparent 1px);
+    linear-gradient(to bottom, var(--bg-e5e5ea) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-f2f2f5) 1px, transparent 1px);
   background-size: 100% 60px, 100% 30px;
 }
 
@@ -135,7 +135,7 @@
   right: 0;
   height: 2px;
   margin-top: -1px;
-  background: #ff3b30;
+  background: var(--bg-ff3b30);
   z-index: 2;
 }
 
@@ -147,7 +147,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #ff3b30;
+  background: var(--bg-ff3b30);
 }
 
 /* ---------- Events ---------- */
@@ -158,14 +158,14 @@
   border-left: 3px solid;
   border-radius: 4px;
   overflow: hidden;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   font-size: 0.72rem;
   line-height: 1.2;
   cursor: pointer;
   z-index: 1;
   /* 1px gap so stacked or side-by-side events stay separate */
-  border-top: 1px solid #fff;
-  border-right: 1px solid #fff;
+  border-top: 1px solid var(--line-ffffff);
+  border-right: 1px solid var(--line-ffffff);
 }
 
 .wv-event-title {
@@ -181,7 +181,7 @@
 
 .wv-event-time {
   margin-top: 1px;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
   font-size: 0.68rem;
 }
 

@@ -7,9 +7,9 @@
   inset: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #f2f2f7;
+  background: var(--bg-f2f2f7);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -36,7 +36,7 @@
   grid-template-columns: 44px 1fr 44px;
   align-items: center;
   padding: 10px 14px;
-  background: rgba(242, 242, 247, 0.92);
+  background: var(--bg-f2f2f7-a92);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
@@ -48,7 +48,7 @@
   display: flex;
   align-items: center;
   font-size: 1.1rem;
-  color: #0077cc;
+  color: var(--fg-0077cc);
 }
 
 .cs-content {
@@ -61,7 +61,7 @@
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
 }
 
 /* Day switcher */
@@ -69,7 +69,7 @@
   display: flex;
   gap: 4px;
   padding: 2px;
-  background: #e3e3e8;
+  background: var(--bg-e3e3e8);
   border-radius: 10px;
   margin-bottom: 10px;
 }
@@ -82,19 +82,19 @@
   text-align: center;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
 }
 
 .cs-page .cs-day.is-on,
 .cs-page .cs-day.is-on:hover {
-  background: #fff;
-  color: #0077cc;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  background: var(--bg-ffffff);
+  color: var(--fg-0077cc);
+  box-shadow: 0 1px 3px var(--shadow-000000-a12);
 }
 
 .cs-subtitle {
   font-size: 0.95rem;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
   margin-bottom: 10px;
 }
 
@@ -109,17 +109,17 @@
   flex: 1;
   padding: 10px 0;
   border-radius: 10px;
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
   font-weight: 600;
   text-align: center;
 }
 
 .cs-page .cs-btn-plain,
 .cs-page .cs-btn-plain:hover {
-  background: #fff;
-  color: #0077cc;
-  border: 1px solid #d1d1d6;
+  background: var(--bg-ffffff);
+  color: var(--fg-0077cc);
+  border: 1px solid var(--line-d1d1d6);
 }
 
 .cs-page .cs-btn:disabled {
@@ -129,13 +129,13 @@
 
 .cs-message {
   font-size: 0.85rem;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
   margin: -4px 0 10px;
 }
 
 .cs-empty {
   text-align: center;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   padding: 40px 16px;
   line-height: 1.5;
 }
@@ -144,8 +144,8 @@
 .cs-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  background: #fff;
-  border: 1px solid #c7c7cc;
+  background: var(--bg-ffffff);
+  border: 1px solid var(--line-c7c7cc);
   border-radius: 6px;
 }
 
@@ -161,7 +161,7 @@
 
 .cs-table th,
 .cs-table td {
-  border: 1px solid #d1d1d6;
+  border: 1px solid var(--line-d1d1d6);
   padding: 7px 9px;
   text-align: left;
   vertical-align: top;
@@ -169,15 +169,15 @@
 }
 
 .cs-table th {
-  background: #eef2f6;
+  background: var(--bg-eef2f6);
   font-weight: 700;
-  color: #3a3a3c;
+  color: var(--fg-3a3a3c);
   position: sticky;
   top: 0;
 }
 
 .cs-table tbody tr:nth-child(even) td {
-  background: #fafafc;
+  background: var(--bg-fafafc);
 }
 
 .cs-table td.cs-wide {
@@ -192,14 +192,14 @@
 
 .cs-page .cs-link,
 .cs-page .cs-link:hover {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: inherit;
 }
 
 .cs-hint {
   text-align: center;
   font-size: 0.8rem;
-  color: #aeaeb2;
+  color: var(--fg-aeaeb2);
   padding: 10px 0;
 }
 
@@ -213,7 +213,7 @@
   .cs-page {
     position: static;
     overflow: visible;
-    background: #fff;
+    background: var(--bg-ffffff);
   }
 
   .cs-header,
@@ -236,13 +236,13 @@
     text-align: center;
     margin: 0 0 14pt;
     padding-bottom: 10pt;
-    border-bottom: 2px solid #0077cc;
+    border-bottom: 2px solid var(--line-0077cc);
   }
 
   .cs-print-brand {
     font-size: 11pt;
     font-weight: 800;
-    color: #0077cc;
+    color: var(--fg-0077cc);
     letter-spacing: -0.01em;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -252,19 +252,19 @@
     font-size: 22pt;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: #1c1c1e;
+    color: var(--fg-1c1c1e);
     margin: 2pt 0 4pt;
   }
 
   .cs-print-sub {
     font-size: 11pt;
-    color: #3a3a3c;
+    color: var(--fg-3a3a3c);
   }
 
   /* Pure white page: no app background color behind the grid */
   html,
   body {
-    background: #fff !important;
+    background: var(--bg-ffffff) !important;
     padding: 0 !important;
     margin: 0 !important;
   }
@@ -274,7 +274,7 @@
   .cs-scroll,
   .cs-table tbody tr td,
   .cs-table tbody tr:nth-child(even) td {
-    background: #fff !important;
+    background: var(--bg-ffffff) !important;
   }
 
   .cs-scroll {
@@ -289,16 +289,16 @@
 
   .cs-table th,
   .cs-table td {
-    border: 1px solid #555;
+    border: 1px solid var(--line-555555);
     white-space: normal;
   }
 
   .cs-page .cs-link {
-    color: #000;
+    color: var(--fg-000000);
   }
 
   .cs-table th {
-    background: #e6e6e6 !important;
+    background: var(--bg-e6e6e6) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -310,13 +310,13 @@
   display: block;
   width: 100%;
   min-height: 1.2em;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   white-space: pre-wrap;
   text-align: left;
 }
 
 .cs-page .cs-note.is-empty {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: 600;
 }
 
@@ -325,7 +325,7 @@
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-000000-a30);
   display: flex;
   align-items: flex-end;
 }
@@ -333,7 +333,7 @@
 .cs-sheet {
   width: 100%;
   box-sizing: border-box;
-  background: #fff;
+  background: var(--bg-ffffff);
   border-radius: 14px 14px 0 0;
   padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
 }
@@ -346,7 +346,7 @@
 
 .cs-sheet-sub {
   font-size: 0.85rem;
-  color: #8e8e93;
+  color: var(--fg-8e8e93);
   margin-bottom: 12px;
 }
 
@@ -355,7 +355,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  border: 1px solid #d1d1d6;
+  border: 1px solid var(--line-d1d1d6);
   border-radius: 10px;
   font-family: inherit;
   font-size: 16px;
@@ -382,14 +382,14 @@
 
 .cs-page .cs-sheet-cancel,
 .cs-page .cs-sheet-cancel:hover {
-  background: #f2f2f7;
-  color: #0077cc;
+  background: var(--bg-f2f2f7);
+  color: var(--fg-0077cc);
 }
 
 .cs-page .cs-sheet-save,
 .cs-page .cs-sheet-save:hover {
-  background: #0077cc;
-  color: #fff;
+  background: var(--bg-0077cc);
+  color: var(--fg-ffffff);
 }
 
 @media print {
@@ -402,7 +402,7 @@
 .cs-time {
   font-size: 16px;
   font-family: inherit;
-  color: #1c1c1e;
+  color: var(--fg-1c1c1e);
   border: none;
   background: transparent;
   outline: none;
@@ -410,7 +410,7 @@
 }
 
 .cs-time.is-empty {
-  color: #0077cc;
+  color: var(--fg-0077cc);
   font-weight: 600;
 }
 
@@ -421,7 +421,7 @@
 .cs-check {
   width: 20px;
   height: 20px;
-  accent-color: #1e8e3e;
+  accent-color: var(--fg-1e8e3e);
   margin: 0;
 }
 
@@ -442,28 +442,28 @@
 
 /* Ordered checkbox (last column) */
 .cs-ordered {
-  accent-color: #0077cc;
+  accent-color: var(--fg-0077cc);
 }
 
 .cs-table tbody tr:has(.cs-ordered:checked) td {
-  background: #eef7ee;
+  background: var(--bg-eef7ee);
 }
 
 /* Did Not Order (Nov 10): the whole row turns red */
 .cs-not-ordered {
-  accent-color: #d93025;
+  accent-color: var(--fg-d93025);
 }
 
 .cs-table tbody tr.is-not-ordered td {
-  background: #fde8e6;
+  background: var(--bg-fde8e6);
 }
 
 .cs-table tbody tr.is-not-ordered td.cs-name .cs-link {
-  color: #b3261e;
+  color: var(--fg-b3261e);
 }
 
 .cs-progress-no {
-  color: #d93025;
+  color: var(--fg-d93025);
 }
 
 /* Online ordering: set on the customer, shown (locked) here */
@@ -472,12 +472,12 @@
   min-width: 20px;
   font-size: 17px;
   font-weight: 700;
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
 }
 
 @media print {
   .cs-table tbody tr.is-not-ordered td {
-    background: #fde8e6 !important;
+    background: var(--bg-fde8e6) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -485,7 +485,7 @@
 
 .cs-progress {
   font-weight: 600;
-  color: #1e8e3e;
+  color: var(--fg-1e8e3e);
 }
 
 
@@ -507,7 +507,7 @@
   .cs-page .cs-link,
   .cs-page .cs-note,
   .cs-print-only {
-    color: #000 !important;
+    color: var(--fg-000000) !important;
     -webkit-text-stroke: 0.25px #000;
   }
 
@@ -522,13 +522,13 @@
 
   .cs-table th,
   .cs-table td {
-    border: 1.5px solid #000 !important;
+    border: 1.5px solid var(--line-000000) !important;
     padding: 6px 8px;
     font-weight: 600;
   }
 
   .cs-table th {
-    background: #cfcfcf !important;
+    background: var(--bg-cfcfcf) !important;
     font-weight: 800;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -580,14 +580,14 @@
   height: 32px;
   padding: 0 12px;
   border-radius: 16px;
-  background: #e5f0fa;
-  color: #0077cc;
+  background: var(--bg-e5f0fa);
+  color: var(--fg-0077cc);
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .cs-page .cs-pill:active {
-  background: #cfe3f5;
+  background: var(--bg-cfe3f5);
 }
 
 .cs-page .cs-pill:disabled {
@@ -628,7 +628,7 @@
   .cs-print-brand {
     font-size: 15pt;
     font-weight: 800;
-    color: #0077cc !important;
+    color: var(--fg-0077cc) !important;
     -webkit-text-stroke: 0;
   }
 
@@ -637,13 +637,13 @@
     font-weight: 800;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #000;
+    color: var(--fg-000000);
   }
 
   .cs-print-bottom {
     margin-top: 2pt;
     padding-bottom: 6pt;
-    border-bottom: 2px solid #0077cc;
+    border-bottom: 2px solid var(--line-0077cc);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -662,25 +662,25 @@
 
   /* Table: bold header band, even rows lightly shaded, crisp black lines */
   .cs-table th {
-    background: #1c1c1e !important;
-    color: #fff !important;
+    background: var(--bg-1c1c1e) !important;
+    color: var(--fg-ffffff) !important;
     -webkit-text-stroke: 0 !important;
     font-size: 8.5pt;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    border: 1px solid #1c1c1e !important;
+    border: 1px solid var(--line-1c1c1e) !important;
     padding: 6px 8px;
   }
 
   .cs-table td {
-    border: 1px solid #000 !important;
+    border: 1px solid var(--line-000000) !important;
     padding: 7px 8px;
     font-size: 10.5pt;
   }
 
   .cs-table tbody tr:nth-child(even) td {
-    background: #f0f0f0 !important;
+    background: var(--bg-f0f0f0) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

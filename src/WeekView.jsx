@@ -48,10 +48,14 @@ function shortTime(minutes) {
 
 // Light tint of an event color for the block background.
 // Mixed with white into a solid color so grid lines don't show through.
+// Midnight (Nov 11): mixed with the dark card color instead, a little stronger so the color still reads.
 function tint(hex, amount) {
   const n = parseInt(hex.slice(1), 16);
-  const mix = (c) => Math.round(c * amount + 255 * (1 - amount));
-  return `rgb(${mix((n >> 16) & 255)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+  const dark = document.documentElement.getAttribute('data-theme') === 'midnight';
+  const base = dark ? [14, 27, 44] : [255, 255, 255];
+  const k = dark ? Math.min(1, amount * 1.6) : amount;
+  const mix = (c, b) => Math.round(c * k + b * (1 - k));
+  return `rgb(${mix((n >> 16) & 255, base[0])}, ${mix((n >> 8) & 255, base[1])}, ${mix(n & 255, base[2])})`;
 }
 
 // Events that overlap sit side by side, like Google Calendar.
