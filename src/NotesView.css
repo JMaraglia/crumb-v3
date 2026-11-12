@@ -476,10 +476,14 @@
 }
 
 /* Edit a note's date/time */
+/* Nov 12: the label sits on its own line above the date box. Side by side, the iPhone's date box left no room
+   for "Written On" and the label disappeared. */
 .nv-when-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
   margin-top: 10px; font-size: 0.9rem; color: var(--fg-6e6e73); font-weight: 600;
 }
+.nv-when-row span { white-space: nowrap; }
+.nv-when-input { max-width: 100%; box-sizing: border-box; }
 .nv-when-input {
   border: 1px solid var(--line-e3e3e8); border-radius: 10px; padding: 7px 10px; font-size: 16px;
   font-family: inherit; color: var(--fg-1c1c1e); background: var(--bg-f7f7fa);
