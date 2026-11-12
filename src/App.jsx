@@ -26,7 +26,7 @@ const FeedbackPage = React.lazy(() => import('./FeedbackPage'));
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
-import { needsSignIn, needsSetup, firstOpenSignIn, accessState, checkInvited, signedInEmail, ownerState, ownerMayView, verifyOwner } from './syncMode';
+import { needsSignIn, needsSetup, firstOpenSignIn, accessState, checkInvited, signedInEmail, ownerState, ownerMayView } from './syncMode';
 import ResetPasswordOnly from './ResetPasswordOnly';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
@@ -101,7 +101,6 @@ const emailLink = () => /access_token|error_description|type=recovery/.test(wind
 // address changes nothing.
 const LINK_PATHS = ['/setup', '/cloud-test', '/sign-in'];
 let accessCheckedThisLaunch = false;
-let ownerCheckedThisLaunch = false;
 
 function SignInGate() {
   const navigate = useNavigate();
@@ -120,27 +119,12 @@ function SignInGate() {
       navigate('/sign-in', { replace: true, state: { from: '/setup', gate: true } });
       return;
     }
-    // A device that belongs to one account never opens for another. With no owner confirmed yet, a new
-    // sign-in waits on Setup until the cloud confirms it (Setup shows why, with Sign Out).
+    // A device that belongs to one account never opens for another. With no owner confirmed yet, everyone
+    // waits on Setup until the cloud confirms the device is theirs (one time; Setup explains, with Sign Out).
     const own = ownerState();
     if (own === 'other' || own === 'unverified') {
       if (location.pathname !== '/setup') navigate('/setup', { replace: true });
       return;
-    }
-    // The person who was already using this device before an owner was recorded: confirm with the cloud
-    // quietly, once per launch. A clear "no" locks it; no signal changes nothing.
-    if (own === 'grace' && !ownerCheckedThisLaunch) {
-      ownerCheckedThisLaunch = true;
-      import('./cloud')
-        .then(({ cloud }) => {
-          const sb = cloud();
-          return sb ? verifyOwner(sb) : 'unknown';
-        })
-        .then((answer) => {
-          if (answer === 'mismatch') navigate('/setup', { replace: true });
-          else if (answer === 'unknown') ownerCheckedThisLaunch = false; // try again on the next screen
-        })
-        .catch(() => { ownerCheckedThisLaunch = false; });
     }
     if ((access === 'denied' || access === 'unknown') && !OPEN_PATHS.includes(location.pathname)) {
       navigate('/access', { replace: true });

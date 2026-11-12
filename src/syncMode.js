@@ -153,24 +153,11 @@ export function signedInUserId(ref = projectRef()) {
    their account), or after the CLOUD confirms that the records saved here are in the signed-in account
    (verifyOwner). It is never guessed from who happens to be signed in or from anything remembered locally.
 
-   Devices set up before Nov 11 have no owner saved. For those:
-     - GRACE_KEY notes, once, who was signed in when this version first ran here ('none' if nobody). That person
-       was already using this data, so they keep seeing it (also with no signal). It gives no ownership and no
-       syncing: the cloud check still has to pass.
-     - Anyone else who signs in sees nothing until the cloud check passes for them.
-   ownerState(): 'na' (not a syncing device, or nobody signed in) | 'ok' | 'other' | 'grace' | 'unverified' */
-export const GRACE_KEY = 'crumb_sync_owner_grace';
+   Devices set up before Nov 11 have no owner saved. For those (founder, Nov 12: the strict rule): NOTHING private
+   is drawn for anyone until the cloud check passes once. With no signal, Setup says a one-time connection is
+   needed. After that the owner is saved on the device and Crumb opens normally, with or without a signal.
+   ownerState(): 'na' (not a syncing device, or nobody signed in) | 'ok' | 'other' | 'unverified' */
 let ownerMismatch = ''; // the account ID the cloud said NO for, this launch only (never saved)
-
-function noteGrace() {
-  try {
-    if (!isRealSynced() || readText(OWNER_KEY) || readText(GRACE_KEY)) return;
-    writeText(GRACE_KEY, signedInUserId() || 'none');
-  } catch {
-    /* storage unavailable: nothing to note */
-  }
-}
-noteGrace(); // when the app starts, before anyone can sign in during this launch
 
 export function ownerState() {
   if (!isRealSynced()) return 'na';
@@ -178,13 +165,12 @@ export function ownerState() {
   if (!me) return 'na';
   const owner = readText(OWNER_KEY);
   if (owner) return owner === me ? 'ok' : 'other';
-  if (ownerMismatch === me) return 'other';
-  return readText(GRACE_KEY) === me ? 'grace' : 'unverified';
+  return ownerMismatch === me ? 'other' : 'unverified';
 }
 // A syncing device with someone signed in who isn't the account it belongs to.
 export const otherAccountSignedIn = () => ownerState() === 'other';
-// Private screens may be drawn for the signed-in person (the owner, or the grace case above).
-export const ownerMayView = () => ['na', 'ok', 'grace'].includes(ownerState());
+// Private screens may be drawn only for the confirmed owner (or where there is no owner rule at all).
+export const ownerMayView = () => ['na', 'ok'].includes(ownerState());
 
 // Up to 40 of the oldest record IDs saved on this device (oldest = certainly sent to the cloud long ago).
 function localSample() {

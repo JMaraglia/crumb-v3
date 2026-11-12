@@ -8,7 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setUpAfterSignIn, useMyAccount, addThisDevice, keepSeparate } from './syncMove';
 import { plainError } from './cloudErrors';
-import { lockApplies, ownerState } from './syncMode';
+import { lockApplies } from './syncMode';
 import './SetupPage.css';
 
 export const SETUP_SKIP_KEY = 'crumb_setup_not_now'; // this visit only (sessionStorage): don't reopen setup
@@ -75,10 +75,7 @@ export default function SetupPage() {
           return;
         }
         if (r.status === 'cant-check') {
-          // The person who was already using this device carries on (the check runs again by itself);
-          // anyone else waits here until the cloud can confirm the device is theirs.
-          if (ownerState() === 'grace') navigate('/', { replace: true });
-          else setCantCheck(true);
+          setCantCheck(true); // nothing opens until the cloud confirms this device, one time
           return;
         }
         setCantCheck(false);
@@ -95,6 +92,14 @@ export default function SetupPage() {
       })
       .catch(fail);
   }, [tries, navigate]);
+
+  // Waiting on a connection: try again by itself the moment the device is back online.
+  useEffect(() => {
+    if (!cantCheck) return undefined;
+    const retry = () => { setCantCheck(false); setTries((n) => n + 1); };
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [cantCheck]);
 
   const run = (fn) => {
     setErr('');
@@ -131,10 +136,10 @@ export default function SetupPage() {
   if (cantCheck && !busy) {
     card = (
       <div className="su-card" role="alert">
-        <div className="su-title">Checking This Device</div>
+        <div className="su-title">One-Time Connection Needed</div>
         <div className="su-sub">
-          Crumb needs a connection to confirm this device belongs to your account. Nothing on this device was changed.
-          Check your signal, then try again.
+          Crumb needs to connect once to verify this device belongs to your account. After that it works with no
+          signal, like always. Nothing on this device was changed. Connect to the internet, then try again.
         </div>
         <button className="su-btn" onClick={() => { setCantCheck(false); setTries((n) => n + 1); }}>Try Again</button>
         <button className="su-btn su-btn-plain" onClick={signOut} disabled={signingOut}>{signingOut ? 'Signing Out…' : 'Sign Out'}</button>

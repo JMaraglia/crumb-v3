@@ -289,6 +289,7 @@ export async function setUpAfterSignIn(onStep = () => {}) {
       const st = ownerState();
       if (st === 'other') return { status: 'other-account' };
       if (st === 'ok' || st === 'na') return { status: 'ready' };
+      // 'unverified': no owner saved on this device yet. Ask the cloud, once.
       const answer = await verifyOwner(sb);
       if (answer === 'ok') return { status: 'ready' };
       if (answer === 'mismatch') return { status: 'other-account' };

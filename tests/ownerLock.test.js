@@ -1,7 +1,7 @@
 // Security audit, Nov 12 2026: whose device is this? Ownership is only saved after the cloud confirms that the
 // records on the device are in the signed-in account. Made-up records and a fake cloud only.
 import { describe, it, expect } from 'vitest';
-import { ownerState, ownerMayView, verifyOwner, projectRef, OWNER_KEY, GRACE_KEY, MODE_KEY } from '../src/syncMode';
+import { ownerState, ownerMayView, verifyOwner, projectRef, OWNER_KEY, MODE_KEY } from '../src/syncMode';
 
 const TOKEN = `sb-${projectRef()}-auth-token`; // where the sign-in is remembered (depends on the cloud address the build was given)
 const signIn = (id) => localStorage.setItem(TOKEN, JSON.stringify({ user: { id, email: `${id}@example.invalid` } }));
@@ -37,7 +37,6 @@ describe('device owner (account isolation)', () => {
 
   it('no owner saved: a new sign-in sees nothing and is never made the owner on its own', () => {
     device();
-    localStorage.setItem(GRACE_KEY, 'none');
     signIn('user-c');
     expect(ownerState()).toBe('unverified');
     expect(ownerMayView()).toBe(false);
@@ -46,7 +45,6 @@ describe('device owner (account isolation)', () => {
 
   it('no signal or not approved: nothing is decided and no owner is saved', async () => {
     device();
-    localStorage.setItem(GRACE_KEY, 'none');
     signIn('user-d');
     expect(await verifyOwner(cloudFor('user-d', ['1001', '1002', '2001'], { down: true }))).toBe('unknown');
     expect(await verifyOwner(cloudFor('user-d', ['1001', '1002', '2001'], { approved: false }))).toBe('unknown');
@@ -56,7 +54,6 @@ describe('device owner (account isolation)', () => {
 
   it('the cloud says these records are NOT in this account: locked, no owner saved, nothing on the device changed', async () => {
     device();
-    localStorage.setItem(GRACE_KEY, 'none');
     signIn('user-e');
     const before = localStorage.getItem('crumb_contacts');
     expect(await verifyOwner(cloudFor('user-e', []))).toBe('mismatch');
@@ -67,7 +64,6 @@ describe('device owner (account isolation)', () => {
 
   it('the cloud confirms the records are in this account: only then is the owner saved', async () => {
     device();
-    localStorage.setItem(GRACE_KEY, 'none');
     signIn('user-f');
     expect(await verifyOwner(cloudFor('user-f', ['1001', '1002', '2001']))).toBe('ok');
     expect(localStorage.getItem(OWNER_KEY)).toBe('user-f');
@@ -77,20 +73,23 @@ describe('device owner (account isolation)', () => {
     expect(localStorage.getItem(OWNER_KEY)).toBe('user-f');
   });
 
-  it('whoever was already using the device keeps seeing it, but is not the owner until the cloud confirms', async () => {
+  it('strict rule: with no owner saved, even the account that was already signed in sees nothing until the cloud confirms; after that no signal is needed', async () => {
     device();
-    localStorage.setItem(GRACE_KEY, 'user-h');
     signIn('user-h');
-    expect(ownerState()).toBe('grace');
+    expect(ownerState()).toBe('unverified');
+    expect(ownerMayView()).toBe(false);
+    expect(await verifyOwner(cloudFor('user-h', ['1001', '1002', '2001'], { down: true }))).toBe('unknown'); // no signal: still nothing
+    expect(ownerMayView()).toBe(false);
+    expect(await verifyOwner(cloudFor('user-h', ['1001', '1002', '2001']))).toBe('ok');
     expect(ownerMayView()).toBe(true);
-    expect(localStorage.getItem(OWNER_KEY)).toBe(null);
-    expect(await verifyOwner(cloudFor('user-h', []))).toBe('mismatch');
-    expect(ownerState()).toBe('other');
+    // verified and saved: from now on it's decided on the device, no cloud needed
+    expect(localStorage.getItem(OWNER_KEY)).toBe('user-h');
+    expect(ownerState()).toBe('ok');
+    expect(await verifyOwner(cloudFor('user-h', [], { down: true }))).toBe('ok');
   });
 
   it('a device with nothing saved on it has nothing to protect: the signed-in account becomes the owner', async () => {
     localStorage.setItem(MODE_KEY, 'real');
-    localStorage.setItem(GRACE_KEY, 'none');
     signIn('user-i');
     expect(await verifyOwner(cloudFor('user-i', []))).toBe('ok');
     expect(localStorage.getItem(OWNER_KEY)).toBe('user-i');
