@@ -266,7 +266,8 @@ export default function NotesView({ account, kindLabel, goBack, onAddNote, onDel
           )}
           {editing.when0 && (
             <label className="nv-when-row">
-              <span>Date</span>
+              {/* Founder, Nov 12: "Written On", so it isn't mistaken for a due date. */}
+              <span>Written On</span>
               <input
                 type="datetime-local"
                 className="nv-when-input"
