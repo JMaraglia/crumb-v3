@@ -370,6 +370,21 @@ export function VisitChips({ account, config, onPick }) {
   ) : null; // no visit set: show nothing (set visits from Edit)
 }
 
+// Founder, Nov 12: picking anything other than Weekly asks for a Start Date (no silent "today"), and tries to
+// open the device's calendar right away. The schedule counts its weeks from that date.
+function openDatePicker(ref) {
+  setTimeout(() => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      if (typeof el.showPicker === 'function') el.showPicker();
+      else el.focus();
+    } catch {
+      try { el.focus(); } catch { /* the row is highlighted either way */ }
+    }
+  }, 60);
+}
+
 // Quick visit panel: days, usual time, how often (+ start date). Same fields as the Edit screen,
 // so the Itinerary, Calendar and reminders pick the change up right away.
 export function VisitSheet({ account, config, onSave, onCancel }) {
@@ -377,9 +392,20 @@ export function VisitSheet({ account, config, onSave, onCancel }) {
   const [days, setDays] = useState(account[field] || []);
   const [time, setTime] = useState(typeof account.visitTime === 'number' ? account.visitTime : '');
   const [freq, setFreq] = useState(account.visitFrequency || 'weekly');
-  const [startDay, setStartDay] = useState(account.visitStart || todayKey());
+  const [startDay, setStartDay] = useState(account.visitStart || '');
+  const [needStart, setNeedStart] = useState(false);
+  const startRef = React.useRef(null);
   const toggle = (d) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
-  const save = () =>
+  const pickFreq = (key) => {
+    setFreq(key);
+    if (key !== 'weekly' && !startDay) openDatePicker(startRef);
+  };
+  const save = () => {
+    if (freq !== 'weekly' && !startDay) {
+      setNeedStart(true);
+      openDatePicker(startRef);
+      return;
+    }
     onSave({
       [field]: DAYS.filter((d) => days.includes(d)),
       visitTime: time === '' ? null : Number(time),
@@ -387,6 +413,7 @@ export function VisitSheet({ account, config, onSave, onCancel }) {
       visitStart: freq === 'weekly' ? null : startDay,
       fixedTime: time !== '' && Boolean(account.fixedTime),
     });
+  };
   return (
     <div className="av-sheet-backdrop" onClick={onCancel}>
       <div className="av-sheet av-vs-sheet" onClick={(e) => e.stopPropagation()}>
@@ -417,19 +444,22 @@ export function VisitSheet({ account, config, onSave, onCancel }) {
           </label>
           <label className="av-vs-row">
             <span>How often</span>
-            <select className="av-vs-select" value={freq} onChange={(e) => setFreq(e.target.value)}>
+            <select className="av-vs-select" value={freq} onChange={(e) => pickFreq(e.target.value)}>
               {FREQUENCIES.map((f) => (
                 <option key={f.key} value={f.key}>{f.label}</option>
               ))}
             </select>
           </label>
           {freq !== 'weekly' && (
-            <label className="av-vs-row">
-              <span>Starting</span>
-              <input type="date" className="av-vs-select" value={startDay} onChange={(e) => e.target.value && setStartDay(e.target.value)} />
+            <label className={`av-vs-row ${!startDay ? 'av-start-missing' : ''}`}>
+              <span>Start Date</span>
+              <input ref={startRef} type="date" className="av-vs-select" value={startDay} onChange={(e) => { if (e.target.value) { setStartDay(e.target.value); setNeedStart(false); } }} />
             </label>
           )}
         </div>
+        {freq !== 'weekly' && !startDay && (
+          <div className={`av-start-note ${needStart ? 'is-error' : ''}`}>Pick the date of the first visit. The schedule counts from there.</div>
+        )}
         <div className="av-vs-hint">Shows up on your Daily Stops and Calendar right away. No days = no scheduled visits.</div>
       </div>
     </div>
@@ -2153,7 +2183,8 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const [visitLength, setVisitLength] = useState(
     existing && typeof existing.visitLength === 'number' ? existing.visitLength : DEFAULT_VISIT_LENGTH
   );
-  const [visitStart, setVisitStart] = useState((existing && existing.visitStart) || todayKey());
+  const [visitStart, setVisitStart] = useState((existing && existing.visitStart) || '');
+  const visitStartRef = React.useRef(null);
   const [stage, setStage] = useState((existing && existing.stage) || '');
   const [showInItinerary, setShowInItinerary] = useState(!(existing && existing.showInItinerary === false));
   const [showOnCalendar, setShowOnCalendar] = useState(!(existing && existing.showOnCalendar === false));
@@ -2204,7 +2235,7 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
       [config.visitDaysField]: DAYS.filter((d) => days.includes(d)),
       visitTime: visitTime === '' ? null : Number(visitTime),
       visitFrequency,
-      visitStart: visitFrequency === 'weekly' ? null : visitStart,
+      visitStart: visitFrequency === 'weekly' ? null : visitStart || todayKey(),
       fixedTime: visitTime !== '' && fixedTime, // only means something with a usual time
       visitLength: Number(visitLength) || DEFAULT_VISIT_LENGTH,
     };
@@ -2227,6 +2258,12 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
   const save = (skipRepeatCheck = false) => {
     if (!name.trim()) {
       window.alert(`Add a ${config.singular.toLowerCase()} name first.`);
+      return;
+    }
+    // Nov 12: anything other than Weekly needs a Start Date (only asked when there are visit days).
+    if (days.length && visitFrequency !== 'weekly' && !visitStart) {
+      window.alert('Pick a Start Date for the visits first.');
+      openDatePicker(visitStartRef);
       return;
     }
     // New account, or the name / address changed: check it isn't already in Crumb.
@@ -2572,12 +2609,24 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
             )}
             <label className="av-row av-static-row">
               <span className="av-row-label-inline">How often</span>
-              <select className="av-select" value={visitFrequency} onChange={(e) => { scheduleTouched.current = true; setVisitFrequency(e.target.value); }}>
+              <select className="av-select" value={visitFrequency} onChange={(e) => { scheduleTouched.current = true; setVisitFrequency(e.target.value); if (e.target.value !== 'weekly' && !visitStart) openDatePicker(visitStartRef); }}>
                 {FREQUENCIES.map((f) => (
                   <option key={f.key} value={f.key}>{f.label}</option>
                 ))}
               </select>
             </label>
+            {visitFrequency !== 'weekly' && (
+              <label className={`av-row av-static-row ${!visitStart ? 'av-start-missing' : ''}`}>
+                <span className="av-row-label-inline">Start Date</span>
+                <input
+                  ref={visitStartRef}
+                  type="date"
+                  className="av-select"
+                  value={visitStart}
+                  onChange={(e) => { scheduleTouched.current = true; e.target.value && setVisitStart(e.target.value); }}
+                />
+              </label>
+            )}
             <label className="av-row av-static-row">
               <span className="av-row-label-inline">Show on Daily Stops</span>
               <input
@@ -2596,17 +2645,6 @@ export function AccountEdit({ config, accounts, setAccounts, isNew = false, onCo
                 onChange={(e) => setShowOnCalendar(e.target.checked)}
               />
             </label>
-            {visitFrequency !== 'weekly' && (
-              <label className="av-row av-static-row">
-                <span className="av-row-label-inline">Starting</span>
-                <input
-                  type="date"
-                  className="av-select"
-                  value={visitStart}
-                  onChange={(e) => { scheduleTouched.current = true; e.target.value && setVisitStart(e.target.value); }}
-                />
-              </label>
-            )}
           </div>
         )}
 

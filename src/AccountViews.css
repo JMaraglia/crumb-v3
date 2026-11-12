@@ -1670,3 +1670,23 @@
     white-space: nowrap;
   }
 }
+
+/* Start Date still to pick (Nov 12): anything other than Weekly needs one */
+.av-start-missing input[type='date'] {
+  outline: 2px solid #0077cc;
+  outline-offset: 1px;
+  min-width: 130px;
+  min-height: 34px;
+}
+
+.av-start-note {
+  font-size: 0.85rem;
+  color: var(--fg-8e8e93);
+  text-align: center;
+  padding: 0 10px 8px;
+}
+
+.av-start-note.is-error {
+  color: #ff3b30;
+  font-weight: 600;
+}
