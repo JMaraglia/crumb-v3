@@ -1,9 +1,9 @@
 // Security audit, Nov 12 2026: whose device is this? Ownership is only saved after the cloud confirms that the
 // records on the device are in the signed-in account. Made-up records and a fake cloud only.
 import { describe, it, expect } from 'vitest';
-import { ownerState, ownerMayView, verifyOwner, OWNER_KEY, GRACE_KEY, MODE_KEY } from '../src/syncMode';
+import { ownerState, ownerMayView, verifyOwner, projectRef, OWNER_KEY, GRACE_KEY, MODE_KEY } from '../src/syncMode';
 
-const TOKEN = 'sb--auth-token'; // the test build has no cloud address, so the sign-in is remembered under this name
+const TOKEN = `sb-${projectRef()}-auth-token`; // where the sign-in is remembered (depends on the cloud address the build was given)
 const signIn = (id) => localStorage.setItem(TOKEN, JSON.stringify({ user: { id, email: `${id}@example.invalid` } }));
 const device = () => {
   localStorage.setItem(MODE_KEY, 'real');
