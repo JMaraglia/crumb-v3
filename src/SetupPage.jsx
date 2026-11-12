@@ -8,7 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setUpAfterSignIn, useMyAccount, addThisDevice, keepSeparate } from './syncMove';
 import { plainError } from './cloudErrors';
-import { lockApplies } from './syncMode';
+import { lockApplies, ownerState } from './syncMode';
 import './SetupPage.css';
 
 export const SETUP_SKIP_KEY = 'crumb_setup_not_now'; // this visit only (sessionStorage): don't reopen setup
@@ -28,6 +28,7 @@ export default function SetupPage() {
   const [busy, setBusy] = useState('');
   const [separated, setSeparated] = useState(false);
   const [otherAccount, setOtherAccount] = useState(false);
+  const [cantCheck, setCantCheck] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const signOut = async () => {
     setSigningOut(true);
@@ -69,9 +70,18 @@ export default function SetupPage() {
           return;
         }
         if (r.status === 'other-account') {
+          setCantCheck(false);
           setOtherAccount(true);
           return;
         }
+        if (r.status === 'cant-check') {
+          // The person who was already using this device carries on (the check runs again by itself);
+          // anyone else waits here until the cloud can confirm the device is theirs.
+          if (ownerState() === 'grace') navigate('/', { replace: true });
+          else setCantCheck(true);
+          return;
+        }
+        setCantCheck(false);
         if (r.status === 'ask') {
           setAsk(r);
           return;
@@ -118,7 +128,19 @@ export default function SetupPage() {
   };
 
   let card;
-  if (otherAccount) {
+  if (cantCheck && !busy) {
+    card = (
+      <div className="su-card" role="alert">
+        <div className="su-title">Checking This Device</div>
+        <div className="su-sub">
+          Crumb needs a connection to confirm this device belongs to your account. Nothing on this device was changed.
+          Check your signal, then try again.
+        </div>
+        <button className="su-btn" onClick={() => { setCantCheck(false); setTries((n) => n + 1); }}>Try Again</button>
+        <button className="su-btn su-btn-plain" onClick={signOut} disabled={signingOut}>{signingOut ? 'Signing Out…' : 'Sign Out'}</button>
+      </div>
+    );
+  } else if (otherAccount) {
     card = (
       <div className="su-card" role="alert">
         <div className="su-title">This Device Is Set Up For Another Account</div>

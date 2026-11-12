@@ -75,6 +75,8 @@ export function syncBlockReason(ref = projectRef(), read = readText, killed = KI
     if (!ref || read(PROJECT_KEY) !== ref) return 'other-project';
     const owner = read(OWNER_KEY);
     if (owner && userId && owner !== userId) return 'other-account';
+    // No owner confirmed yet (a device set up before Nov 11): nothing syncs until the cloud confirms it.
+    if (!owner && userId) return 'owner-unverified';
     return read(PAUSED_KEY) === '1' ? 'paused' : '';
   }
   return 'off';
@@ -118,6 +120,7 @@ export const BLOCK_TEXT = {
   'test-copy-locked': 'This is a test copy with made-up demo data, so it can never sync with your real account.',
   'other-project': 'This device was set up with a different cloud, so it isn’t syncing.',
   'other-account': 'This device is set up for another account, so it isn’t syncing.',
+  'owner-unverified': 'Checking that this device belongs to your account. Syncing starts once that’s confirmed.',
   paused: 'Paused. Crumb keeps working on this device, and your changes wait here until you resume.',
   off: '',
 };
@@ -145,19 +148,97 @@ export function signedInUserId(ref = projectRef()) {
     return '';
   }
 }
-// A syncing device with someone signed in who isn't the account it was set up for.
-export function otherAccountSignedIn() {
-  if (!isRealSynced()) return false;
-  const owner = readText(OWNER_KEY);
-  const me = signedInUserId();
-  return Boolean(owner && me && owner !== me);
+/* ---------- Whose device is this? (security audit, Nov 12 2026) ----------
+   OWNER_KEY is only ever written when ownership is certain: at setup (the person just set this device up with
+   their account), or after the CLOUD confirms that the records saved here are in the signed-in account
+   (verifyOwner). It is never guessed from who happens to be signed in or from anything remembered locally.
+
+   Devices set up before Nov 11 have no owner saved. For those:
+     - GRACE_KEY notes, once, who was signed in when this version first ran here ('none' if nobody). That person
+       was already using this data, so they keep seeing it (also with no signal). It gives no ownership and no
+       syncing: the cloud check still has to pass.
+     - Anyone else who signs in sees nothing until the cloud check passes for them.
+   ownerState(): 'na' (not a syncing device, or nobody signed in) | 'ok' | 'other' | 'grace' | 'unverified' */
+export const GRACE_KEY = 'crumb_sync_owner_grace';
+let ownerMismatch = ''; // the account ID the cloud said NO for, this launch only (never saved)
+
+function noteGrace() {
+  try {
+    if (!isRealSynced() || readText(OWNER_KEY) || readText(GRACE_KEY)) return;
+    writeText(GRACE_KEY, signedInUserId() || 'none');
+  } catch {
+    /* storage unavailable: nothing to note */
+  }
 }
-// Remember whose device this is. Devices set up before Nov 11 have no owner saved yet: the person signed in
-// now becomes the owner. Never changes an owner that's already saved.
-export function rememberOwner() {
-  if (!isRealSynced() || readText(OWNER_KEY)) return;
+noteGrace(); // when the app starts, before anyone can sign in during this launch
+
+export function ownerState() {
+  if (!isRealSynced()) return 'na';
   const me = signedInUserId();
-  if (me) writeText(OWNER_KEY, me);
+  if (!me) return 'na';
+  const owner = readText(OWNER_KEY);
+  if (owner) return owner === me ? 'ok' : 'other';
+  if (ownerMismatch === me) return 'other';
+  return readText(GRACE_KEY) === me ? 'grace' : 'unverified';
+}
+// A syncing device with someone signed in who isn't the account it belongs to.
+export const otherAccountSignedIn = () => ownerState() === 'other';
+// Private screens may be drawn for the signed-in person (the owner, or the grace case above).
+export const ownerMayView = () => ['na', 'ok', 'grace'].includes(ownerState());
+
+// Up to 40 of the oldest record IDs saved on this device (oldest = certainly sent to the cloud long ago).
+function localSample() {
+  const ids = (key) => {
+    try {
+      const v = JSON.parse(localStorage.getItem(key) || '[]');
+      return (Array.isArray(v) ? v : []).map((x) => x && x.id).filter((id) => id !== undefined && id !== null && id !== '').map(String);
+    } catch {
+      return [];
+    }
+  };
+  const oldest = (list) => list.slice().sort((a, b) => (a.length - b.length) || (a < b ? -1 : a > b ? 1 : 0)).slice(0, 40);
+  const accounts = [...ids('crumb_contacts'), ...ids('crumb_prospects')];
+  if (accounts.length) return { table: 'accounts', ids: oldest(accounts) };
+  const events = ids('crumb_calendar_events');
+  if (events.length) return { table: 'events', ids: oldest(events) };
+  return { table: '', ids: [] };
+}
+
+// Ask the cloud whether this device's records are in the signed-in account. Only a clear yes saves the owner.
+// 'ok' | 'mismatch' | 'unknown' (no signal, not approved yet, or the cloud couldn't answer: nothing changes).
+export async function verifyOwner(sb) {
+  try {
+    if (!isRealSynced()) return 'ok';
+    const { data: s } = await sb.auth.getSession();
+    const me = String((s && s.session && s.session.user && s.session.user.id) || '');
+    if (!me) return 'unknown';
+    const owner = readText(OWNER_KEY);
+    if (owner) return owner === me ? 'ok' : 'mismatch';
+    const confirm = () => {
+      writeText(OWNER_KEY, me);
+      ownerMismatch = '';
+      try {
+        window.dispatchEvent(new Event('crumb-sync-status'));
+        window.dispatchEvent(new Event('crumb-outbox-changed')); // anything waiting can go now
+      } catch {
+        /* nothing listening: syncing picks it up on its next pass */
+      }
+      return 'ok';
+    };
+    const sample = localSample();
+    if (!sample.ids.length) return confirm(); // nothing saved here to protect or to mix
+    const approved = await sb.rpc('can_sync');
+    if (approved.error || approved.data !== true) return 'unknown';
+    const found = await sb.from(sample.table).select('id').in('id', sample.ids);
+    if (found.error || !Array.isArray(found.data)) return 'unknown';
+    const mine = new Set(found.data.map((r) => String(r.id)));
+    const hits = sample.ids.filter((id) => mine.has(id)).length;
+    if (hits * 2 >= sample.ids.length) return confirm();
+    ownerMismatch = me;
+    return 'mismatch';
+  } catch {
+    return 'unknown';
+  }
 }
 
 // A brand-new device (nothing on it, nobody signed in, not syncing): Crumb opens on Sign In, like any app.

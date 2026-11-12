@@ -26,7 +26,8 @@ const FeedbackPage = React.lazy(() => import('./FeedbackPage'));
 startRecordingIfOn();
 import { syncReminders, startReminderRefresh } from './notify';
 import { startRecordingIfOn } from './outbox';
-import { needsSignIn, needsSetup, firstOpenSignIn, accessState, checkInvited, signedInEmail, otherAccountSignedIn, rememberOwner } from './syncMode';
+import { needsSignIn, needsSetup, firstOpenSignIn, accessState, checkInvited, signedInEmail, ownerState, ownerMayView, verifyOwner } from './syncMode';
+import ResetPasswordOnly from './ResetPasswordOnly';
 import { readSaved, writeSaved, withNoteIds, withStandardDates, changeNote, dropNote, upgradeStopIds, CUSTOMERS_KEY, PROSPECTS_KEY } from './store';
 
 // Simple hook to sync state with saved data (reads and saves go through store.js, the front door).
@@ -94,24 +95,52 @@ function NotificationTaps() {
 // reachable while locked; email links (confirm / reset password) are let through too.
 const OPEN_PATHS = ['/sign-in', '/access', '/setup'];
 const emailLink = () => /access_token|error_description|type=recovery/.test(window.location.hash || '');
+// Security audit, Nov 12 2026: an email link never opens a data screen. It is only honored on the screens
+// those emails point at (Setup for "confirm your email", the Cloud address for "reset your password"), and
+// even there the lock and the owner check below still decide what is drawn. Anything after "#" on any other
+// address changes nothing.
+const LINK_PATHS = ['/setup', '/cloud-test', '/sign-in'];
 let accessCheckedThisLaunch = false;
+let ownerCheckedThisLaunch = false;
 
 function SignInGate() {
   const navigate = useNavigate();
   const location = useLocation();
   React.useEffect(() => {
     if (location.pathname === '/sign-in') return;
-    if (emailLink()) return;
+    if (emailLink()) {
+      if (LINK_PATHS.includes(location.pathname)) return; // the screen itself handles the link
+      // A link that landed somewhere else: hand it to the right screen, keeping the link's details.
+      const hash = window.location.hash || '';
+      navigate((/type=recovery/.test(hash) ? '/cloud-test' : '/setup') + hash, { replace: true });
+      return;
+    }
     const access = accessState();
     if (access === 'signin') {
       navigate('/sign-in', { replace: true, state: { from: '/setup', gate: true } });
       return;
     }
-    // Nov 11: a device set up for one account never opens for another (Setup shows why, with Sign Out).
-    rememberOwner();
-    if (otherAccountSignedIn()) {
+    // A device that belongs to one account never opens for another. With no owner confirmed yet, a new
+    // sign-in waits on Setup until the cloud confirms it (Setup shows why, with Sign Out).
+    const own = ownerState();
+    if (own === 'other' || own === 'unverified') {
       if (location.pathname !== '/setup') navigate('/setup', { replace: true });
       return;
+    }
+    // The person who was already using this device before an owner was recorded: confirm with the cloud
+    // quietly, once per launch. A clear "no" locks it; no signal changes nothing.
+    if (own === 'grace' && !ownerCheckedThisLaunch) {
+      ownerCheckedThisLaunch = true;
+      import('./cloud')
+        .then(({ cloud }) => {
+          const sb = cloud();
+          return sb ? verifyOwner(sb) : 'unknown';
+        })
+        .then((answer) => {
+          if (answer === 'mismatch') navigate('/setup', { replace: true });
+          else if (answer === 'unknown') ownerCheckedThisLaunch = false; // try again on the next screen
+        })
+        .catch(() => { ownerCheckedThisLaunch = false; });
     }
     if ((access === 'denied' || access === 'unknown') && !OPEN_PATHS.includes(location.pathname)) {
       navigate('/access', { replace: true });
@@ -155,10 +184,15 @@ function SignInGate() {
 }
 
 // While locked, nothing of Crumb is drawn (not even for a moment) except the open screens.
+// Nov 12 2026: this is decided BEFORE anything is drawn, and nothing in the address can switch it off:
+// approved, signed in where a sign-in is needed, and the device belongs to (or was already in use by) this account.
 function AccessGuard({ children }) {
   const location = useLocation();
+  if (OPEN_PATHS.includes(location.pathname)) return children;
   const access = accessState();
-  if (access === 'open' || access === 'ok' || OPEN_PATHS.includes(location.pathname) || emailLink()) return children;
+  if ((access === 'open' || access === 'ok') && !needsSignIn() && ownerMayView()) return children;
+  // A "reset your password" link: only the new-password box, nothing from this device.
+  if (location.pathname === '/cloud-test' && emailLink()) return <ResetPasswordOnly />;
   return null;
 }
 

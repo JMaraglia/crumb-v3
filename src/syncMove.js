@@ -15,7 +15,7 @@ import { allPhotos, saveSafetyCopy, clearAllPhotos, putPhotosAll } from './photo
 import { isBackedUpKey, makeManifest } from './backupCheck';
 import { syncPhotos, splitKey, PHOTOS_SENT_KEY, PHOTOS_PULLED_KEY } from './syncPhotos';
 import { clearOutbox, setRecording, quietly } from './outbox';
-import { isTestProject, isTestCopy, isRealSynced, projectRef, checkInvited, deviceHasData, otherAccountSignedIn, signedInUserId, MODE_KEY, PROJECT_KEY, PAUSED_KEY, TEST_DEVICE_KEY, OWNER_KEY } from './syncMode';
+import { isTestProject, isTestCopy, isRealSynced, projectRef, checkInvited, deviceHasData, ownerState, verifyOwner, signedInUserId, MODE_KEY, PROJECT_KEY, PAUSED_KEY, TEST_DEVICE_KEY, OWNER_KEY } from './syncMode';
 import { myWorkspace, sendBatch, opId, UPLOADED_KEY, LAST_SENT_KEY, PULLED_KEY, LAST_CHECK_KEY } from './syncSend';
 
 const BACKUP_KEY = 'crumb_last_backup';
@@ -221,6 +221,8 @@ export async function moveMyData(onStep = () => {}, { safetyCopied = false } = {
     writeText(LAST_SENT_KEY, now);
     const t = Date.parse(answer && answer.server_time);
     writeText(PULLED_KEY, new Date((Number.isNaN(t) ? Date.now() : t) - 120000).toISOString());
+    const mover = signedInUserId();
+    if (mover) writeText(OWNER_KEY, mover); // this device's data was just uploaded into this account: it's theirs
     writeText(MODE_KEY, 'real'); // last: only now does this device sync
     window.dispatchEvent(new Event('crumb-outbox-changed')); // send anything edited during the move
     window.dispatchEvent(new Event('crumb-sync-status'));
@@ -276,10 +278,25 @@ function turnOnSyncing(answer) {
 // Anything else is handed back untouched: 'ready' (already set up), 'not-invited', 'has-local' (this device
 // has its own data: asked about separately, never replaced here). Errors throw, and nothing on the device changes.
 export async function setUpAfterSignIn(onStep = () => {}) {
-  // Someone else's device (Nov 11): never opens for a different account. Nothing on it is touched.
-  if (otherAccountSignedIn()) return { status: 'other-account' };
-  if (isRealSynced()) return { status: 'ready' };
   const sb = cloud();
+  // A device that already syncs (Nov 11–12): it only ever opens for the account it belongs to. Nothing on it
+  // is touched. With no owner saved yet, the cloud is asked; only a clear yes lets this account in.
+  if (isRealSynced()) {
+    if (!sb) return { status: 'ready' };
+    try {
+      const { data: live } = await sb.auth.getSession(); // also waits for an email link to finish signing in
+      if (!live || !live.session) return { status: 'signed-out' };
+      const st = ownerState();
+      if (st === 'other') return { status: 'other-account' };
+      if (st === 'ok' || st === 'na') return { status: 'ready' };
+      const answer = await verifyOwner(sb);
+      if (answer === 'ok') return { status: 'ready' };
+      if (answer === 'mismatch') return { status: 'other-account' };
+    } catch {
+      /* treated as "couldn't check" below */
+    }
+    return { status: 'cant-check' };
+  }
   if (!sb) throw new Error('Cloud isn’t set up in this version.');
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) return { status: 'signed-out' };
