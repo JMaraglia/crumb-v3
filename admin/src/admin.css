@@ -292,3 +292,8 @@ input { font: inherit; }
 .ad-account.ad-account-line { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
 .ad-account-line .ad-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ad-account-line .ad-link-btn { padding: 4px 0; font-size: 14px; flex: none; }
+
+/* Recent Admin Actions: tap the heading to fold or unfold (Nov 12) */
+.ad-fold { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; border: 0; background: none; padding: 8px 0; text-align: left; font-family: inherit; }
+.ad-fold-arrow { font-size: 20px; line-height: 1; transition: transform .15s; }
+.ad-fold-arrow.is-open { transform: rotate(90deg); }

@@ -510,6 +510,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
   const [openEmail, setOpenEmail] = useState(''); // the rep whose details sheet is open (Nov 12)
   const [sheetNote, setSheetNote] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [logOpen, setLogOpen] = useState(false); // Recent Admin Actions starts folded (Nov 12)
   const [access, setAccess] = useState({ busy: '', ask: false, err: '', mail: true }); // Approve / Remove Access in the rep sheet
   const within = (d, ms) => d && Date.now() - new Date(d).getTime() < ms;
   // The Overview tiles' groups (Nov 11): joined this week, active this week, a device synced in 30 days, a change in
@@ -648,15 +649,17 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
 
       {log.length > 0 && (
         <>
-          <h2 className="ad-h2">Recent Admin Actions</h2>
-          <div className="ad-card ad-rows">
+          <button type="button" className="ad-h2 ad-fold" aria-expanded={logOpen} onClick={() => setLogOpen((v) => !v)}>
+            <span>Recent Admin Actions · {log.length}</span><span className={`ad-fold-arrow ${logOpen ? 'is-open' : ''}`} aria-hidden="true">›</span>
+          </button>
+          {logOpen && <div className="ad-card ad-rows">
             {log.map((l, i) => (
               <div className="ad-row ad-log" key={`${l.at}-${i}`}>
                 <span className="ad-row-label">{logText(l)}</span>
                 <span className="ad-row-value">{ago(l.at)}</span>
               </div>
             ))}
-          </div>
+          </div>}
         </>
       )}
 
