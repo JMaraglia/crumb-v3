@@ -297,7 +297,7 @@ function Answers({ data }) {
 
 // ---------- send a nudge (founder, Nov 11): a push notification to one rep's devices ----------
 const NUDGE_DEFAULT = 'Your customers and stops are right where you left them. Anything getting in your way? Tap to open Crumb.';
-function Nudge({ email, last, onDone }) {
+function Nudge({ email, last, onDone, big = false }) {
   const [open, setOpen] = useState(false);
   const [sentAt, setSentAt] = useState(null); // just now, before the next refresh
   const when = sentAt || last;
@@ -332,9 +332,9 @@ function Nudge({ email, last, onDone }) {
   };
   if (!open) {
     return (
-      <div className="ad-nudge-row">
-        <button type="button" className="ad-link-btn ad-nudge-btn" onClick={() => { setErr(''); setOpen(true); }}>Send A Nudge</button>
-        {when && <span className="ad-muted ad-small">Last Nudged {shortDate(when)} · {ago(when)}</span>}
+      <div className={`ad-nudge-row ${big ? 'is-big' : ''}`}>
+        <button type="button" className={big ? 'ad-btn' : 'ad-link-btn ad-nudge-btn'} onClick={() => { setErr(''); setOpen(true); }}>Send A Nudge</button>
+        {when ? <span className="ad-muted ad-small">Last Nudged {shortDate(when)} · {ago(when)}</span> : big && <span className="ad-muted ad-small">Never Nudged</span>}
       </div>
     );
   }
@@ -354,11 +354,13 @@ function Nudge({ email, last, onDone }) {
 // ---------- users ----------
 // Beta approval: a rep is approved when their email is on the Sync Access list (admins always pass).
 // invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
-function Users({ users, log, invites = [], invitesOk = false, answers = [], nudged = {}, onChanged, initialFilter = 'all' }) {
+function Users({ users, log, invites = [], invitesOk = false, answers = [], nudged = {}, beta = [], welcomes = [], onChanged, initialFilter = 'all' }) {
   const [q, setQ] = useState('');
   const [deleting, setDeleting] = useState('');
   const [done, setDone] = useState('');
   const [filter, setFilter] = useState(initialFilter);
+  const [openEmail, setOpenEmail] = useState(''); // the rep whose details sheet is open (Nov 12)
+  const [sheetNote, setSheetNote] = useState('');
   const within = (d, ms) => d && Date.now() - new Date(d).getTime() < ms;
   // The Overview tiles' groups (Nov 11): joined this week, active this week, a device synced in 30 days, a change in
   // the last 24 hours. Founder, Nov 11: admins are left out of these (they're always active); they still show under All.
@@ -369,9 +371,13 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
   const invited = new Set(invites.map((i) => String(i.email || '').toLowerCase()));
   const approved = (u) => u.is_admin || invited.has(String(u.email || '').toLowerCase());
   const waiting = (u) => invitesOk && !approved(u);
+  const quiet = (u) => !u.is_admin && !active(u);
+  const nameOf = (u) => nameFor(beta, u.email); // from their beta sign-up; blank if they never filled in that form
   const shown = users
-    .filter((u) => (filter === 'active' ? active(u) : filter === 'waiting' ? waiting(u) : filter === 'new' ? isNew(u) : filter === 'devices' ? syncing(u) : filter === 'today' ? today(u) : true))
-    .filter((u) => !q.trim() || String(u.email || '').toLowerCase().includes(q.trim().toLowerCase()));
+    .filter((u) => (filter === 'active' ? active(u) : filter === 'quiet' ? quiet(u) : filter === 'waiting' ? waiting(u) : filter === 'new' ? isNew(u) : filter === 'devices' ? syncing(u) : filter === 'today' ? today(u) : true))
+    .filter((u) => !q.trim() || `${u.email || ''} ${nameOf(u)}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const openUser = openEmail ? users.find((u) => u.email === openEmail) : null;
+  const devicesWord = (u) => `${u.devices_30d} ${Number(u.devices_30d) === 1 ? 'Device' : 'Devices'}`;
 
   return (
     <>
@@ -379,44 +385,36 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
       {done && <p className="ad-done" role="status">{done}</p>}
       <label className="ad-search">
         {Icon.search}
-        <input type="search" placeholder="Search By Email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search By Email" />
+        <input type="search" placeholder="Search By Name Or Email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search By Name Or Email" />
       </label>
-      <div className="ad-chips" role="group" aria-label="Filter users">
-        <button type="button" className={`ad-chip ${filter === 'all' ? 'is-on' : ''}`} onClick={() => setFilter('all')}>All · {users.length}</button>
-        <button type="button" className={`ad-chip ${filter === 'new' ? 'is-on' : ''}`} onClick={() => setFilter('new')}>New This Week · {users.filter(isNew).length}</button>
-        <button type="button" className={`ad-chip ${filter === 'active' ? 'is-on' : ''}`} onClick={() => setFilter('active')}>Active · {users.filter(active).length}</button>
-        <button type="button" className={`ad-chip ${filter === 'devices' ? 'is-on' : ''}`} onClick={() => setFilter('devices')}>Syncing · {users.filter(syncing).length}</button>
-        <button type="button" className={`ad-chip ${filter === 'today' ? 'is-on' : ''}`} onClick={() => setFilter('today')}>Changed Today · {users.filter(today).length}</button>
-        {invitesOk && (
-          <button type="button" className={`ad-chip ${filter === 'waiting' ? 'is-on' : ''}`} onClick={() => setFilter('waiting')}>Waiting · {users.filter(waiting).length}</button>
-        )}
+      <div className="ad-chips ad-chips-line" role="group" aria-label="Filter users">
+        {[['all', 'All', users.length], ['active', 'Active', users.filter(active).length], ['quiet', 'Quiet', users.filter(quiet).length], ['new', 'New', users.filter(isNew).length], ['devices', 'Syncing', users.filter(syncing).length], ['today', 'Today', users.filter(today).length]]
+          .concat(invitesOk ? [['waiting', 'Waiting', users.filter(waiting).length]] : [])
+          .map(([id, label, n]) => (
+            <button key={id} type="button" className={`ad-chip ${filter === id ? 'is-on' : ''}`} onClick={() => setFilter(id)}>{label} · {n}</button>
+          ))}
       </div>
 
-      <div className="ad-list">
-        {shown.map((u) => (
-          <div className="ad-user" key={u.email}>
-            <div className="ad-user-top">
-              <div className="ad-avatar" aria-hidden="true">{String(u.email || '?').charAt(0).toUpperCase()}</div>
-              <div className="ad-user-name">
-                <div className="ad-user-email">{u.email}</div>
-                <div className="ad-muted ad-small">{u.is_admin ? 'Admin' : 'Rep'} · Joined {shortDate(u.joined_at)} · {active(u) ? 'Active This Week' : 'Quiet'}</div>
-                {invitesOk && (waiting(u)
-                  ? <span className="ad-pill ad-pill-work ad-user-pill">WAITING FOR APPROVAL</span>
-                  : <span className="ad-pill ad-pill-ok ad-user-pill">APPROVED</span>)}
-              </div>
-            </div>
-            <Answers data={answersFor(answers, u.email)} />
-            <div className="ad-user-stats">
-              <div><span>Last Sign-In</span><b>{ago(u.last_sign_in_at)}</b></div>
-              <div><span>Last Change</span><b>{ago(u.last_change_at)}</b></div>
-              <div><span>Devices</span><b>{u.devices_30d}</b></div>
-            </div>
-            {!u.is_admin && <Nudge email={u.email} last={nudged[String(u.email || '').toLowerCase()]} onDone={setDone} />}
-            {!u.is_admin && <button type="button" className="ad-del-btn" onClick={() => { setDone(''); setDeleting(u.email); }}>Delete Account</button>}
-          </div>
-        ))}
-        {shown.length === 0 && <p className="ad-muted">No one matches.</p>}
-      </div>
+      {shown.length > 0 && (
+        <div className="ad-card ad-urows">
+          {shown.map((u) => {
+            const lively = within(u.last_change_at, 7 * DAY);
+            const tone = invitesOk && waiting(u) ? 'warn' : lively ? 'ok' : 'quiet';
+            return (
+              <button type="button" className="ad-urow" key={u.email} onClick={() => { setDone(''); setSheetNote(''); setOpenEmail(u.email); }}>
+                <span className="ad-urow-av" aria-hidden="true">{String(nameOf(u) || u.email || '?').charAt(0).toUpperCase()}</span>
+                <span className="ad-urow-text">
+                  <span className="ad-urow-name">{nameOf(u) || u.email}</span>
+                  <span className="ad-urow-sub">{u.is_admin ? `Admin · ${devicesWord(u)}` : `${devicesWord(u)} · Joined ${shortDate(u.joined_at)}`}</span>
+                </span>
+                <span className={`ad-urow-st is-${tone}`}><i aria-hidden="true" />{tone === 'warn' ? 'Waiting' : ago(u.last_change_at)}</span>
+                <span className="ad-urow-go" aria-hidden="true">›</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {shown.length === 0 && <p className="ad-muted">No one matches.</p>}
       {invitesOk && users.some(waiting) && <p className="ad-muted ad-small ad-note">Approve people in Inbox → Beta.</p>}
       <p className="ad-muted ad-small ad-note">Counts and dates only. Admin never shows reps' customers, notes or photos.</p>
 
@@ -432,6 +430,42 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
             ))}
           </div>
         </>
+      )}
+
+      {openUser && (
+        <div className="ad-sheet-back" onClick={(e) => { if (e.target === e.currentTarget) setOpenEmail(''); }}>
+          <div className="ad-sheet ad-rep-sheet" role="dialog" aria-label="Rep details">
+            <div className="ad-rep-head">
+              <span className="ad-urow-av" aria-hidden="true">{String(nameOf(openUser) || openUser.email || '?').charAt(0).toUpperCase()}</span>
+              <div className="ad-urow-text">
+                <h2 className="ad-sheet-title">{nameOf(openUser) || openUser.email}</h2>
+                {nameOf(openUser) && <span className="ad-rep-email">{openUser.email}</span>}
+              </div>
+            </div>
+            <span className={`ad-urow-st ad-rep-st is-${invitesOk && waiting(openUser) ? 'warn' : within(openUser.last_change_at, 7 * DAY) ? 'ok' : 'quiet'}`}>
+              <i aria-hidden="true" />
+              {[openUser.is_admin ? 'Admin' : 'Rep', within(openUser.last_change_at, 7 * DAY) ? 'Active This Week' : 'Quiet', invitesOk && (waiting(openUser) ? 'Waiting For Approval' : 'Approved')].filter(Boolean).join(' · ')}
+            </span>
+            <div className="ad-rep-facts">
+              <div><span>Joined</span><b>{shortDate(openUser.joined_at)}</b></div>
+              <div><span>Devices</span><b>{openUser.devices_30d}</b></div>
+              <div><span>Last Sign-In</span><b>{ago(openUser.last_sign_in_at)}</b></div>
+              <div><span>Last Change</span><b>{ago(openUser.last_change_at)}</b></div>
+            </div>
+            <Answers data={answersFor(answers, openUser.email)} />
+            {invitesOk && waiting(openUser) && <p className="ad-muted ad-small">Approve people in Inbox → Beta.</p>}
+            {sheetNote && <p className="ad-done" role="status">{sheetNote}</p>}
+            {!openUser.is_admin && <Nudge big key={`n-${openUser.email}`} email={openUser.email} last={nudged[String(openUser.email || '').toLowerCase()]} onDone={(m) => { setSheetNote(m); onChanged(); }} />}
+            {!openUser.is_admin && invitesOk && !waiting(openUser) && (
+              <div className="ad-rep-welcome">
+                <ResendWelcome email={openUser.email} name={nameOf(openUser)} welcome={welcomeFor(welcomes, openUser.email)} onDone={(r) => { setSheetNote(r.err || r.note || ''); onChanged(); }} />
+                <span className="ad-muted ad-small">{welcomeLine(welcomeFor(welcomes, openUser.email))}</span>
+              </div>
+            )}
+            {!openUser.is_admin && <button type="button" className="ad-del-btn ad-rep-del" onClick={() => { const e = openUser.email; setOpenEmail(''); setDone(''); setDeleting(e); }}>Delete Account</button>}
+            <button type="button" className="ad-link-btn ad-sheet-cancel" onClick={() => setOpenEmail('')}>Close</button>
+          </div>
+        </div>
       )}
 
       {deleting && (
@@ -916,7 +950,7 @@ export default function App() {
         </div>
         {msg && <p className="ad-error">{msg}</p>}
         {tab === 'overview' && overview && <Overview data={overview} users={users} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} onOpenUsers={(f) => { setUsersView({ filter: f, n: Date.now() }); pick('users'); }} />}
-        {tab === 'users' && <Users key={usersView.n} initialFilter={usersView.filter} nudged={nudged} users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
+        {tab === 'users' && <Users key={usersView.n} initialFilter={usersView.filter} nudged={nudged} beta={inbox.beta} welcomes={inbox.welcomes} users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
         {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} beta={inbox.beta} betaErr={inbox.betaErr} invites={inbox.invites} invitesErr={inbox.invitesErr} welcomes={inbox.welcomes} answers={inbox.answers} onChanged={load} />}
       </main>

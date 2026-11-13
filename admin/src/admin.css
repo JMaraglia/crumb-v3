@@ -237,3 +237,37 @@ input { font: inherit; }
 .ad-resend-btn { padding: 4px 0; text-align: left; align-self: flex-start; }
 .ad-resend-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 0; }
 .ad-answers { margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.04); display: flex; flex-direction: column; gap: 3px; color: #c9d4e2; }
+
+/* Users: slim rows + tap a rep for details (Nov 12) */
+.ad-chips-line { flex-wrap: nowrap; overflow-x: auto; margin: 0 -20px; padding: 0 20px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ad-chips-line::-webkit-scrollbar { display: none; }
+.ad-chips-line .ad-chip { flex: none; white-space: nowrap; }
+.ad-urows { overflow: hidden; }
+.ad-urow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 13px 14px; border: 0; background: none; color: inherit; text-align: left; }
+.ad-urow + .ad-urow { border-top: 1px solid var(--ad-line); }
+.ad-urow:active { background: rgba(255, 255, 255, 0.04); }
+.ad-urow-av { width: 40px; height: 40px; border-radius: 20px; background: #22507e; flex: none; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; }
+.ad-urow-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ad-urow-name { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-urow-sub { font-size: 13px; color: var(--ad-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-urow-st { flex: none; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.ad-urow-st i { width: 9px; height: 9px; border-radius: 5px; flex: none; }
+.ad-urow-st.is-ok { color: var(--ad-ok); } .ad-urow-st.is-ok i { background: var(--ad-ok); }
+.ad-urow-st.is-quiet { color: var(--ad-dim); } .ad-urow-st.is-quiet i { background: var(--ad-dim); }
+.ad-urow-st.is-warn { color: var(--ad-warn); } .ad-urow-st.is-warn i { background: var(--ad-warn); }
+.ad-urow-go { flex: none; font-size: 20px; line-height: 1; color: var(--ad-dim); }
+.ad-rep-head { display: flex; align-items: center; gap: 12px; }
+.ad-rep-head .ad-urow-av { width: 52px; height: 52px; border-radius: 26px; font-size: 20px; }
+.ad-rep-head .ad-sheet-title { word-break: break-word; }
+.ad-rep-email { font-size: 15px; color: var(--ad-muted); word-break: break-all; }
+.ad-rep-st { font-size: 14px; white-space: normal; }
+.ad-rep-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ad-rep-facts > div { background: var(--ad-card); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.ad-rep-facts span { display: block; font-size: 12px; color: var(--ad-muted); }
+.ad-rep-facts b { display: block; font-size: 16px; margin-top: 2px; }
+.ad-rep-sheet .ad-answers { margin: 0; }
+.ad-nudge-row.is-big { align-items: stretch; gap: 6px; text-align: center; }
+.ad-rep-welcome { display: flex; flex-direction: column; align-items: stretch; gap: 6px; text-align: center; }
+.ad-rep-welcome .ad-resend-btn { align-self: stretch; text-align: center; padding: 14px; border: 1px solid var(--ad-line); border-radius: 12px; font-size: 17px; }
+.ad-rep-welcome .ad-resend-ask { justify-content: center; }
+.ad-rep-del { align-self: center; padding: 6px 0; }
