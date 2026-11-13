@@ -297,3 +297,10 @@ input { font: inherit; }
 .ad-fold { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; border: 0; background: none; padding: 8px 0; text-align: left; font-family: inherit; }
 .ad-fold-arrow { font-size: 20px; line-height: 1; transition: transform .15s; }
 .ad-fold-arrow.is-open { transform: rotate(90deg); }
+
+/* Status bar cover (Nov 12): the page used to scroll up behind the phone's clock and battery.
+   A fixed strip the height of that area keeps it clear. Sheets (z-index 20) still sit above it. */
+body::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  height: env(safe-area-inset-top); background: var(--ad-bg); pointer-events: none;
+}
