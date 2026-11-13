@@ -330,3 +330,5 @@ body::before {
 .ad-rp-tr span { text-align: right; font-variant-numeric: tabular-nums; }
 .ad-rp-tr.is-head { font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ad-dim); }
 .ad-rp-none { margin: 0; padding: 10px 0; }
+.ad-rp-dl { border: 1px solid var(--ad-line); background: none; color: #7cc2ff; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; }
+.ad-rp-dl:active { background: rgba(255, 255, 255, 0.04); }

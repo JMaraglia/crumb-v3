@@ -955,8 +955,62 @@ function Bar({ label, value, pct }) {
     </div>
   );
 }
+// The whole report as a spreadsheet file (CSV opens in Excel, Numbers and Google Sheets). Counts, dates and emails only.
+function reportCsv(data, beta) {
+  const cell = (v) => { const t = v == null ? '' : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const rows = [];
+  const add = (...cols) => rows.push(cols.map(cell).join(','));
+  const w = (data.periods || {}).week || {}, m = (data.periods || {}).month || {};
+  const f = data.funnel || {};
+  const total = (data.features || []).reduce((n, x) => n + Number(x.changes || 0), 0);
+  add('Crumb Report', new Date(data.made_at || Date.now()).toLocaleString('en-US'));
+  add();
+  add('Summary', 'Last 7 Days', '7 Days Before', 'Last 30 Days', '30 Days Before');
+  add('New Sign-Ups', w.signups, w.signups_prev, m.signups, m.signups_prev);
+  add('Active Reps', w.active, w.active_prev, m.active, m.active_prev);
+  add('Days Used Per Rep', w.days_per_rep, w.days_per_rep_prev, m.days_per_rep, m.days_per_rep_prev);
+  add('Still Active After 1 Week (%)', w.kept1, w.kept1_prev, m.kept1, m.kept1_prev);
+  add();
+  add('Sign-Up Funnel (All Time)', 'People');
+  add('Signed Up', f.signed_up); add('Invited', f.invited); add('Made An Account', f.account); add('Used Crumb', f.used);
+  add();
+  add('Where Reps Come From', 'Signed Up', 'Using (Last 14 Days)', 'Kept (%)');
+  (data.sources || []).forEach((x) => add(x.source, x.signed_up, x.using_now, x.signed_up ? Math.round((100 * x.using_now) / x.signed_up) : ''));
+  add();
+  add('Retention: Joined Week Of', 'Reps', 'Week 1 (%)', 'Week 4 (%)');
+  (data.cohorts || []).forEach((c) => add(c.week_start, c.reps, c.week1, c.week4));
+  add();
+  add('What Reps Use Most (Last 30 Days)', 'Saved Changes', 'Share (%)');
+  (data.features || []).forEach((x) => add(x.name, x.changes, total ? Math.round((100 * x.changes) / total) : ''));
+  add();
+  add('Gone Quiet: Name', 'Email', 'Last Change', 'Days Used');
+  (data.quiet || []).forEach((x) => add(nameFor(beta, x.email), x.email, x.last_change_at ? new Date(x.last_change_at).toLocaleDateString('en-US') : '', x.active_days));
+  return rows.join('\r\n');
+}
+async function saveReport(data, beta) {
+  const name = `crumb-report-${new Date().toLocaleDateString('en-CA')}.csv`;
+  const text = '﻿' + reportCsv(data, beta); // the first mark tells Excel the file is UTF-8
+  // Phones: hand the file to the share sheet (Save To Files, Mail, AirDrop). Computers: a normal download.
+  try {
+    const file = new File([text], name, { type: 'text/csv' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Crumb Report' }); return ''; }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return ''; // closed the share sheet: not a problem
+  }
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    return '';
+  } catch (e) {
+    return plainError(e);
+  }
+}
+
 function Reports({ data, err, missing, beta = [], onBack, onOpenPerson }) {
   const [span, setSpan] = useState('week');
+  const [saveErr, setSaveErr] = useState('');
   const head = (
     <>
       <button type="button" className="ad-link-btn ad-rp-back" onClick={onBack}>‹ Overview</button>
@@ -1045,6 +1099,8 @@ function Reports({ data, err, missing, beta = [], onBack, onOpenPerson }) {
       ) : (
         <p className="ad-muted ad-small">No one who used Crumb has gone a week without a change.</p>
       )}
+      <button type="button" className="ad-rp-dl" onClick={async () => setSaveErr(await saveReport(data, beta))}>Download As A Spreadsheet</button>
+      {saveErr && <p className="ad-error" role="alert">Couldn't make the file: {saveErr}</p>}
       <p className="ad-muted ad-small ad-note">Counts and dates only. Reports never show reps' customers, notes or photos.</p>
     </>
   );
