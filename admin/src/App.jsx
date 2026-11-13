@@ -419,6 +419,15 @@ function LeadSheet({ lead, welcome, answers, onClose, onDone }) {
     if (err) { setMsg(err); return; }
     onDone(`${lead.email} ${word}.`);
   };
+  // Snooze (Nov 12): the sign-up stops counting as new, so its alert goes away, until it's moved back.
+  const setStatus = async (st, note) => {
+    if (busy || !b) return;
+    setBusy(st); setMsg('');
+    const { error } = await cloud().rpc('admin_beta_set_status', { p_id: b.id, p_status: st });
+    setBusy('');
+    if (error) { setMsg(/unknown status/i.test(error.message || '') ? "Snooze isn't turned on yet: the Snooze SQL (0018) hasn't been run in Supabase." : plainError(error)); return; }
+    onDone(note);
+  };
   const facts = b ? [['Industry', b.industry], ['State', b.state], ['Company', b.company], ['Heard About Crumb', b.heard]].filter(([, v]) => v) : [];
   return (
     <div className="ad-sheet-back" onClick={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}>
@@ -430,8 +439,8 @@ function LeadSheet({ lead, welcome, answers, onClose, onDone }) {
             {lead.name && <span className="ad-rep-email">{lead.email}</span>}
           </div>
         </div>
-        {lead.stage === 'declined'
-          ? <span className="ad-urow-st ad-rep-st is-quiet"><i aria-hidden="true" />Declined</span>
+        {lead.stage === 'declined' || lead.stage === 'snoozed'
+          ? <span className="ad-urow-st ad-rep-st is-quiet"><i aria-hidden="true" />{lead.stage === 'snoozed' ? 'Snoozed' : 'Declined'}</span>
           : <Steps at={lead.stage === 'invited' ? 1 : 0} />}
         {facts.length > 0 && <div className="ad-rep-facts">{facts.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div>}
         <p className="ad-muted ad-small">{b ? `Signed Up ${ago(b.created_at)}` : `Added By Hand ${ago(lead.invite && lead.invite.added_at)}`}</p>
@@ -442,7 +451,9 @@ function LeadSheet({ lead, welcome, answers, onClose, onDone }) {
             <button type="button" className="ad-btn" onClick={invite} disabled={Boolean(busy)}>{busy === 'invite' ? 'Inviting…' : 'Invite To The Beta'}</button>
             {sentBefore ? <span className="ad-muted ad-small ad-center">{welcomeLine(welcome)}</span> : <WelcomeToggle on={mail} setOn={setMail} disabled={Boolean(busy)} />}
             <p className="ad-muted ad-small">Inviting lets this email create an account and use Crumb.</p>
-            {lead.stage === 'needs' && <button type="button" className="ad-del-btn ad-rep-del" onClick={() => takeBack('was declined')} disabled={Boolean(busy)}>{busy === 'remove' ? 'Saving…' : 'Decline'}</button>}
+            {lead.stage === 'needs' && b && <button type="button" className="ad-rp-dl" onClick={() => setStatus('snoozed', `${lead.email} is snoozed.`)} disabled={Boolean(busy)}>{busy === 'snoozed' ? 'Snoozing…' : 'Snooze'}</button>}
+            {lead.stage === 'snoozed' && <button type="button" className="ad-rp-dl" onClick={() => setStatus('new', `${lead.email} is back under Needs You.`)} disabled={Boolean(busy)}>{busy === 'new' ? 'Moving…' : 'Move Back To Needs You'}</button>}
+            {(lead.stage === 'needs' || lead.stage === 'snoozed') && <button type="button" className="ad-del-btn ad-rep-del" onClick={() => takeBack('was declined')} disabled={Boolean(busy)}>{busy === 'remove' ? 'Saving…' : 'Decline'}</button>}
           </>
         ) : (
           <>
@@ -537,7 +548,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
   // Leads: people with no account yet. A sign-up is New, Invited or Declined; an email added by hand is Invited.
   const haveAccount = new Set(users.map((u) => lc(u.email)));
   const leads = [
-    ...beta.filter((x) => !haveAccount.has(lc(x.email))).map((x) => ({ email: x.email, name: x.name || '', beta: x, invite: inviteFor(x.email), stage: x.status === 'invited' || inviteFor(x.email) ? 'invited' : x.status === 'declined' ? 'declined' : 'needs' })),
+    ...beta.filter((x) => !haveAccount.has(lc(x.email))).map((x) => ({ email: x.email, name: x.name || '', beta: x, invite: inviteFor(x.email), stage: x.status === 'invited' || inviteFor(x.email) ? 'invited' : x.status === 'declined' ? 'declined' : x.status === 'snoozed' ? 'snoozed' : 'needs' })),
     ...invites.filter((i) => i.source !== 'founder' && !haveAccount.has(lc(i.email)) && !betaFor(i.email)).map((i) => ({ email: i.email, name: '', beta: null, invite: i, stage: 'invited' })),
   ];
   const turnedDown = (u) => (betaFor(u.email) || {}).status === 'declined'; // an account whose access was declined or taken away
@@ -549,6 +560,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
     needs: { leads: leads.filter((l) => l.stage === 'needs'), users: users.filter((u) => waiting(u) && !turnedDown(u)) },
     invited: { leads: leads.filter((l) => l.stage === 'invited'), users: [] },
     using: { leads: [], users: users.filter((u) => !waiting(u)) },
+    snoozed: { leads: leads.filter((l) => l.stage === 'snoozed'), users: [] },
     declined: { leads: leads.filter((l) => l.stage === 'declined'), users: users.filter((u) => waiting(u) && turnedDown(u)) },
   };
   const count = (g) => groups[g].leads.length + groups[g].users.length;
@@ -576,7 +588,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
   const leadRow = (l) => {
     const where = l.beta ? [l.beta.industry, l.beta.state].filter(Boolean).join(' · ') : '';
     const sub = l.stage === 'invited' ? `Invited ${ago((l.invite && l.invite.added_at) || (l.beta && l.beta.updated_at))}` : where || (l.name ? l.email : 'No Details Given');
-    const [tone, word] = l.stage === 'needs' ? ['new', 'New Sign-Up'] : l.stage === 'invited' ? ['warn', 'Waiting'] : ['quiet', 'Declined'];
+    const [tone, word] = l.stage === 'needs' ? ['new', 'New Sign-Up'] : l.stage === 'invited' ? ['warn', 'Waiting'] : l.stage === 'snoozed' ? ['quiet', 'Snoozed'] : ['quiet', 'Declined'];
     return (
       <button type="button" className="ad-urow" key={`lead-${l.email}`} onClick={() => open(l.email)}>
         <span className="ad-urow-av" aria-hidden="true">{String(l.name || l.email || '?').charAt(0).toUpperCase()}</span>
@@ -633,8 +645,8 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
 
       {grouped ? (
         <>
-          {[['needs', 'Needs You', 'ad-h2-warn'], ['invited', 'Invited, No Account Yet', ''], ['using', 'Using Crumb', ''], ['declined', 'Declined Or Removed', '']].map(([g, title, tone]) => {
-            if (!(g === 'declined' ? filter === 'all' : showGroup(g))) return null;
+          {[['needs', 'Needs You', 'ad-h2-warn'], ['invited', 'Invited, No Account Yet', ''], ['using', 'Using Crumb', ''], ['snoozed', 'Snoozed', ''], ['declined', 'Declined Or Removed', '']].map(([g, title, tone]) => {
+            if (!(g === 'declined' || g === 'snoozed' ? filter === 'all' : showGroup(g))) return null;
             const ls = groups[g].leads.filter((l) => hit(l.email, l.name));
             const us = groups[g].users.filter((u) => hit(u.email, nameOf(u)));
             if (!ls.length && !us.length) return null;
@@ -651,7 +663,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
               </React.Fragment>
             );
           })}
-          {['needs', 'invited', 'using', 'declined'].every((g) => !(g === 'declined' ? filter === 'all' : showGroup(g)) || (!groups[g].leads.some((l) => hit(l.email, l.name)) && !groups[g].users.some((u) => hit(u.email, nameOf(u))))) && <p className="ad-muted">No one here.</p>}
+          {['needs', 'invited', 'using', 'snoozed', 'declined'].every((g) => !(g === 'declined' || g === 'snoozed' ? filter === 'all' : showGroup(g)) || (!groups[g].leads.some((l) => hit(l.email, l.name)) && !groups[g].users.some((u) => hit(u.email, nameOf(u))))) && <p className="ad-muted">No one here.</p>}
         </>
       ) : (
         <>
@@ -900,7 +912,7 @@ function ResendWelcome({ email, name, welcome, onDone, disabled }) {
 }
 
 // ---------- beta sign-ups (from crumbsales.com) ----------
-const BETA_STATUSES = [['new', 'New'], ['invited', 'Invited'], ['declined', 'Declined']];
+const BETA_STATUSES = [['new', 'New'], ['invited', 'Invited'], ['declined', 'Declined'], ['snoozed', 'Snoozed']];
 const betaWord = (st) => (BETA_STATUSES.find(([v]) => v === st) || [st, st])[1];
 
 function Inbox({ items, err, onChanged }) {
