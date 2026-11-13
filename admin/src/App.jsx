@@ -511,6 +511,10 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
   const [sheetNote, setSheetNote] = useState('');
   const [inviting, setInviting] = useState(false);
   const [logOpen, setLogOpen] = useState(false); // Recent Admin Actions starts folded (Nov 12)
+  // Under All, each group folds (Nov 12). Which ones are folded is remembered on this device. A search opens them all.
+  const [folds, setFolds] = useState(() => { try { return JSON.parse(localStorage.getItem('crumb_admin_people_folds')) || {}; } catch { return {}; } });
+  const toggleFold = (g) => setFolds((f) => { const next = { ...f, [g]: !f[g] }; try { localStorage.setItem('crumb_admin_people_folds', JSON.stringify(next)); } catch { /* not important */ } return next; });
+  const shut = (g) => filter === 'all' && !q.trim() && Boolean(folds[g]);
   const [access, setAccess] = useState({ busy: '', ask: false, err: '', mail: true }); // Approve / Remove Access in the rep sheet
   const within = (d, ms) => d && Date.now() - new Date(d).getTime() < ms;
   // The Overview tiles' groups (Nov 11): joined this week, active this week, a device synced in 30 days, a change in
@@ -632,8 +636,14 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
             if (!ls.length && !us.length) return null;
             return (
               <React.Fragment key={g}>
-                <h2 className={`ad-h2 ${tone}`}>{title}</h2>
-                <div className="ad-card ad-urows">{ls.map(leadRow)}{us.map(userRow)}</div>
+                {filter === 'all' ? (
+                  <button type="button" className={`ad-h2 ad-fold ${tone}`} aria-expanded={!shut(g)} onClick={() => toggleFold(g)}>
+                    <span>{title} · {ls.length + us.length}</span><span className={`ad-fold-arrow ${shut(g) ? '' : 'is-open'}`} aria-hidden="true">›</span>
+                  </button>
+                ) : (
+                  <h2 className={`ad-h2 ${tone}`}>{title}</h2>
+                )}
+                {!shut(g) && <div className="ad-card ad-urows">{ls.map(leadRow)}{us.map(userRow)}</div>}
               </React.Fragment>
             );
           })}

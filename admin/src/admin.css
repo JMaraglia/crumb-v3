@@ -304,3 +304,7 @@ body::before {
   content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 10;
   height: env(safe-area-inset-top); background: var(--ad-bg); pointer-events: none;
 }
+
+/* People groups fold under All (Nov 12): the folding heading keeps its color */
+.ad-fold.ad-h2-warn { color: var(--ad-warn); }
+.ad-fold { color: var(--ad-dim); margin: 0; }
