@@ -112,7 +112,7 @@ function Tile({ label, value, sub, onClick }) {
   );
 }
 
-function Overview({ data, users = [], onSignOut, email, newTickets = 0, newSuggestions = 0, newBeta = 0, onOpenInbox, onOpenUsers = () => {} }) {
+function Overview({ data, users = [], onSignOut, email, newTickets = 0, newSuggestions = 0, newBeta = 0, onOpenInbox, onOpenUsers = () => {}, onOpenReports = () => {} }) {
   // Founder, Nov 11: the first three tiles count reps only (admins left out), matching the lists they open.
   const reps = users.filter((u) => !u.is_admin);
   const recent = (d, ms) => d && Date.now() - new Date(d).getTime() < ms;
@@ -149,6 +149,10 @@ function Overview({ data, users = [], onSignOut, email, newTickets = 0, newSugge
           </div>
         </>
       )}
+
+      <button type="button" className="ad-card ad-row ad-row-btn ad-rp-open" onClick={onOpenReports}>
+        <span className="ad-row-label">Reports</span><span className="ad-row-value ad-rp-open-go">Sign-Ups, Retention, Usage ›</span>
+      </button>
 
       <h2 className="ad-h2">Sync</h2>
       <div className="ad-card ad-rows">
@@ -502,12 +506,12 @@ function InviteSheet({ beta, onClose, onDone }) {
 // ---------- users ----------
 // Beta approval: a rep is approved when their email is on the invite list (admins always pass).
 // invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
-function Users({ users, log, invites = [], invitesOk = false, answers = [], nudged = {}, beta = [], betaErr = '', invitesErr = '', welcomes = [], onChanged, initialFilter = 'all' }) {
+function Users({ users, log, invites = [], invitesOk = false, answers = [], nudged = {}, beta = [], betaErr = '', invitesErr = '', welcomes = [], onChanged, initialFilter = 'all', initialOpen = '' }) {
   const [q, setQ] = useState('');
   const [deleting, setDeleting] = useState('');
   const [done, setDone] = useState('');
   const [filter, setFilter] = useState(initialFilter);
-  const [openEmail, setOpenEmail] = useState(''); // the rep whose details sheet is open (Nov 12)
+  const [openEmail, setOpenEmail] = useState(() => { const u = initialOpen && users.find((x) => lc(x.email) === lc(initialOpen)); return u ? u.email : ''; }); // the person whose details sheet is open (Nov 12)
   const [sheetNote, setSheetNote] = useState('');
   const [inviting, setInviting] = useState(false);
   const [logOpen, setLogOpen] = useState(false); // Recent Admin Actions starts folded (Nov 12)
@@ -936,6 +940,116 @@ function Inbox({ items, err, onChanged }) {
   );
 }
 
+// ---------- reports (Nov 12): counts and dates only, worked out by the database (0017_admin_reports.sql) ----------
+function Delta({ now, prev, unit = '' }) {
+  if (now == null || prev == null) return null;
+  const d = Math.round((Number(now) - Number(prev)) * 10) / 10;
+  if (d === 0) return <i className="ad-rp-flat">Same</i>;
+  return <i className={d > 0 ? 'ad-rp-up' : 'ad-rp-down'}>{d > 0 ? '▲' : '▼'} {Math.abs(d)}{unit}</i>;
+}
+function Bar({ label, value, pct }) {
+  return (
+    <div>
+      <div className="ad-rp-bar-top"><span>{label}</span><span className="ad-muted ad-small">{value}</span></div>
+      <div className="ad-meter-bar"><div className="ad-meter-fill" style={{ width: `${Math.max(0, Math.min(100, pct || 0))}%` }} /></div>
+    </div>
+  );
+}
+function Reports({ data, err, missing, beta = [], onBack, onOpenPerson }) {
+  const [span, setSpan] = useState('week');
+  const head = (
+    <>
+      <button type="button" className="ad-link-btn ad-rp-back" onClick={onBack}>‹ Overview</button>
+      <h1 className="ad-h1">Reports</h1>
+    </>
+  );
+  if (missing) return <>{head}<div className="ad-card ad-coming"><p>Not turned on yet: the Reports SQL (0017) hasn't been run in Supabase.</p></div></>;
+  if (err) return <>{head}<p className="ad-error">{err}</p></>;
+  if (!data) return <>{head}<p className="ad-muted">Loading…</p></>;
+  const p = (data.periods || {})[span] || {};
+  const before = span === 'week' ? 'the 7 days before' : 'the 30 days before';
+  const f = data.funnel || {};
+  const share = (n) => (f.signed_up ? Math.round((100 * n) / f.signed_up) : 0);
+  const totalChanges = (data.features || []).reduce((n, x) => n + Number(x.changes || 0), 0);
+  const pctWord = (v) => (v == null ? '—' : `${v}%`);
+  return (
+    <>
+      {head}
+      <div className="ad-seg ad-seg-two" role="tablist">
+        {[['week', 'Last 7 Days'], ['month', 'Last 30 Days']].map(([k, label]) => (
+          <button key={k} type="button" role="tab" aria-selected={span === k} className={`ad-seg-btn ${span === k ? 'is-on' : ''}`} onClick={() => setSpan(k)}>{label}</button>
+        ))}
+      </div>
+      <div className="ad-card ad-rp-card">
+        <div className="ad-rp-nums">
+          <div><span>New Sign-Ups</span><b>{p.signups ?? 0}</b><Delta now={p.signups} prev={p.signups_prev} /></div>
+          <div><span>Active Reps</span><b>{p.active ?? 0}</b><Delta now={p.active} prev={p.active_prev} /></div>
+          <div><span>Days Used Per Rep</span><b>{p.days_per_rep ?? '—'}</b><Delta now={p.days_per_rep} prev={p.days_per_rep_prev} /></div>
+          <div><span>Still Active After 1 Week</span><b>{pctWord(p.kept1)}</b><Delta now={p.kept1} prev={p.kept1_prev} unit=" Pts" /></div>
+        </div>
+        <p className="ad-muted ad-small">Arrows compare with {before}. A dash means there isn't enough history yet.</p>
+      </div>
+
+      <h2 className="ad-h2">Sign-Up Funnel · All Time</h2>
+      <div className="ad-card ad-rp-bars">
+        <Bar label="Signed Up" value={f.signed_up ?? 0} pct={f.signed_up ? 100 : 0} />
+        <Bar label="Invited" value={`${f.invited ?? 0} · ${share(f.invited || 0)}%`} pct={share(f.invited || 0)} />
+        <Bar label="Made An Account" value={`${f.account ?? 0} · ${share(f.account || 0)}%`} pct={share(f.account || 0)} />
+        <Bar label="Used Crumb" value={`${f.used ?? 0} · ${share(f.used || 0)}%`} pct={share(f.used || 0)} />
+      </div>
+
+      <h2 className="ad-h2">Where Reps Come From</h2>
+      <div className="ad-card ad-rp-table">
+        <div className="ad-rp-tr is-head"><b>Source</b><span>Signed Up</span><span>Using</span><span>Kept</span></div>
+        {(data.sources || []).map((x) => (
+          <div className="ad-rp-tr" key={x.source}><b>{x.source}</b><span>{x.signed_up}</span><span>{x.using_now}</span><span>{x.signed_up ? `${Math.round((100 * x.using_now) / x.signed_up)}%` : '—'}</span></div>
+        ))}
+        {(data.sources || []).length === 0 && <p className="ad-muted ad-small ad-rp-none">No sign-ups yet.</p>}
+      </div>
+      <p className="ad-muted ad-small ad-note">Using = synced a change in the last 14 days.</p>
+
+      <h2 className="ad-h2">Retention By Join Week</h2>
+      <div className="ad-card ad-rp-table">
+        <div className="ad-rp-tr is-head"><b>Joined Week Of</b><span>Reps</span><span>Week 1</span><span>Week 4</span></div>
+        {(data.cohorts || []).map((c) => (
+          <div className="ad-rp-tr" key={c.week_start}><b>{shortDate(`${c.week_start}T12:00:00`)}</b><span>{c.reps}</span><span>{pctWord(c.week1)}</span><span>{pctWord(c.week4)}</span></div>
+        ))}
+        {(data.cohorts || []).length === 0 && <p className="ad-muted ad-small ad-rp-none">No reps yet.</p>}
+      </div>
+
+      <h2 className="ad-h2">What Reps Use Most · Last 30 Days</h2>
+      <div className="ad-card ad-rp-bars">
+        {(data.features || []).map((x) => {
+          const pct = totalChanges ? Math.round((100 * x.changes) / totalChanges) : 0;
+          return <Bar key={x.name} label={x.name} value={`${pct}%`} pct={pct} />;
+        })}
+        {(data.features || []).length === 0 && <p className="ad-muted ad-small">No changes synced in the last 30 days.</p>}
+      </div>
+      <p className="ad-muted ad-small ad-note">Counts saved changes, not screens looked at.</p>
+
+      <h2 className={`ad-h2 ${(data.quiet || []).length ? 'ad-h2-warn' : ''}`}>Gone Quiet · {(data.quiet || []).length}</h2>
+      {(data.quiet || []).length > 0 ? (
+        <div className="ad-card ad-urows">
+          {data.quiet.map((x) => (
+            <button type="button" className="ad-urow" key={x.email} onClick={() => onOpenPerson(x.email)}>
+              <span className="ad-urow-av" aria-hidden="true">{String(nameFor(beta, x.email) || x.email || '?').charAt(0).toUpperCase()}</span>
+              <span className="ad-urow-text">
+                <span className="ad-urow-name">{nameFor(beta, x.email) || x.email}</span>
+                <span className="ad-urow-sub">Used Crumb On {x.active_days} {Number(x.active_days) === 1 ? 'Day' : 'Days'}</span>
+              </span>
+              <span className="ad-urow-st is-quiet"><i aria-hidden="true" />{ago(x.last_change_at)}</span>
+              <span className="ad-urow-go" aria-hidden="true">›</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="ad-muted ad-small">No one who used Crumb has gone a week without a change.</p>
+      )}
+      <p className="ad-muted ad-small ad-note">Counts and dates only. Reports never show reps' customers, notes or photos.</p>
+    </>
+  );
+}
+
 // ---------- app ----------
 export default function App() {
   const [stage, setStage] = useState('loading'); // loading | signedOut | notAdmin | ready | error
@@ -949,7 +1063,8 @@ export default function App() {
   const [msg, setMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [nudged, setNudged] = useState({}); // { email: when last nudged }
-  const [usersView, setUsersView] = useState({ filter: 'all', n: 0 }); // which group a tapped Overview tile opens
+  const [reports, setReports] = useState({ data: null, err: '', missing: false });
+  const [usersView, setUsersView] = useState({ filter: 'all', n: 0, open: '' }); // which group a tapped Overview tile opens
 
   const load = useCallback(async () => {
     const sb = cloud();
@@ -988,6 +1103,9 @@ export default function App() {
       } catch {
         /* the dates are extra: Users still loads */
       }
+      const rp = await sb.rpc('admin_reports'); // before 0017 is run: Reports says it isn't turned on yet
+      const rpMissing = Boolean(rp.error) && (rp.error.code === 'PGRST202' || /could not find the function/i.test(rp.error.message || ''));
+      setReports({ data: rp.error ? null : rp.data, err: rp.error && !rpMissing ? plainError(rp.error) : '', missing: rpMissing });
       const fb = await sb.rpc('admin_feedback_list');
       const bt = await sb.rpc('admin_beta_list');
       const si = await sb.rpc('admin_sync_invites_list');
@@ -1066,15 +1184,16 @@ export default function App() {
           <button className="ad-refresh" type="button" onClick={load} disabled={refreshing}>{refreshing ? 'Updating…' : todayLabel()}</button>
         </div>
         {msg && <p className="ad-error">{msg}</p>}
-        {tab === 'overview' && overview && <Overview data={overview} users={users} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} onOpenUsers={(f) => { setUsersView({ filter: f, n: Date.now() }); pick('users'); }} />}
-        {tab === 'users' && <Users key={usersView.n} initialFilter={usersView.filter} nudged={nudged} beta={inbox.beta} betaErr={inbox.betaErr} invitesErr={inbox.invitesErr} welcomes={inbox.welcomes} users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
+        {tab === 'overview' && overview && <Overview data={overview} users={users} email={email} onSignOut={signOut} newTickets={inbox.items.filter((i) => i.kind === 'problem' && i.status === 'new').length} newSuggestions={inbox.items.filter((i) => i.kind === 'suggestion' && i.status === 'new').length} newBeta={inbox.beta.filter((b) => b.status === 'new').length} onOpenInbox={() => pick('inbox')} onOpenUsers={(f) => { setUsersView({ filter: f, n: Date.now(), open: '' }); pick('users'); }} onOpenReports={() => pick('reports')} />}
+        {tab === 'reports' && <Reports {...reports} beta={inbox.beta} onBack={() => pick('overview')} onOpenPerson={(em) => { setUsersView({ filter: 'all', n: Date.now(), open: em }); pick('users'); }} />}
+        {tab === 'users' && <Users key={usersView.n} initialFilter={usersView.filter} initialOpen={usersView.open} nudged={nudged} beta={inbox.beta} betaErr={inbox.betaErr} invitesErr={inbox.invitesErr} welcomes={inbox.welcomes} users={users} log={log} invites={inbox.invites} invitesOk={!inbox.invitesErr} answers={inbox.answers} onChanged={load} />}
         {tab === 'health' && <Health {...health} />}
         {tab === 'inbox' && <Inbox items={inbox.items} err={inbox.err} onChanged={load} />}
       </main>
 
       <nav className="ad-tabs" aria-label="Admin sections">
         {[['overview', 'Overview'], ['users', 'People'], ['health', 'Health'], ['inbox', 'Inbox']].map(([id, label]) => (
-          <button key={id} type="button" className={`ad-tab ${tab === id ? 'is-on' : ''}`} onClick={() => pick(id)} aria-current={tab === id ? 'page' : undefined}>
+          <button key={id} type="button" className={`ad-tab ${tab === id || (id === 'overview' && tab === 'reports') ? 'is-on' : ''}`} onClick={() => pick(id)} aria-current={tab === id ? 'page' : undefined}>
             <span className="ad-tab-icon">{Icon[id]}{((id === 'inbox' && inbox.items.some((i) => i.status === 'new')) || (id === 'users' && inbox.beta.some((b) => b.status === 'new'))) && <span className="ad-badge" aria-label="New items" />}</span><span>{label}</span>
           </button>
         ))}
