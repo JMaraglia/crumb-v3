@@ -119,11 +119,12 @@ function Overview({ data, users = [], onSignOut, email, newTickets = 0, newSugge
   const repNew = reps.filter((u) => recent(u.joined_at, 7 * DAY)).length;
   const repActive = reps.filter((u) => recent(u.last_change_at, 7 * DAY)).length;
   const repDevices = reps.reduce((n, u) => n + (Number(u.devices_30d) || 0), 0);
+  // Each row: what needs doing and where a tap goes (Nov 12).
   const attention = [];
-  if (newTickets > 0) attention.push(`${newTickets} New ${newTickets === 1 ? 'Ticket' : 'Tickets'} In The Inbox`);
-  if (newSuggestions > 0) attention.push(`${newSuggestions} New ${newSuggestions === 1 ? 'Suggestion' : 'Suggestions'} In The Inbox`);
-  if (newBeta > 0) attention.push(`${newBeta} New Beta ${newBeta === 1 ? 'Sign-Up' : 'Sign-Ups'} In People`);
-  if (data.needs_review > 0) attention.push(`${data.needs_review} Sync ${data.needs_review === 1 ? 'Change Needs' : 'Changes Need'} Review`);
+  if (newBeta > 0) attention.push({ text: `${newBeta} New ${newBeta === 1 ? 'Sign-Up' : 'Sign-Ups'}`, to: 'People', go: () => onOpenUsers('needs') });
+  if (newTickets > 0) attention.push({ text: `${newTickets} New ${newTickets === 1 ? 'Ticket' : 'Tickets'}`, to: 'Inbox', go: onOpenInbox });
+  if (newSuggestions > 0) attention.push({ text: `${newSuggestions} New ${newSuggestions === 1 ? 'Suggestion' : 'Suggestions'}`, to: 'Inbox', go: onOpenInbox });
+  if (data.needs_review > 0) attention.push({ text: `${data.needs_review} Sync ${data.needs_review === 1 ? 'Change Needs' : 'Changes Need'} Review` });
   return (
     <>
       <h1 className="ad-h1">How's The Business?</h1>
@@ -134,24 +135,35 @@ function Overview({ data, users = [], onSignOut, email, newTickets = 0, newSugge
         <Tile label="Changes Today" value={data.changes_24h} sub={`${data.changes_7d} This Week`} onClick={() => onOpenUsers('today')} />
       </div>
 
-      <h2 className={`ad-h2 ${attention.length ? 'ad-h2-warn' : ''}`}>{attention.length ? 'Needs Your Attention' : 'Sync'}</h2>
+      {attention.length > 0 && (
+        <>
+          <h2 className="ad-h2 ad-h2-warn">Needs You</h2>
+          <div className="ad-card ad-rows">
+            {attention.map((a) => (a.go ? (
+              <button key={a.text} type="button" className="ad-row ad-row-warn ad-row-btn" onClick={a.go}>
+                <span className="ad-dot ad-dot-warn" /><span className="ad-row-label">{a.text}</span><span className="ad-row-value ad-row-go">{a.to} ›</span>
+              </button>
+            ) : (
+              <div key={a.text} className="ad-row ad-row-warn"><span className="ad-dot ad-dot-warn" /><span className="ad-row-label">{a.text}</span></div>
+            )))}
+          </div>
+        </>
+      )}
+
+      <h2 className="ad-h2">Sync</h2>
       <div className="ad-card ad-rows">
-        {attention.map((a) => (
-          <button key={a} type="button" className="ad-row ad-row-warn ad-row-btn" onClick={/Inbox/.test(a) ? onOpenInbox : /People/.test(a) ? () => onOpenUsers('needs') : undefined}>
-            <span className="ad-dot ad-dot-warn" /><span className="ad-row-label">{a}</span>
-          </button>
-        ))}
-        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Last Change Synced</span><span className="ad-row-value">{ago(data.last_change_at)}</span></div>
-        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Overwritten Values Kept (7 Days)</span><span className="ad-row-value">{data.overwrites_7d}</span></div>
+        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Last Change</span><span className="ad-row-value">{ago(data.last_change_at)}</span></div>
+        <div className="ad-row"><span className="ad-dot ad-dot-ok" /><span className="ad-row-label">Conflicts This Week</span><span className="ad-row-value">{data.overwrites_7d}</span></div>
       </div>
 
-      <div className="ad-account">
-        <span className="ad-muted">Signed in as {email}{projectRef ? ` · ${projectRef}` : ''}</span>
+      <div className="ad-account ad-account-line">
+        <span className="ad-muted ad-small">Signed In As {email}</span>
         <button className="ad-link-btn" type="button" onClick={onSignOut}>Sign Out</button>
       </div>
     </>
   );
 }
+
 
 // ---------- delete account (guardrails: counts first, type the email, server re-checks everything) ----------
 // ---------- welcome email (sent by the CRM's server through Resend; admins only, approved emails only) ----------

@@ -286,3 +286,9 @@ input { font: inherit; }
 
 /* Inbox: Tickets and Suggestions only (Nov 12; sign-ups moved to People) */
 .ad-seg.ad-seg-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* Overview cleanup (Nov 12) */
+.ad-row-warn .ad-row-go { color: #7cc2ff; font-weight: 700; }
+.ad-account.ad-account-line { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.ad-account-line .ad-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-account-line .ad-link-btn { padding: 4px 0; font-size: 14px; flex: none; }
