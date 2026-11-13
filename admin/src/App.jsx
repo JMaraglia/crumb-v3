@@ -351,6 +351,142 @@ function Nudge({ email, last, onDone, big = false }) {
   );
 }
 
+// ---------- people (Nov 12): one list for sign-ups, invited people and accounts ----------
+const lc = (e) => String(e || '').toLowerCase();
+const STEPS = ['Signed Up', 'Invited', 'Account Created', 'Using Crumb'];
+function Steps({ at }) {
+  return (
+    <div className="ad-steps" aria-label={`Step: ${STEPS[at]}`}>
+      {STEPS.map((w, i) => <span key={w} className={i === at ? 'is-at' : i < at ? 'is-past' : ''}>{i > 0 && <em aria-hidden="true">→</em>}{w}</span>)}
+    </div>
+  );
+}
+// Access = the email is on the invite list. A beta sign-up is kept in step with it (Invited / Declined).
+async function grantAccess(email, b) {
+  const r = b ? await cloud().rpc('admin_beta_set_status', { p_id: b.id, p_status: 'invited' }) : await cloud().rpc('admin_sync_invite_add', { p_email: email });
+  return r.error ? plainError(r.error) : '';
+}
+async function revokeAccess(email, b, inv) {
+  if (b && b.status !== 'declined') {
+    const r = await cloud().rpc('admin_beta_set_status', { p_id: b.id, p_status: 'declined' });
+    if (r.error) return plainError(r.error);
+  }
+  if (inv && inv.source !== 'beta') {
+    const r = await cloud().rpc('admin_sync_invite_remove', { p_email: email });
+    if (r.error) return plainError(r.error);
+  }
+  return '';
+}
+
+// Someone with no account yet: a new sign-up, an invited person, or a declined sign-up.
+function LeadSheet({ lead, welcome, answers, onClose, onDone }) {
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const [mail, setMail] = useState(true);
+  const [asking, setAsking] = useState(false);
+  const b = lead.beta;
+  const sentBefore = Boolean(welcome && welcome.times > 0);
+  const invite = async () => {
+    if (busy) return;
+    setBusy('invite'); setMsg('');
+    const err = await grantAccess(lead.email, b);
+    if (err) { setBusy(''); setMsg(err); return; }
+    const res = mail && !sentBefore ? await sendWelcome(lead.email, lead.name) : null;
+    setBusy('');
+    onDone(`${lead.email} is invited.${mailNote(lead.email, res)}`);
+  };
+  const takeBack = async (word) => {
+    if (busy) return;
+    setBusy('remove'); setMsg('');
+    const err = await revokeAccess(lead.email, b, lead.invite);
+    setBusy('');
+    if (err) { setMsg(err); return; }
+    onDone(`${lead.email} ${word}.`);
+  };
+  const facts = b ? [['Industry', b.industry], ['State', b.state], ['Company', b.company], ['Heard About Crumb', b.heard]].filter(([, v]) => v) : [];
+  return (
+    <div className="ad-sheet-back" onClick={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}>
+      <div className="ad-sheet ad-rep-sheet" role="dialog" aria-label="Person details">
+        <div className="ad-rep-head">
+          <span className="ad-urow-av" aria-hidden="true">{String(lead.name || lead.email || '?').charAt(0).toUpperCase()}</span>
+          <div className="ad-urow-text">
+            <h2 className="ad-sheet-title">{lead.name || lead.email}</h2>
+            {lead.name && <span className="ad-rep-email">{lead.email}</span>}
+          </div>
+        </div>
+        {lead.stage === 'declined'
+          ? <span className="ad-urow-st ad-rep-st is-quiet"><i aria-hidden="true" />Declined</span>
+          : <Steps at={lead.stage === 'invited' ? 1 : 0} />}
+        {facts.length > 0 && <div className="ad-rep-facts">{facts.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div>}
+        <p className="ad-muted ad-small">{b ? `Signed Up ${ago(b.created_at)}` : `Added By Hand ${ago(lead.invite && lead.invite.added_at)}`}</p>
+        <Answers data={answers} />
+        {msg && <p className="ad-error" role="alert">{msg}</p>}
+        {lead.stage !== 'invited' ? (
+          <>
+            <button type="button" className="ad-btn" onClick={invite} disabled={Boolean(busy)}>{busy === 'invite' ? 'Inviting…' : 'Invite To The Beta'}</button>
+            {sentBefore ? <span className="ad-muted ad-small ad-center">{welcomeLine(welcome)}</span> : <WelcomeToggle on={mail} setOn={setMail} disabled={Boolean(busy)} />}
+            <p className="ad-muted ad-small">Inviting lets this email create an account and use Crumb.</p>
+            {lead.stage === 'needs' && <button type="button" className="ad-del-btn ad-rep-del" onClick={() => takeBack('was declined')} disabled={Boolean(busy)}>{busy === 'remove' ? 'Saving…' : 'Decline'}</button>}
+          </>
+        ) : (
+          <>
+            <p className="ad-muted ad-small">Invited. Waiting for them to create their account.</p>
+            <div className="ad-rep-welcome">
+              <ResendWelcome email={lead.email} name={lead.name} welcome={welcome} disabled={Boolean(busy)} onDone={(r) => (r.err ? setMsg(r.err) : onDone(r.note))} />
+              <span className="ad-muted ad-small">{welcomeLine(welcome)}</span>
+            </div>
+            {asking ? (
+              <span className="ad-resend-ask ad-center">
+                <span className="ad-small">Take the invite back?</span>
+                <button type="button" className="ad-link-btn ad-invite-yes" onClick={() => takeBack('is no longer invited')} disabled={Boolean(busy)}>{busy === 'remove' ? 'Removing…' : 'Yes, Remove'}</button>
+                <button type="button" className="ad-link-btn" onClick={() => setAsking(false)} disabled={Boolean(busy)}>Cancel</button>
+              </span>
+            ) : (
+              <button type="button" className="ad-del-btn ad-rep-del" onClick={() => setAsking(true)} disabled={Boolean(busy)}>Remove Invite</button>
+            )}
+          </>
+        )}
+        <button type="button" className="ad-link-btn ad-sheet-cancel" onClick={onClose} disabled={Boolean(busy)}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+// Invite an email that never filled in the sign-up form.
+function InviteSheet({ beta, onClose, onDone }) {
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [mail, setMail] = useState(true);
+  const send = async (e) => {
+    e.preventDefault();
+    const em = email.trim().toLowerCase();
+    if (busy || !em) return;
+    setBusy(true); setMsg('');
+    const b = (beta || []).find((x) => lc(x.email) === em) || null;
+    const err = await grantAccess(em, b);
+    if (err) { setBusy(false); setMsg(err); return; }
+    const res = mail ? await sendWelcome(em, (b && b.name) || '') : null;
+    setBusy(false);
+    onDone(`${em} is invited.${mailNote(em, res)}`);
+  };
+  return (
+    <div className="ad-sheet-back" onClick={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}>
+      <form className="ad-sheet ad-rep-sheet" role="dialog" aria-label="Invite someone" onSubmit={send}>
+        <h2 className="ad-sheet-title">Invite Someone</h2>
+        <p className="ad-muted ad-small">For someone who didn't fill in the Join The Beta form. Their email will be able to create an account and use Crumb.</p>
+        <label className="ad-field">Email Address
+          <input type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} />
+        </label>
+        <WelcomeToggle on={mail} setOn={setMail} disabled={busy} />
+        {msg && <p className="ad-error" role="alert">{msg}</p>}
+        <button type="submit" className="ad-btn" disabled={busy || !email.trim()}>{busy ? 'Inviting…' : 'Invite To The Beta'}</button>
+        <button type="button" className="ad-link-btn ad-sheet-cancel" onClick={onClose} disabled={busy}>Cancel</button>
+      </form>
+    </div>
+  );
+}
+
 // ---------- users ----------
 // Beta approval: a rep is approved when their email is on the Sync Access list (admins always pass).
 // invitesOk = false when that list couldn't be read: then no approval status is shown at all, never a wrong one.
@@ -361,6 +497,8 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
   const [filter, setFilter] = useState(initialFilter);
   const [openEmail, setOpenEmail] = useState(''); // the rep whose details sheet is open (Nov 12)
   const [sheetNote, setSheetNote] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [access, setAccess] = useState({ busy: '', ask: false, err: '', mail: true }); // Approve / Remove Access in the rep sheet
   const within = (d, ms) => d && Date.now() - new Date(d).getTime() < ms;
   // The Overview tiles' groups (Nov 11): joined this week, active this week, a device synced in 30 days, a change in
   // the last 24 hours. Founder, Nov 11: admins are left out of these (they're always active); they still show under All.
@@ -373,49 +511,125 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
   const waiting = (u) => invitesOk && !approved(u);
   const quiet = (u) => !u.is_admin && !active(u);
   const nameOf = (u) => nameFor(beta, u.email); // from their beta sign-up; blank if they never filled in that form
-  const shown = users
-    .filter((u) => (filter === 'active' ? active(u) : filter === 'quiet' ? quiet(u) : filter === 'waiting' ? waiting(u) : filter === 'new' ? isNew(u) : filter === 'devices' ? syncing(u) : filter === 'today' ? today(u) : true))
-    .filter((u) => !q.trim() || `${u.email || ''} ${nameOf(u)}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const inviteFor = (email) => invites.find((i) => lc(i.email) === lc(email)) || null;
+  const betaFor = (email) => beta.find((x) => lc(x.email) === lc(email)) || null;
+  // Leads: people with no account yet. A sign-up is New, Invited or Declined; an email added by hand is Invited.
+  const haveAccount = new Set(users.map((u) => lc(u.email)));
+  const leads = [
+    ...beta.filter((x) => !haveAccount.has(lc(x.email))).map((x) => ({ email: x.email, name: x.name || '', beta: x, invite: inviteFor(x.email), stage: x.status === 'invited' || inviteFor(x.email) ? 'invited' : x.status === 'declined' ? 'declined' : 'needs' })),
+    ...invites.filter((i) => i.source !== 'founder' && !haveAccount.has(lc(i.email)) && !betaFor(i.email)).map((i) => ({ email: i.email, name: '', beta: null, invite: i, stage: 'invited' })),
+  ];
+  const turnedDown = (u) => (betaFor(u.email) || {}).status === 'declined'; // an account whose access was declined or taken away
+  const hit = (email, name) => !q.trim() || `${email || ''} ${name || ''}`.toLowerCase().includes(q.trim().toLowerCase());
+  const byActivity = { active, quiet, new: isNew, devices: syncing, today };
+  const grouped = !byActivity[filter]; // All / Needs You / Invited / Using Crumb show the groups; the rest are plain lists of accounts
+  const showGroup = (g) => filter === 'all' || filter === g || (g === 'needs' && filter === 'waiting');
+  const groups = {
+    needs: { leads: leads.filter((l) => l.stage === 'needs'), users: users.filter((u) => waiting(u) && !turnedDown(u)) },
+    invited: { leads: leads.filter((l) => l.stage === 'invited'), users: [] },
+    using: { leads: [], users: users.filter((u) => !waiting(u)) },
+    declined: { leads: leads.filter((l) => l.stage === 'declined'), users: users.filter((u) => waiting(u) && turnedDown(u)) },
+  };
+  const count = (g) => groups[g].leads.length + groups[g].users.length;
+  const shown = users.filter((u) => (byActivity[filter] ? byActivity[filter](u) : true)).filter((u) => hit(u.email, nameOf(u)));
+  const openLead = openEmail && !users.some((u) => u.email === openEmail) ? leads.find((l) => l.email === openEmail) || null : null;
   const openUser = openEmail ? users.find((u) => u.email === openEmail) : null;
   const devicesWord = (u) => `${u.devices_30d} ${Number(u.devices_30d) === 1 ? 'Device' : 'Devices'}`;
 
+  const open = (email) => { setDone(''); setSheetNote(''); setAccess({ busy: '', ask: false, err: '', mail: true }); setOpenEmail(email); };
+  const userRow = (u) => {
+    const lively = within(u.last_change_at, 7 * DAY);
+    const tone = waiting(u) ? 'warn' : lively ? 'ok' : 'quiet';
+    return (
+      <button type="button" className="ad-urow" key={u.email} onClick={() => open(u.email)}>
+        <span className="ad-urow-av" aria-hidden="true">{String(nameOf(u) || u.email || '?').charAt(0).toUpperCase()}</span>
+        <span className="ad-urow-text">
+          <span className="ad-urow-name">{nameOf(u) || u.email}</span>
+          <span className="ad-urow-sub">{u.is_admin ? `Admin · ${devicesWord(u)}` : `${devicesWord(u)} · Joined ${shortDate(u.joined_at)}`}</span>
+        </span>
+        <span className={`ad-urow-st is-${turnedDown(u) && waiting(u) ? 'quiet' : tone}`}><i aria-hidden="true" />{tone === 'warn' ? (turnedDown(u) ? 'No Access' : 'Not Approved') : ago(u.last_change_at)}</span>
+        <span className="ad-urow-go" aria-hidden="true">›</span>
+      </button>
+    );
+  };
+  const leadRow = (l) => {
+    const where = l.beta ? [l.beta.industry, l.beta.state].filter(Boolean).join(' · ') : '';
+    const sub = l.stage === 'invited' ? `Invited ${ago((l.invite && l.invite.added_at) || (l.beta && l.beta.updated_at))}` : where || (l.name ? l.email : 'No Details Given');
+    const [tone, word] = l.stage === 'needs' ? ['new', 'New Sign-Up'] : l.stage === 'invited' ? ['warn', 'Waiting'] : ['quiet', 'Declined'];
+    return (
+      <button type="button" className="ad-urow" key={`lead-${l.email}`} onClick={() => open(l.email)}>
+        <span className="ad-urow-av" aria-hidden="true">{String(l.name || l.email || '?').charAt(0).toUpperCase()}</span>
+        <span className="ad-urow-text">
+          <span className="ad-urow-name">{l.name || l.email}</span>
+          <span className="ad-urow-sub">{sub}</span>
+        </span>
+        <span className={`ad-urow-st is-${tone}`}><i aria-hidden="true" />{word}</span>
+        <span className="ad-urow-go" aria-hidden="true">›</span>
+      </button>
+    );
+  };
+  const approve = async (u) => {
+    if (access.busy) return;
+    setAccess((a) => ({ ...a, busy: 'approve', err: '' }));
+    const err = await grantAccess(u.email, betaFor(u.email));
+    if (err) { setAccess((a) => ({ ...a, busy: '', err })); return; }
+    const w = welcomeFor(welcomes, u.email);
+    const res = access.mail && !(w && w.times > 0) ? await sendWelcome(u.email, nameOf(u)) : null;
+    setAccess((a) => ({ ...a, busy: '' }));
+    setSheetNote(`${u.email} is approved.${mailNote(u.email, res)}`);
+    onChanged();
+  };
+  const removeAccess = async (u) => {
+    if (access.busy) return;
+    setAccess((a) => ({ ...a, busy: 'remove', err: '' }));
+    const err = await revokeAccess(u.email, betaFor(u.email), inviteFor(u.email));
+    if (err) { setAccess((a) => ({ ...a, busy: '', err })); return; }
+    setAccess((a) => ({ ...a, busy: '', ask: false }));
+    setSheetNote(`${u.email} no longer has beta access. Their data wasn't touched.`);
+    onChanged();
+  };
+
   return (
     <>
-      <h1 className="ad-h1">Users</h1>
+      <div className="ad-people-top">
+        <h1 className="ad-h1">People</h1>
+        {invitesOk && <button type="button" className="ad-link-btn ad-people-add" onClick={() => { setDone(''); setInviting(true); }}>Invite Someone</button>}
+      </div>
       {done && <p className="ad-done" role="status">{done}</p>}
       <label className="ad-search">
         {Icon.search}
         <input type="search" placeholder="Search By Name Or Email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search By Name Or Email" />
       </label>
       <div className="ad-chips ad-chips-line" role="group" aria-label="Filter users">
-        {[['all', 'All', users.length], ['active', 'Active', users.filter(active).length], ['quiet', 'Quiet', users.filter(quiet).length], ['new', 'New', users.filter(isNew).length], ['devices', 'Syncing', users.filter(syncing).length], ['today', 'Today', users.filter(today).length]]
-          .concat(invitesOk ? [['waiting', 'Waiting', users.filter(waiting).length]] : [])
+        {[['all', 'All', users.length + leads.length], ['needs', 'Needs You', count('needs')], ['invited', 'Invited', count('invited')], ['using', 'Using Crumb', count('using')],
+          ['active', 'Active', users.filter(active).length], ['quiet', 'Quiet', users.filter(quiet).length], ['new', 'New', users.filter(isNew).length], ['devices', 'Syncing', users.filter(syncing).length], ['today', 'Today', users.filter(today).length]]
           .map(([id, label, n]) => (
-            <button key={id} type="button" className={`ad-chip ${filter === id ? 'is-on' : ''}`} onClick={() => setFilter(id)}>{label} · {n}</button>
+            <button key={id} type="button" className={`ad-chip ${filter === id || (id === 'needs' && filter === 'waiting') ? 'is-on' : ''}`} onClick={() => setFilter(id)}>{label} · {n}</button>
           ))}
       </div>
 
-      {shown.length > 0 && (
-        <div className="ad-card ad-urows">
-          {shown.map((u) => {
-            const lively = within(u.last_change_at, 7 * DAY);
-            const tone = invitesOk && waiting(u) ? 'warn' : lively ? 'ok' : 'quiet';
+      {grouped ? (
+        <>
+          {[['needs', 'Needs You', 'ad-h2-warn'], ['invited', 'Invited, No Account Yet', ''], ['using', 'Using Crumb', ''], ['declined', 'Declined Or Removed', '']].map(([g, title, tone]) => {
+            if (!(g === 'declined' ? filter === 'all' : showGroup(g))) return null;
+            const ls = groups[g].leads.filter((l) => hit(l.email, l.name));
+            const us = groups[g].users.filter((u) => hit(u.email, nameOf(u)));
+            if (!ls.length && !us.length) return null;
             return (
-              <button type="button" className="ad-urow" key={u.email} onClick={() => { setDone(''); setSheetNote(''); setOpenEmail(u.email); }}>
-                <span className="ad-urow-av" aria-hidden="true">{String(nameOf(u) || u.email || '?').charAt(0).toUpperCase()}</span>
-                <span className="ad-urow-text">
-                  <span className="ad-urow-name">{nameOf(u) || u.email}</span>
-                  <span className="ad-urow-sub">{u.is_admin ? `Admin · ${devicesWord(u)}` : `${devicesWord(u)} · Joined ${shortDate(u.joined_at)}`}</span>
-                </span>
-                <span className={`ad-urow-st is-${tone}`}><i aria-hidden="true" />{tone === 'warn' ? 'Waiting' : ago(u.last_change_at)}</span>
-                <span className="ad-urow-go" aria-hidden="true">›</span>
-              </button>
+              <React.Fragment key={g}>
+                <h2 className={`ad-h2 ${tone}`}>{title}</h2>
+                <div className="ad-card ad-urows">{ls.map(leadRow)}{us.map(userRow)}</div>
+              </React.Fragment>
             );
           })}
-        </div>
+          {['needs', 'invited', 'using', 'declined'].every((g) => !(g === 'declined' ? filter === 'all' : showGroup(g)) || (!groups[g].leads.some((l) => hit(l.email, l.name)) && !groups[g].users.some((u) => hit(u.email, nameOf(u))))) && <p className="ad-muted">No one here.</p>}
+        </>
+      ) : (
+        <>
+          {shown.length > 0 && <div className="ad-card ad-urows">{shown.map(userRow)}</div>}
+          {shown.length === 0 && <p className="ad-muted">No one matches.</p>}
+        </>
       )}
-      {shown.length === 0 && <p className="ad-muted">No one matches.</p>}
-      {invitesOk && users.some(waiting) && <p className="ad-muted ad-small ad-note">Approve people in Inbox → Beta.</p>}
       <p className="ad-muted ad-small ad-note">Counts and dates only. Admin never shows reps' customers, notes or photos.</p>
 
       {log.length > 0 && (
@@ -446,6 +660,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
               <i aria-hidden="true" />
               {[openUser.is_admin ? 'Admin' : 'Rep', within(openUser.last_change_at, 7 * DAY) ? 'Active This Week' : 'Quiet', invitesOk && (waiting(openUser) ? 'Waiting For Approval' : 'Approved')].filter(Boolean).join(' · ')}
             </span>
+            {!openUser.is_admin && <Steps at={openUser.last_change_at ? 3 : 2} />}
             <div className="ad-rep-facts">
               <div><span>Joined</span><b>{shortDate(openUser.joined_at)}</b></div>
               <div><span>Devices</span><b>{openUser.devices_30d}</b></div>
@@ -453,8 +668,15 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
               <div><span>Last Change</span><b>{ago(openUser.last_change_at)}</b></div>
             </div>
             <Answers data={answersFor(answers, openUser.email)} />
-            {invitesOk && waiting(openUser) && <p className="ad-muted ad-small">Approve people in Inbox → Beta.</p>}
             {sheetNote && <p className="ad-done" role="status">{sheetNote}</p>}
+            {access.err && <p className="ad-error" role="alert">{access.err}</p>}
+            {waiting(openUser) && (
+              <>
+                <button type="button" className="ad-btn" onClick={() => approve(openUser)} disabled={Boolean(access.busy)}>{access.busy === 'approve' ? 'Approving…' : 'Approve For Beta'}</button>
+                {!(welcomeFor(welcomes, openUser.email) && welcomeFor(welcomes, openUser.email).times > 0) && <WelcomeToggle on={access.mail} setOn={(v) => setAccess((a) => ({ ...a, mail: v }))} disabled={Boolean(access.busy)} />}
+                <p className="ad-muted ad-small">They made an account but aren't approved yet, so Crumb isn't syncing for them.</p>
+              </>
+            )}
             {!openUser.is_admin && <Nudge big key={`n-${openUser.email}`} email={openUser.email} last={nudged[String(openUser.email || '').toLowerCase()]} onDone={(m) => { setSheetNote(m); onChanged(); }} />}
             {!openUser.is_admin && invitesOk && !waiting(openUser) && (
               <div className="ad-rep-welcome">
@@ -462,11 +684,26 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
                 <span className="ad-muted ad-small">{welcomeLine(welcomeFor(welcomes, openUser.email))}</span>
               </div>
             )}
+            {!openUser.is_admin && invitesOk && !waiting(openUser) && (access.ask ? (
+              <span className="ad-resend-ask ad-center">
+                <span className="ad-small">Take beta access away? Their data stays.</span>
+                <button type="button" className="ad-link-btn ad-invite-yes" onClick={() => removeAccess(openUser)} disabled={Boolean(access.busy)}>{access.busy === 'remove' ? 'Removing…' : 'Yes, Remove'}</button>
+                <button type="button" className="ad-link-btn" onClick={() => setAccess((a) => ({ ...a, ask: false }))} disabled={Boolean(access.busy)}>Cancel</button>
+              </span>
+            ) : (
+              <button type="button" className="ad-link-btn ad-rep-del" onClick={() => setAccess((a) => ({ ...a, ask: true, err: '' }))}>Remove Beta Access</button>
+            ))}
             {!openUser.is_admin && <button type="button" className="ad-del-btn ad-rep-del" onClick={() => { const e = openUser.email; setOpenEmail(''); setDone(''); setDeleting(e); }}>Delete Account</button>}
             <button type="button" className="ad-link-btn ad-sheet-cancel" onClick={() => setOpenEmail('')}>Close</button>
           </div>
         </div>
       )}
+
+      {openLead && (
+        <LeadSheet key={openLead.email} lead={openLead} welcome={welcomeFor(welcomes, openLead.email)} answers={answersFor(answers, openLead.email)}
+          onClose={() => setOpenEmail('')} onDone={(note) => { setOpenEmail(''); setDone(note || ''); onChanged(); }} />
+      )}
+      {inviting && <InviteSheet beta={beta} onClose={() => setInviting(false)} onDone={(note) => { setInviting(false); setDone(note || ''); onChanged(); }} />}
 
       {deleting && (
         <DeleteSheet
@@ -956,7 +1193,7 @@ export default function App() {
       </main>
 
       <nav className="ad-tabs" aria-label="Admin sections">
-        {[['overview', 'Overview'], ['users', 'Users'], ['health', 'Health'], ['inbox', 'Inbox']].map(([id, label]) => (
+        {[['overview', 'Overview'], ['users', 'People'], ['health', 'Health'], ['inbox', 'Inbox']].map(([id, label]) => (
           <button key={id} type="button" className={`ad-tab ${tab === id ? 'is-on' : ''}`} onClick={() => pick(id)} aria-current={tab === id ? 'page' : undefined}>
             <span className="ad-tab-icon">{Icon[id]}{id === 'inbox' && (inbox.items.some((i) => i.status === 'new') || inbox.beta.some((b) => b.status === 'new')) && <span className="ad-badge" aria-label="New items" />}</span><span>{label}</span>
           </button>

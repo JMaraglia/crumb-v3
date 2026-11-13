@@ -271,3 +271,15 @@ input { font: inherit; }
 .ad-rep-welcome .ad-resend-btn { align-self: stretch; text-align: center; padding: 14px; border: 1px solid var(--ad-line); border-radius: 12px; font-size: 17px; }
 .ad-rep-welcome .ad-resend-ask { justify-content: center; }
 .ad-rep-del { align-self: center; padding: 6px 0; }
+
+/* People (Nov 12): sign-ups, invited people and accounts in one list */
+.ad-people-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ad-people-add { padding: 4px 0; font-size: 15px; white-space: nowrap; }
+.ad-urow-st.is-new { color: var(--ad-bad); } .ad-urow-st.is-new i { background: #ff6b5c; }
+.ad-steps { display: flex; flex-wrap: wrap; gap: 2px 6px; font-size: 12px; font-weight: 700; color: var(--ad-dim); }
+.ad-steps span { white-space: nowrap; }
+.ad-steps em { font-style: normal; margin-right: 6px; color: var(--ad-dim); }
+.ad-steps .is-at { color: var(--ad-text); }
+.ad-steps .is-past { color: var(--ad-muted); }
+.ad-center { align-self: center; justify-content: center; text-align: center; }
+.ad-rep-sheet .ad-check { align-self: flex-start; }
