@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const who = clip(name, 50) || 'Someone';
     const about = [clip(industry, 40), clip(state, 20)].filter(Boolean).join(' · ');
     const title = 'ADMIN · New beta sign-up';
-    const body = `${who}${about ? ` · ${about}` : ''}. Open Crumb Admin → Inbox → Beta.`;
+    const body = `${who}${about ? ` · ${about}` : ''}. Open Crumb Admin → People.`;
 
     let sent = 0;
     for (const u of await allUsers()) {
