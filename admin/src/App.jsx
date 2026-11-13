@@ -552,15 +552,16 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
     ...invites.filter((i) => i.source !== 'founder' && !haveAccount.has(lc(i.email)) && !betaFor(i.email)).map((i) => ({ email: i.email, name: '', beta: null, invite: i, stage: 'invited' })),
   ];
   const turnedDown = (u) => (betaFor(u.email) || {}).status === 'declined'; // an account whose access was declined or taken away
+  const snoozedAcct = (u) => (betaFor(u.email) || {}).status === 'snoozed'; // made an account, not approved, and snoozed (Nov 12)
   const hit = (email, name) => !q.trim() || `${email || ''} ${name || ''}`.toLowerCase().includes(q.trim().toLowerCase());
   const byActivity = { active, quiet, new: isNew, devices: syncing, today };
   const grouped = !byActivity[filter]; // All / Needs You / Invited / Using Crumb show the groups; the rest are plain lists of accounts
   const showGroup = (g) => filter === 'all' || filter === g || (g === 'needs' && filter === 'waiting');
   const groups = {
-    needs: { leads: leads.filter((l) => l.stage === 'needs'), users: users.filter((u) => waiting(u) && !turnedDown(u)) },
+    needs: { leads: leads.filter((l) => l.stage === 'needs'), users: users.filter((u) => waiting(u) && !turnedDown(u) && !snoozedAcct(u)) },
     invited: { leads: leads.filter((l) => l.stage === 'invited'), users: [] },
     using: { leads: [], users: users.filter((u) => !waiting(u)) },
-    snoozed: { leads: leads.filter((l) => l.stage === 'snoozed'), users: [] },
+    snoozed: { leads: leads.filter((l) => l.stage === 'snoozed'), users: users.filter((u) => waiting(u) && snoozedAcct(u)) },
     declined: { leads: leads.filter((l) => l.stage === 'declined'), users: users.filter((u) => waiting(u) && turnedDown(u)) },
   };
   const count = (g) => groups[g].leads.length + groups[g].users.length;
@@ -580,7 +581,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
           <span className="ad-urow-name">{nameOf(u) || u.email}</span>
           <span className="ad-urow-sub">{u.is_admin ? `Admin · ${devicesWord(u)}` : `${devicesWord(u)} · Joined ${shortDate(u.joined_at)}`}</span>
         </span>
-        <span className={`ad-urow-st is-${turnedDown(u) && waiting(u) ? 'quiet' : tone}`}><i aria-hidden="true" />{tone === 'warn' ? (turnedDown(u) ? 'No Access' : 'Not Approved') : ago(u.last_change_at)}</span>
+        <span className={`ad-urow-st is-${(turnedDown(u) || snoozedAcct(u)) && waiting(u) ? 'quiet' : tone}`}><i aria-hidden="true" />{tone === 'warn' ? (turnedDown(u) ? 'No Access' : snoozedAcct(u) ? 'Snoozed' : 'Not Approved') : ago(u.last_change_at)}</span>
         <span className="ad-urow-go" aria-hidden="true">›</span>
       </button>
     );
@@ -610,6 +611,18 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
     const res = access.mail && !(w && w.times > 0) ? await sendWelcome(u.email, nameOf(u)) : null;
     setAccess((a) => ({ ...a, busy: '' }));
     setSheetNote(`${u.email} is approved.${mailNote(u.email, res)}`);
+    onChanged();
+  };
+  // Snooze a not-approved account (it has a beta sign-up): clears its alert until it's moved back, approved or deleted.
+  const snooze = async (u, st) => {
+    const b = betaFor(u.email);
+    if (access.busy || !b) return;
+    setAccess((a) => ({ ...a, busy: st, err: '' }));
+    const { error } = await cloud().rpc('admin_beta_set_status', { p_id: b.id, p_status: st });
+    if (error) { setAccess((a) => ({ ...a, busy: '', err: /unknown status/i.test(error.message || '') ? "Snooze isn't turned on yet: the Snooze SQL (0018) hasn't been run in Supabase." : plainError(error) })); return; }
+    setAccess((a) => ({ ...a, busy: '' }));
+    setOpenEmail('');
+    setDone(st === 'snoozed' ? `${u.email} is snoozed.` : `${u.email} is back under Needs You.`);
     onChanged();
   };
   const removeAccess = async (u) => {
@@ -701,7 +714,7 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
             </div>
             <span className={`ad-urow-st ad-rep-st is-${invitesOk && waiting(openUser) ? 'warn' : within(openUser.last_change_at, 7 * DAY) ? 'ok' : 'quiet'}`}>
               <i aria-hidden="true" />
-              {[openUser.is_admin ? 'Admin' : 'Rep', within(openUser.last_change_at, 7 * DAY) ? 'Active This Week' : 'Quiet', invitesOk && (waiting(openUser) ? 'Waiting For Approval' : 'Approved')].filter(Boolean).join(' · ')}
+              {[openUser.is_admin ? 'Admin' : 'Rep', within(openUser.last_change_at, 7 * DAY) ? 'Active This Week' : 'Quiet', invitesOk && (waiting(openUser) ? (snoozedAcct(openUser) ? 'Snoozed' : 'Waiting For Approval') : 'Approved')].filter(Boolean).join(' · ')}
             </span>
             {!openUser.is_admin && <Steps at={openUser.last_change_at ? 3 : 2} />}
             <div className="ad-rep-facts">
@@ -719,6 +732,9 @@ function Users({ users, log, invites = [], invitesOk = false, answers = [], nudg
                 <button type="button" className="ad-btn" onClick={() => approve(openUser)} disabled={Boolean(access.busy)}>{access.busy === 'approve' ? 'Approving…' : 'Approve For Beta'}</button>
                 {!(welcomeFor(welcomes, openUser.email) && welcomeFor(welcomes, openUser.email).times > 0) && <WelcomeToggle on={access.mail} setOn={(v) => setAccess((a) => ({ ...a, mail: v }))} disabled={Boolean(access.busy)} />}
                 <p className="ad-muted ad-small">They made an account but aren't approved yet, so Crumb isn't syncing for them.</p>
+                {betaFor(openUser.email) && !turnedDown(openUser) && (snoozedAcct(openUser)
+                  ? <button type="button" className="ad-rp-dl" onClick={() => snooze(openUser, 'new')} disabled={Boolean(access.busy)}>{access.busy === 'new' ? 'Moving…' : 'Move Back To Needs You'}</button>
+                  : <button type="button" className="ad-rp-dl" onClick={() => snooze(openUser, 'snoozed')} disabled={Boolean(access.busy)}>{access.busy === 'snoozed' ? 'Snoozing…' : 'Snooze'}</button>)}
               </>
             )}
             {!openUser.is_admin && <Nudge big key={`n-${openUser.email}`} email={openUser.email} last={nudged[String(openUser.email || '').toLowerCase()]} onDone={(m) => { setSheetNote(m); onChanged(); }} />}
