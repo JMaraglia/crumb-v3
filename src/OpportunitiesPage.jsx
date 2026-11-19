@@ -98,16 +98,34 @@ export default function OpportunitiesPage({ contacts = [] }) {
     ? customers.filter((a) => a.name.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 5)
     : [];
 
-  const add = () => {
+  // Photos picked in the add box wait here (not saved yet) until Add is tapped.
+  const [newFiles, setNewFiles] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const addFileRef = useRef(null);
+  const add = async () => {
     const t = title.trim();
-    if (!t || !acct) return;
+    if (!t || !acct || adding) return;
+    let photoIds = [];
+    if (newFiles.length) {
+      setAdding(true);
+      try {
+        // Saved to the customer's photos, then linked to this opportunity
+        photoIds = (await addPhotos(photoKey('customer', acct.id), newFiles)).map((p) => p.id);
+      } catch (err) {
+        setAdding(false);
+        setMessage(err.message || "Couldn't save that photo.");
+        return;
+      }
+      setAdding(false);
+    }
     save([
-      ...opps,
-      { id: newId(), title: t, term, followUp, notes: '', status: 'open', closedAt: null, createdAt: new Date().toISOString(), accountType: 'customer', accountId: acct.id, accountName: acct.name },
+      ...loadOpportunities(),
+      { id: newId(), title: t, term, followUp, notes: '', status: 'open', closedAt: null, createdAt: new Date().toISOString(), accountType: 'customer', accountId: acct.id, accountName: acct.name, photoIds },
     ]);
     setTitle('');
     setFollowUp(null);
     setAcct(null);
+    setNewFiles([]);
     if (params.has('customer')) navigate(-1); // added from the customer's profile: back to it
   };
   const close = (opp, status) => {
@@ -216,7 +234,16 @@ export default function OpportunitiesPage({ contacts = [] }) {
             {acct ? (
               <span className="td-picked">
                 {acct.name}
-                <button className="td-picked-x" onClick={() => setAcct(null)} aria-label="Remove">×</button>
+                <button
+                  className="td-picked-x"
+                  onClick={() => {
+                    setAcct(null);
+                    setNewFiles([]); // photos go with the customer
+                  }}
+                  aria-label="Remove"
+                >
+                  ×
+                </button>
               </span>
             ) : (
               <input className="op-acct-input" placeholder="Customer" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -245,11 +272,45 @@ export default function OpportunitiesPage({ contacts = [] }) {
               {followUp ? niceDate(followUp, today) : 'Follow Up'}
               <input type="date" className="td-date-hidden" value={followUp || ''} onChange={(e) => setFollowUp(e.target.value || null)} />
             </label>
+            {acct && (
+              <button
+                className={`td-chip op-cam-chip ${newFiles.length ? 'is-on' : ''}`}
+                onClick={() => addFileRef.current && addFileRef.current.click()}
+                aria-label="Add photo"
+              >
+                <IoCameraOutline />
+                {newFiles.length > 0 && <span className="op-cam-count">{newFiles.length}</span>}
+              </button>
+            )}
             <span className="td-spacer" />
-            <button className="td-add-btn" disabled={!title.trim() || !acct} onClick={add}>
-              Add
+            <button className="td-add-btn" disabled={!title.trim() || !acct || adding} onClick={add}>
+              {adding ? 'Saving…' : 'Add'}
             </button>
           </div>
+          <input
+            ref={addFileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="op-file"
+            onChange={(e) => {
+              const files = [...(e.target.files || [])];
+              e.target.value = '';
+              if (files.length) setNewFiles([...newFiles, ...files]);
+            }}
+          />
+          {newFiles.length > 0 && (
+            <div className="op-strip op-add-strip">
+              {newFiles.map((f, i) => (
+                <span key={i} className="op-strip-item">
+                  <FileThumb file={f} />
+                  <button className="op-unlink" onClick={() => setNewFiles(newFiles.filter((_, j) => j !== i))} aria-label="Remove photo">
+                    <IoClose />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {open.length === 0 && <div className="td-empty">No open opportunities.</div>}
@@ -567,4 +628,15 @@ function OppPhotos({ customer, photoIds, setPhotoIds }) {
       )}
     </div>
   );
+}
+
+// Preview of a photo picked in the add box (not saved yet)
+function FileThumb({ file }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    const u = URL.createObjectURL(file);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  return <span className="op-thumb op-file-thumb">{url && <img className="op-thumb-img" src={url} alt="" />}</span>;
 }

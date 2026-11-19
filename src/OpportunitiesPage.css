@@ -254,3 +254,28 @@
 .op-pick.is-on .op-pick-mark {
   background: var(--bg-0077cc);
 }
+
+/* Camera button in the add box (Nov 19): photos wait there until Add */
+.op-page .td-add-row .td-chip.op-cam-chip {
+  gap: 4px;
+  font-size: 1.05rem;
+  padding: 0 10px;
+}
+
+.op-cam-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.op-add-strip {
+  padding: 10px 2px 2px;
+}
+
+.op-file-thumb {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-e5e5ea);
+}
