@@ -130,9 +130,22 @@ export function isRecording() {
   return readText(FLAG_KEY) === '1';
 }
 
+// Opportunities (Nov 19, 2026) were added before the cloud knew about them. The first time a syncing
+// device opens this version, everything already saved goes up once. This device only (not backed up).
+const OPPS_SENT_KEY = 'crumb_sync_opps_sent';
+function sendOpportunitiesOnce() {
+  if (readText(OPPS_SENT_KEY) === '1' || !(isRealSynced() || isTestCopy())) return;
+  const now = readText('crumb_opportunities');
+  if (now) record(changesFor('crumb_opportunities', '[]', now, readText));
+  writeText(OPPS_SENT_KEY, '1');
+}
+
 // Called once when Crumb opens.
 export function startRecordingIfOn() {
-  if (isRecording()) listen();
+  if (isRecording()) {
+    listen();
+    sendOpportunitiesOnce();
+  }
   scheduleSend(); // a test copy sends anything still waiting from last time
   startPulling(); // …and checks the cloud for changes from your other devices
 }

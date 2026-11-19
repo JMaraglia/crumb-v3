@@ -63,7 +63,7 @@ const DEVICE_ONLY_SETTING_FIELDS = { notify: ['enabled'] };
 
 export function syncsKey(key) {
   return key in ACCOUNT_KEYS || key in DAY_MAP_KEYS || key in SETTING_KEYS ||
-    key === 'crumb_calendar_events' || key === 'visitData' || key === 'crumb_todos';
+    key === 'crumb_calendar_events' || key === 'visitData' || key === 'crumb_todos' || key === 'crumb_opportunities';
 }
 
 export function changesFor(key, beforeText, afterText, readOther = () => null) {
@@ -72,6 +72,7 @@ export function changesFor(key, beforeText, afterText, readOther = () => null) {
   if (key === 'crumb_calendar_events') return recordChanges('events', beforeText, afterText, (e) => ({ account_id: accountIdOf(e), day: e.date || null }));
   if (key === 'visitData') return recordChanges('stops', beforeText, afterText, (v) => ({ account_id: accountIdOf(v), day: v.date || null }));
   if (key === 'crumb_todos') return recordChanges('todos', beforeText, afterText, (t) => ({ account_id: accountIdOf(t) }));
+  if (key === 'crumb_opportunities') return recordChanges('opportunities', beforeText, afterText, (o) => ({ account_id: accountIdOf(o) }));
   if (key in DAY_MAP_KEYS) return dayMapChanges(DAY_MAP_KEYS[key], beforeText, afterText);
   return settingChanges(SETTING_KEYS[key], key, beforeText, afterText);
 }
@@ -213,7 +214,7 @@ export function combine(older, newer) {
 // The FIRST upload (S3 test copy; later the real move, S7): everything currently saved, as "added" changes.
 // Accounts (with their notes) come first, so every note, event, stop and to-do has its account in the cloud.
 export const UPLOAD_ORDER = [
-  'crumb_contacts', 'crumb_prospects', 'crumb_calendar_events', 'visitData', 'crumb_todos',
+  'crumb_contacts', 'crumb_prospects', 'crumb_calendar_events', 'visitData', 'crumb_todos', 'crumb_opportunities',
   ...Object.keys(DAY_MAP_KEYS), ...Object.keys(SETTING_KEYS),
 ];
 export function fullUploadChanges(readText) {
@@ -229,7 +230,7 @@ export function fullUploadChanges(readText) {
 }
 
 // Sending order inside a batch: accounts before what links to them.
-const TABLE_ORDER = { accounts: 0, notes: 1, events: 2, stops: 3, todos: 4, day_marks: 5, settings: 6 };
+const TABLE_ORDER = { accounts: 0, notes: 1, events: 2, stops: 3, todos: 4, opportunities: 4.5, day_marks: 5, settings: 6 };
 export function sendOrder(a, b) {
   return (TABLE_ORDER[a.table] ?? 9) - (TABLE_ORDER[b.table] ?? 9) || String(a.at || '').localeCompare(String(b.at || ''));
 }

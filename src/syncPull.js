@@ -185,6 +185,7 @@ export function planPull(cloud, readText, pendingKeys = new Set()) {
     ['events', 'crumb_calendar_events', 'calendar events'],
     ['stops', 'visitData', 'daily stops'],
     ['todos', 'crumb_todos', 'to-dos'],
+    ['opportunities', 'crumb_opportunities', 'opportunities'],
   ];
   recordLists.forEach(([table, key, label]) => {
     const rs = rows(cloud, table);
@@ -302,5 +303,5 @@ export function planPull(cloud, readText, pendingKeys = new Set()) {
 }
 
 // Keys a pull may write (used to refresh screens afterwards).
-export const PULL_KEYS = ['crumb_contacts', 'crumb_prospects', 'crumb_calendar_events', 'visitData', 'crumb_todos',
+export const PULL_KEYS = ['crumb_contacts', 'crumb_prospects', 'crumb_calendar_events', 'visitData', 'crumb_todos', 'crumb_opportunities',
   ...Object.keys(DAY_MAP_KEYS), ...Object.keys(SETTING_KEYS)];

@@ -59,12 +59,12 @@ export function inspectForMove(read, photos = []) {
   const accountIds = new Set(changes.filter((c) => c.table === 'accounts').map((c) => String(c.id)));
   let unlinked = 0;
   changes.forEach((c) => {
-    if (['events', 'stops', 'todos'].includes(c.table) && c.cols && c.cols.account_id != null && !accountIds.has(String(c.cols.account_id))) {
+    if (['events', 'stops', 'todos', 'opportunities'].includes(c.table) && c.cols && c.cols.account_id != null && !accountIds.has(String(c.cols.account_id))) {
       c.cols = { ...c.cols, account_id: null };
       unlinked += 1;
     }
   });
-  if (unlinked) warnings.push(`${unlinked} calendar event${unlinked === 1 ? '' : 's'}, stops or to-dos point at an account that no longer exists. They’ll go up without that link (nothing changes on this device).`);
+  if (unlinked) warnings.push(`${unlinked} calendar event${unlinked === 1 ? '' : 's'}, stops, to-dos or opportunities point at an account that no longer exists. They’ll go up without that link (nothing changes on this device).`);
   const photoOk = photos.filter((p) => {
     const a = splitKey(p.key);
     return a && accountIds.has(a.id);
@@ -79,6 +79,7 @@ export function inspectForMove(read, photos = []) {
     events: n('events'),
     stops: n('stops'),
     todos: n('todos'),
+    opportunities: n('opportunities'),
     marks: n('day_marks'),
     settings: n('settings'),
     photos: photoOk.length,
@@ -93,6 +94,7 @@ export const COUNT_NAMES = [
   ['events', 'Calendar events'],
   ['stops', 'Added daily stops'],
   ['todos', 'To-dos'],
+  ['opportunities', 'Opportunities'],
   ['marks', 'Daily Stops & Call Sheet day marks'],
   ['settings', 'Settings'],
   ['photos', 'Photos'],
@@ -104,7 +106,7 @@ export const COUNT_NAMES = [
 // (e.g. Due For A Check-In days) that the account never saved isn't a mismatch: it's just this device's choice.
 export function verifyMatch(expected, cloudAnswer, expectedPhotoIds = [], cloudPhotoIds = [], { download = false } = {}) {
   const problems = [];
-  const label = { accounts: 'Customers & prospects', notes: 'Notes', events: 'Calendar events', stops: 'Daily stops', todos: 'To-dos', day_marks: 'Day marks', settings: 'Settings' };
+  const label = { accounts: 'Customers & prospects', notes: 'Notes', events: 'Calendar events', stops: 'Daily stops', todos: 'To-dos', opportunities: 'Opportunities', day_marks: 'Day marks', settings: 'Settings' };
   const want = {};
   expected.forEach((c) => {
     (want[c.table] = want[c.table] || new Map()).set(String(c.id), c);
@@ -162,7 +164,7 @@ async function cloudNow(sb, ws) {
   return { answer: data, photoIds: (ph || []).filter((p) => !p.deleted_at).map((p) => String(p.id)) };
 }
 const cloudIsEmpty = (answer) =>
-  ['accounts', 'notes', 'events', 'stops', 'todos'].every((t) => !((answer && answer[t]) || []).some((r) => !r.deleted));
+  ['accounts', 'notes', 'events', 'stops', 'todos', 'opportunities'].every((t) => !((answer && answer[t]) || []).some((r) => !r.deleted));
 
 export function backupAge() {
   const t = Date.parse(readText(BACKUP_KEY) || '');
