@@ -1,18 +1,22 @@
 // file: src/OpportunitiesPage.jsx
 // Opportunities (Nov 19, 2026): its own list, separate from To-Do. Looks like To-Do (reuses its td- styles).
 // Saved under crumb_opportunities: [{ id, title, term: 'short' | 'long', followUp: 'YYYY-MM-DD' | null,
-//   notes, status: 'open' | 'won' | 'lost', closedAt, createdAt, accountType, accountId, accountName }]
+//   notes, status: 'open' | 'won' | 'lost', closedAt, createdAt, accountType, accountId, accountName,
+//   photoIds: [ids of that customer's photos linked to this opportunity] }]
 // Industry-neutral on purpose: no product, quantity or dollar fields.
 // Every opportunity is linked to a customer (Nov 19: prospects don't have opportunities).
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
+import { IoShareOutline, IoChevronDown, IoChevronForward, IoCameraOutline, IoClose, IoCheckmark } from 'react-icons/io5';
+import { listPhotos, addPhotos, photoKey } from './photos';
+import { inMemory } from './AccountPhotos';
 import { shareText } from './share';
 import { loadOpportunities, saveOpportunities as storeOpportunities } from './store';
 import { useCloudRefresh } from './useCloudRefresh';
 import SwipeRow from './SwipeRow';
 import './TodoPage.css';
+import './AccountPhotos.css'; // the full-screen photo viewer
 import './OpportunitiesPage.css';
 
 const keyOf = (d) =>
@@ -157,6 +161,11 @@ export default function OpportunitiesPage({ contacts = [] }) {
             {closed && <span className={`td-tag op-tag-${o.status}`}>{o.status === 'won' ? 'Won' : 'Lost'}</span>}
             {o.accountName && <span className={`td-acct ${o.accountType}`}>{o.accountName}</span>}
             {!closed && o.followUp && <span className={`td-due ${late ? 'is-late' : ''}`}>Follow Up {niceDate(o.followUp, today)}</span>}
+            {Array.isArray(o.photoIds) && o.photoIds.length > 0 && (
+              <span className="op-photo-count">
+                <IoCameraOutline /> {o.photoIds.length}
+              </span>
+            )}
           </span>
         </button>
       </SwipeRow>
@@ -321,6 +330,7 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
     opp.accountId != null && opp.accountType ? { type: opp.accountType, id: opp.accountId, name: opp.accountName } : null
   );
   const [search, setSearch] = useState('');
+  const [photoIds, setPhotoIds] = useState(Array.isArray(opp.photoIds) ? opp.photoIds : []);
   const matches = search.trim()
     ? accounts.filter((a) => a.name.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 5)
     : [];
@@ -338,6 +348,7 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
       accountType: acct ? acct.type : null,
       accountId: acct ? acct.id : null,
       accountName: acct ? acct.name : '',
+      photoIds,
     });
   };
 
@@ -374,7 +385,16 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
             {acct ? (
               <span className="td-picked">
                 {acct.name}
-                <button className="td-picked-x" onClick={() => setAcct(null)} aria-label="Remove">×</button>
+                <button
+                  className="td-picked-x"
+                  onClick={() => {
+                    setAcct(null);
+                    setPhotoIds([]); // linked photos belong to that customer
+                  }}
+                  aria-label="Remove"
+                >
+                  ×
+                </button>
               </span>
             ) : (
               <input className="td-acct-search" placeholder="Customer" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -407,6 +427,7 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
               ))}
             </span>
           </div>
+          {acct && <OppPhotos customer={acct} photoIds={photoIds} setPhotoIds={setPhotoIds} />}
           <textarea className="td-sheet-text op-notes" rows={3} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
 
@@ -425,3 +446,125 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
   );
 }
 
+
+/* ---------- Photos linked to an opportunity (Nov 19) ----------
+   They're the customer's own photos (same ones on the profile; nothing is copied).
+   Add New saves to the customer's photos AND links it; From Profile picks existing ones. */
+function PhotoImg({ photo, className }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    if (!photo || photo.broken) return undefined;
+    const u = URL.createObjectURL(photo.blob);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [photo]);
+  return url ? <img className={className} src={url} alt="" /> : <span className={`${className} op-img-blank`} />;
+}
+
+function OppPhotos({ customer, photoIds, setPhotoIds }) {
+  const key = photoKey('customer', customer.id);
+  const [photos, setPhotos] = useState([]); // all of this customer's photos
+  const [picking, setPicking] = useState(false);
+  const [viewing, setViewing] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const fileRef = useRef(null);
+  const load = () =>
+    listPhotos(key)
+      .then((rows) => Promise.all(rows.map(inMemory)))
+      .then(setPhotos)
+      .catch(() => setMsg("Photos aren't available in this browser."));
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  const linked = photoIds.map((id) => photos.find((p) => p.id === id)).filter(Boolean); // deleted photos just drop off
+  const toggle = (id) => setPhotoIds(photoIds.includes(id) ? photoIds.filter((x) => x !== id) : [...photoIds, id]);
+
+  const pickNew = async (e) => {
+    const files = [...(e.target.files || [])];
+    e.target.value = '';
+    if (!files.length) return;
+    setBusy(true);
+    setMsg('');
+    try {
+      const added = await addPhotos(key, files);
+      await load();
+      setPhotoIds([...photoIds, ...added.map((p) => p.id)]);
+    } catch (err) {
+      setMsg(err.message || "Couldn't save that photo.");
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="op-photos">
+      <div className="op-photos-head">
+        <span>Photos</span>
+        <span className="op-seg">
+          <button className="td-chip" disabled={busy} onClick={() => fileRef.current && fileRef.current.click()}>
+            <IoCameraOutline className="op-chip-icon" /> {busy ? 'Saving…' : 'Add New'}
+          </button>
+          <button className="td-chip" disabled={!photos.length} onClick={() => setPicking(true)}>
+            From Profile
+          </button>
+        </span>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" multiple className="op-file" onChange={pickNew} />
+      {linked.length > 0 && (
+        <div className="op-strip">
+          {linked.map((p) => (
+            <span key={p.id} className="op-strip-item">
+              <button className="op-thumb" onClick={() => setViewing(p)} aria-label="View photo">
+                <PhotoImg photo={p} className="op-thumb-img" />
+              </button>
+              <button className="op-unlink" onClick={() => toggle(p.id)} aria-label="Unlink photo">
+                <IoClose />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {msg && <div className="op-photo-msg">{msg}</div>}
+
+      {picking && (
+        <div className="op-picker" onClick={() => setPicking(false)}>
+          <div className="op-picker-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="td-sheet-top">
+              <span />
+              <div className="td-sheet-title">{customer.name}</div>
+              <button className="td-link td-bold" onClick={() => setPicking(false)}>Done</button>
+            </div>
+            <div className="op-picker-grid">
+              {photos.map((p) => {
+                const on = photoIds.includes(p.id);
+                return (
+                  <button key={p.id} className={`op-pick ${on ? 'is-on' : ''}`} onClick={() => toggle(p.id)}>
+                    <PhotoImg photo={p} className="op-thumb-img" />
+                    <span className="op-pick-mark">{on && <IoCheckmark />}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewing && (
+        <div className="ap-viewer" onClick={() => setViewing(null)}>
+          <div className="ap-viewer-top" onClick={(e) => e.stopPropagation()}>
+            <button className="ap-icon" onClick={() => setViewing(null)} aria-label="Close">
+              <IoClose />
+            </button>
+            <div className="ap-viewer-title">
+              <strong>{customer.name}</strong>
+            </div>
+            <span style={{ width: 38 }} />
+          </div>
+          <PhotoImg photo={viewing} className="ap-viewer-img" />
+        </div>
+      )}
+    </div>
+  );
+}

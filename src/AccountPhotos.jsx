@@ -20,7 +20,7 @@ function readBytes(blob) {
     r.readAsArrayBuffer(blob);
   });
 }
-async function inMemory(photo) {
+export async function inMemory(photo) {
   try {
     const bytes = await readBytes(photo.blob);
     if (!bytes || !bytes.byteLength) throw new Error('empty');
