@@ -3,6 +3,7 @@
 // Saved under crumb_opportunities: [{ id, title, term: 'short' | 'long', followUp: 'YYYY-MM-DD' | null,
 //   notes, status: 'open' | 'won' | 'lost', closedAt, createdAt, accountType, accountId, accountName }]
 // Industry-neutral on purpose: no product, quantity or dollar fields.
+// Every opportunity is linked to a customer (Nov 19: prospects don't have opportunities).
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -36,7 +37,7 @@ const TERMS = [
   ['long', 'Long-Term'],
 ];
 
-export default function OpportunitiesPage({ contacts = [], prospects = [] }) {
+export default function OpportunitiesPage({ contacts = [] }) {
   const navigate = useNavigate();
   const today = keyOf(new Date());
   const [opps, setOpps] = useState(loadOpportunities);
@@ -44,6 +45,8 @@ export default function OpportunitiesPage({ contacts = [], prospects = [] }) {
   const [title, setTitle] = useState('');
   const [term, setTerm] = useState('short');
   const [followUp, setFollowUp] = useState(null);
+  const [acct, setAcct] = useState(null); // the customer this one is for
+  const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [closing, setClosing] = useState(null); // opportunity being marked Won / Lost
   const [showWon, setShowWon] = useState(false);
@@ -66,15 +69,21 @@ export default function OpportunitiesPage({ contacts = [], prospects = [] }) {
   const lost = opps.filter((o) => o && o.status === 'lost').sort(byClosed);
 
   /* ---- changes ---- */
+  const customers = contacts.filter(hasName).map((a) => ({ type: 'customer', id: a.id, name: a.name }));
+  const matches = search.trim()
+    ? customers.filter((a) => a.name.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 5)
+    : [];
+
   const add = () => {
     const t = title.trim();
-    if (!t) return;
+    if (!t || !acct) return;
     save([
       ...opps,
-      { id: newId(), title: t, term, followUp, notes: '', status: 'open', closedAt: null, createdAt: new Date().toISOString(), accountType: null, accountId: null, accountName: '' },
+      { id: newId(), title: t, term, followUp, notes: '', status: 'open', closedAt: null, createdAt: new Date().toISOString(), accountType: 'customer', accountId: acct.id, accountName: acct.name },
     ]);
     setTitle('');
     setFollowUp(null);
+    setAcct(null);
   };
   const close = (opp, status) => {
     change(opp.id, { status, closedAt: new Date().toISOString() });
@@ -172,6 +181,29 @@ export default function OpportunitiesPage({ contacts = [], prospects = [] }) {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && add()}
           />
+          <div className="op-add-acct">
+            {acct ? (
+              <span className="td-picked">
+                {acct.name}
+                <button className="td-picked-x" onClick={() => setAcct(null)} aria-label="Remove">×</button>
+              </span>
+            ) : (
+              <input className="op-acct-input" placeholder="Customer" value={search} onChange={(e) => setSearch(e.target.value)} />
+            )}
+          </div>
+          {!acct &&
+            matches.map((a) => (
+              <button
+                key={a.id}
+                className="td-match op-add-match"
+                onClick={() => {
+                  setAcct(a);
+                  setSearch('');
+                }}
+              >
+                {a.name}
+              </button>
+            ))}
           <div className="td-add-row">
             {TERMS.map(([t, label]) => (
               <button key={t} className={`td-chip ${term === t ? 'is-on' : ''}`} onClick={() => setTerm(t)}>
@@ -183,7 +215,7 @@ export default function OpportunitiesPage({ contacts = [], prospects = [] }) {
               <input type="date" className="td-date-hidden" value={followUp || ''} onChange={(e) => setFollowUp(e.target.value || null)} />
             </label>
             <span className="td-spacer" />
-            <button className="td-add-btn" disabled={!title.trim()} onClick={add}>
+            <button className="td-add-btn" disabled={!title.trim() || !acct} onClick={add}>
               Add
             </button>
           </div>
@@ -236,10 +268,7 @@ export default function OpportunitiesPage({ contacts = [], prospects = [] }) {
       {editing && (
         <EditSheet
           opp={editing}
-          accounts={[
-            ...contacts.filter(hasName).map((a) => ({ type: 'customer', id: a.id, name: a.name })),
-            ...prospects.filter(hasName).map((a) => ({ type: 'prospect', id: a.id, name: a.name })),
-          ]}
+          accounts={customers}
           onSave={(patch) => {
             change(editing.id, patch);
             setEditing(null);
@@ -271,6 +300,7 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
     : [];
 
   const save = () => {
+    if (!acct) return; // every opportunity needs a customer
     const wasClosed = opp.status === 'won' || opp.status === 'lost';
     onSave({
       title: title.trim() || opp.title,
@@ -291,7 +321,7 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
         <div className="td-sheet-top">
           <button className="td-link" onClick={onCancel}>Cancel</button>
           <div className="td-sheet-title">Opportunity</div>
-          <button className="td-link td-bold" onClick={save}>Save</button>
+          <button className="td-link td-bold" disabled={!acct} onClick={save}>Save</button>
         </div>
 
         <div className="td-sheet-group">
@@ -321,7 +351,7 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
                 <button className="td-picked-x" onClick={() => setAcct(null)} aria-label="Remove">×</button>
               </span>
             ) : (
-              <input className="td-acct-search" placeholder="Customer or prospect" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input className="td-acct-search" placeholder="Customer" value={search} onChange={(e) => setSearch(e.target.value)} />
             )}
           </div>
           {!acct &&
@@ -334,7 +364,7 @@ function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel })
                   setSearch('');
                 }}
               >
-                {a.name} <span className="td-match-kind">{a.type === 'prospect' ? 'Prospect' : 'Customer'}</span>
+                {a.name}
               </button>
             ))}
           <div className="td-sheet-row">

@@ -67,3 +67,37 @@
 .op-page .td-add-row .td-add-btn {
   margin-left: auto;
 }
+
+/* Customer picker in the add box (every opportunity needs a customer) */
+.op-add-acct {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 2px 8px;
+}
+
+.op-acct-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-family: inherit;
+  padding: 6px 0;
+  background: transparent;
+  color: var(--fg-1c1c1e);
+  border-bottom: 1px solid var(--line-ececf0);
+}
+
+.op-page .td-match.op-add-match,
+.op-page .td-match.op-add-match:hover {
+  padding: 10px 2px;
+  border-top: none;
+  border-bottom: 1px solid var(--line-ececf0);
+  color: var(--fg-0077cc);
+  font-weight: 600;
+}
+
+.op-page .td-link:disabled {
+  opacity: 0.4;
+}
