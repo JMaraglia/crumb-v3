@@ -60,6 +60,8 @@ import {
   MAPS_APP_KEY,
   loadTodos,
   saveTodos,
+  loadOpportunities,
+  saveOpportunities,
   loadEvents,
   saveEvents,
   loadCalendarSettings,
@@ -977,6 +979,16 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
       if (item.accountType === 'customer' && setContacts) setContacts(apply);
     };
     const tomorrow = addDaysToKey(today, 1);
+    // Opportunity follow-ups due today or earlier (Nov 19). Only when Opportunities is switched on.
+    const oppsDue = loadAppSettings().opportunities
+      ? loadOpportunities()
+          .filter((o) => o && o.status !== 'won' && o.status !== 'lost' && o.followUp && o.followUp <= today)
+          .sort((a, b) => a.followUp.localeCompare(b.followUp) || (a.title || '').localeCompare(b.title || ''))
+      : [];
+    const pushOpp = (o) => {
+      saveOpportunities(loadOpportunities().map((x) => (x && x.id === o.id ? { ...x, followUp: tomorrow } : x)));
+      setWrapTick((n) => n + 1);
+    };
     return (
       <div className="it-page">
         <header className="it-header">
@@ -1020,6 +1032,32 @@ function ItineraryPage({ contacts = [], setContacts, prospects = [], setProspect
             </div>
           ) : (
             <div className="it-wrap-clear">✓ Nothing due today.</div>
+          )}
+
+          {oppsDue.length > 0 && (
+            <>
+              <div className="it-wrap-section">Opportunity Follow-Ups ({oppsDue.length})</div>
+              <div className="it-sheet-group it-wrap-list">
+                {oppsDue.map((o) => (
+                  <div key={o.id} className="it-wrap-row">
+                    <div
+                      className="it-wrap-text"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/opportunities?open=${encodeURIComponent(o.id)}`)}
+                    >
+                      <div className="it-wrap-name">{o.title}</div>
+                      <div className="it-wrap-sub">
+                        {[o.accountName, o.followUp < today ? 'Overdue' : 'Due today'].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    <button className="it-wrap-later" onClick={() => pushOpp(o)}>
+                      Tomorrow
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           <button className="it-leftover-link" onClick={() => navigate('/itinerary')}>

@@ -15,6 +15,7 @@ import {
   DEFAULT_NOTIFY,
   END_OF_DAY_KINDS,
 } from './notify';
+import { loadAppSettings } from './store';
 import './NotificationsPage.css';
 import { useCloudRefresh } from './useCloudRefresh';
 
@@ -173,7 +174,7 @@ export default function NotificationsPage() {
             </label>
           )}
           {settings.afternoon &&
-            END_OF_DAY_KINDS.map(([k, label]) => {
+            END_OF_DAY_KINDS.filter(([k]) => k !== 'opportunities' || loadAppSettings().opportunities).map(([k, label]) => {
               const kinds = { ...DEFAULT_NOTIFY.afternoonInclude, ...(settings.afternoonInclude || {}) };
               return (
                 <label key={k} className="nt-row nt-sub-row">

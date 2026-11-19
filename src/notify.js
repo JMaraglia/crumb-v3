@@ -17,7 +17,7 @@ import {
 import { noteCat, isNoteDone } from './noteStatus';
 import { staleAccounts, staleDays } from './lastContact';
 import { loadObject, saveQuiet, readText, writeText, NOTIFY_KEY, PUSH_DEVICE_KEY } from './store';
-import { loadCustomers, loadProspects, loadEvents, loadTodos, loadStops, loadDayMap, loadAppSettings, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
+import { loadCustomers, loadProspects, loadEvents, loadTodos, loadOpportunities, loadStops, loadDayMap, loadAppSettings, DONE_KEY, LOCKS_KEY, HIDDEN_KEY, REMOVED_KEY } from './store';
 
 import { isRealSynced, projectRef } from './syncMode';
 
@@ -56,7 +56,7 @@ export const DEFAULT_NOTIFY = {
   lead: 30,            // minutes before visits / appointments (0 = off)
   afternoon: true,     // end-of-day reminder: what's still open
   afternoonTime: 960,  // 4:00 PM
-  afternoonInclude: { tasks: true, followups: true, samples: true, stops: false }, // what it lists
+  afternoonInclude: { tasks: true, followups: true, samples: true, opportunities: true, stops: false }, // what it lists
   leadInclude: { appointments: true, stops: false }, // reminders before: calendar appointments / Itinerary stops
 };
 
@@ -64,6 +64,7 @@ export const END_OF_DAY_KINDS = [
   ['tasks', 'Tasks'],
   ['followups', 'Follow-ups'],
   ['samples', 'Samples'],
+  ['opportunities', 'Opportunity follow-ups'],
   ['stops', 'Daily stops not checked off'],
 ];
 
@@ -114,6 +115,7 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
   const lockMap = loadDayMap(LOCKS_KEY);
   const app = loadAppSettings(); // tools switched off in Settings get no reminders
   const todos = app.todo ? loadTodos() : [];
+  const opps = app.opportunities ? loadOpportunities() : []; // Opportunities switched off: no reminders
   const nowMs = now.getTime();
   const today = keyOf(now);
   const out = [];
@@ -213,6 +215,10 @@ export function buildReminders(settings = loadNotifySettings(), now = new Date()
       const kinds = { ...DEFAULT_NOTIFY.afternoonInclude, ...(settings.afternoonInclude || {}) };
       const when = at(day, settings.afternoonTime);
       const due = dueBy(kinds);
+      // Open opportunities with a follow-up date that day or earlier (Nov 19)
+      if (kinds.opportunities)
+        opps.forEach((o) => o && o.status !== 'won' && o.status !== 'lost' && o.followUp && o.followUp <= day &&
+          due.push({ text: `Opportunity: ${o.title}`, who: o.accountName, late: o.followUp < day }));
       if (kinds.stops)
         stops.filter((st) => !st.done).forEach((st) => due.push({ text: st.title, who: '', late: false, stop: true }));
       if (Date.parse(when) > nowMs && due.length) {
