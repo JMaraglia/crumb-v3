@@ -290,6 +290,13 @@ export const TODOS_KEY = 'crumb_todos';
 export const loadTodos = () => asList(readSaved(TODOS_KEY, [], { keepUnreadable: true }));
 export const saveTodos = (list) => writeSaved(TODOS_KEY, list);
 
+/* ---------- Opportunities (Nov 19, 2026) ----------
+   [{ id, title, term: 'short' | 'long', followUp, notes, status: 'open' | 'won' | 'lost', closedAt,
+      createdAt, accountType?, accountId?, accountName? }]. Separate from To-Do. */
+export const OPPORTUNITIES_KEY = 'crumb_opportunities';
+export const loadOpportunities = () => asList(readSaved(OPPORTUNITIES_KEY, [], { keepUnreadable: true }));
+export const saveOpportunities = (list) => writeSaved(OPPORTUNITIES_KEY, list);
+
 /* ---------- Settings and small lists (central data layer, slice 5, Nov 6 2026) ----------
    Same keys, same saved format. Some of these are saved as plain text, not JSON
    (check-in days "30", maps app "apple", this phone's notification ID). */
@@ -403,6 +410,7 @@ export function loadAppSettings() {
     calendar: o.calendar !== false,
     dailyStops: o.dailyStops !== false,
     todo: o.todo !== false,
+    opportunities: o.opportunities !== false,
     // Note labels switched off (Nov 10): not offered on new notes; old notes keep theirs.
     hiddenLabels: Array.isArray(o.hiddenLabels) ? o.hiddenLabels.filter((x) => typeof x === 'string') : [],
     // Labels in use, in order, and your own labels (see noteLabels.js). null = not set yet.

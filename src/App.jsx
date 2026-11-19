@@ -13,6 +13,7 @@ import CalendarPage from './CalendarPage';
 import ItineraryPage from './ItineraryPage';
 import BackupPage from './BackupPage';
 import TodoPage from './TodoPage';
+import OpportunitiesPage from './OpportunitiesPage';
 import NotificationsPage from './NotificationsPage';
 import SettingsPage from './SettingsPage';
 import ToolSettingsPage from './ToolSettingsPage';
@@ -335,6 +336,7 @@ export default function App() {
             <TodoPage contacts={contacts} setContacts={setContacts} prospects={prospects} setProspects={setProspects} />
           }
         />
+        <Route path="/opportunities" element={<OpportunitiesPage contacts={contacts} prospects={prospects} />} />
         <Route path="/call-sheet" element={<CallSheetPage contacts={contacts} setContacts={setContacts} />} />
         <Route
           path="/notes"

@@ -32,10 +32,10 @@ describe('Call Sheet switches', () => {
 import { loadAppSettings, saveAppSettings } from '../src/store';
 describe('tools you can switch off (Calendar, Daily Stops, To-Do)', () => {
   it('all on until switched off; one switch never touches the others', () => {
-    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: true, hiddenLabels: [], labels: null, customLabels: [], theme: 'light' });
+    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: true, opportunities: true, hiddenLabels: [], labels: null, customLabels: [], theme: 'light' });
     saveAppSettings({ todo: false });
     saveAppSettings({ calendar: false });
-    expect(loadAppSettings()).toEqual({ calendar: false, dailyStops: true, todo: false, hiddenLabels: [], labels: null, customLabels: [], theme: 'light' });
+    expect(loadAppSettings()).toEqual({ calendar: false, dailyStops: true, todo: false, opportunities: true, hiddenLabels: [], labels: null, customLabels: [], theme: 'light' });
   });
   it('follow you to your other devices', () => {
     expect(changesFor('crumb_app_settings', J({}), J({ todo: false }))[0]).toMatchObject({ table: 'settings', id: 'app', next: { todo: false } });
@@ -46,7 +46,7 @@ describe('note labels you can switch off', () => {
   it('remembers hidden labels and keeps the other switches', () => {
     saveAppSettings({ todo: false });
     saveAppSettings({ hiddenLabels: ['Sample', 'Background'], labels: null, customLabels: [] });
-    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: false, hiddenLabels: ['Sample', 'Background'], labels: null, customLabels: [], theme: 'light' });
+    expect(loadAppSettings()).toEqual({ calendar: true, dailyStops: true, todo: false, opportunities: true, hiddenLabels: ['Sample', 'Background'], labels: null, customLabels: [], theme: 'light' });
   });
 });
 

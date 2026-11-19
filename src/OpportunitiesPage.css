@@ -1,0 +1,69 @@
+/* file: src/OpportunitiesPage.css */
+/* Opportunities reuses the To-Do look (td- classes). Only the extra bits live here, all "op-". */
+
+.op-page .op-seg {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.op-page .td-check.op-check-lost,
+.op-page .td-check.op-check-lost:hover {
+  background: var(--bg-ff3b30);
+  border-color: var(--bg-ff3b30);
+}
+
+.op-page .td-tag.op-tag-won {
+  background: var(--bg-e4f6e9);
+  color: var(--fg-1e8e3e);
+}
+
+.op-page .td-tag.op-tag-lost {
+  background: var(--bg-fdecea);
+  color: var(--fg-d70015);
+}
+
+.op-page .op-notes {
+  border-top: 1px solid var(--line-ececf0);
+  min-height: 80px;
+}
+
+.op-close-name {
+  margin: 0 4px 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.op-close-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.op-page .op-close-btn,
+.op-page .op-close-btn:hover {
+  padding: 14px 0;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--fg-ffffff);
+}
+
+.op-page .op-close-btn.is-won {
+  background: var(--bg-34c759);
+}
+
+.op-page .op-close-btn.is-lost {
+  background: var(--bg-ff3b30);
+}
+
+/* Three chips + Add: a little tighter so it fits on one line; if it wraps, Add stays on the right. */
+.op-page .td-add-row .td-chip {
+  padding: 0 9px;
+}
+
+.op-page .td-add-row .td-add-btn {
+  margin-left: auto;
+}

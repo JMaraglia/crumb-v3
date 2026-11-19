@@ -43,6 +43,10 @@ const TOOLS = {
     title: 'To-Do',
     switches: [{ store: 'app', k: 'todo', label: 'Show To-Do', sub: 'The To-Do tile on Home and to-do reminders' }],
   },
+  opportunities: {
+    title: 'Opportunities',
+    switches: [{ store: 'app', k: 'opportunities', label: 'Show Opportunities', sub: 'The Opportunities tile on Home' }],
+  },
 };
 
 export default function ToolSettingsPage() {

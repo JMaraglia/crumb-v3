@@ -1,7 +1,7 @@
 // file: src/HomePage.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt, FaCheckSquare } from 'react-icons/fa';
+import { FaUsers, FaUserPlus, FaClipboardList, FaCalendarAlt, FaStickyNote, FaPhoneAlt, FaCheckSquare, FaBullseye } from 'react-icons/fa';
 import { IoSettingsOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { readText } from './store';
@@ -28,6 +28,7 @@ export default function HomePage() {
     { label: 'Pipeline', icon: <FaUserPlus />, path: '/prospects' },
     ...(on.dailyStops ? [{ label: 'Daily Stops', icon: <FaClipboardList />, path: '/itinerary' }] : []),
     ...(on.todo ? [{ label: 'To-Do', icon: <FaCheckSquare />, path: '/todo' }] : []),
+    ...(on.opportunities ? [{ label: 'Opportunities', icon: <FaBullseye />, path: '/opportunities' }] : []),
     ...(on.calendar ? [{ label: 'Calendar', icon: <FaCalendarAlt />, path: '/calendar' }] : []),
     { label: 'Notes', icon: <FaStickyNote />, path: '/notes' },
     ...(loadCallSheetSettings().show ? [{ label: 'Call Sheet', icon: <FaPhoneAlt />, path: '/call-sheet' }] : []),

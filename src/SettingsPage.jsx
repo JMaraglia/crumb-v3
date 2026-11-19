@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaChevronRight } from 'react-icons/fa';
-import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline, IoBugOutline, IoBulbOutline, IoLocationOutline, IoCallOutline, IoCheckboxOutline, IoPricetagOutline, IoContrastOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCalendarOutline, IoCloudUploadOutline, IoTimeOutline, IoCloudOutline, IoPersonCircleOutline, IoBugOutline, IoBulbOutline, IoLocationOutline, IoCallOutline, IoCheckboxOutline, IoTrendingUpOutline, IoPricetagOutline, IoContrastOutline } from 'react-icons/io5';
 import { readLastBackup } from './BackupPage';
 import { loadNotifySettings, syncReminders } from './notify';
 import { staleDays, STALE_KEY } from './lastContact';
@@ -109,6 +109,12 @@ export default function SettingsPage() {
       label: 'To-Do',
       sub: offWord(app.todo, 'On'),
       go: () => navigate('/settings/todo'),
+    },
+    {
+      icon: <IoTrendingUpOutline />,
+      label: 'Opportunities',
+      sub: offWord(app.opportunities, 'On'),
+      go: () => navigate('/settings/opportunities'),
     },
     {
       icon: <IoPricetagOutline />,

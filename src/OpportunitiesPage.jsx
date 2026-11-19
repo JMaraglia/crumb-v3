@@ -1,0 +1,371 @@
+// file: src/OpportunitiesPage.jsx
+// Opportunities (Nov 19, 2026): its own list, separate from To-Do. Looks like To-Do (reuses its td- styles).
+// Saved under crumb_opportunities: [{ id, title, term: 'short' | 'long', followUp: 'YYYY-MM-DD' | null,
+//   notes, status: 'open' | 'won' | 'lost', closedAt, createdAt, accountType, accountId, accountName }]
+// Industry-neutral on purpose: no product, quantity or dollar fields.
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
+import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
+import { shareText } from './share';
+import { loadOpportunities, saveOpportunities as storeOpportunities } from './store';
+import { useCloudRefresh } from './useCloudRefresh';
+import SwipeRow from './SwipeRow';
+import './TodoPage.css';
+import './OpportunitiesPage.css';
+
+const keyOf = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const addDays = (k, n) => {
+  const [y, m, d] = k.split('-').map(Number);
+  return keyOf(new Date(y, m - 1, d + n));
+};
+const niceDate = (k, today) => {
+  if (!k) return '';
+  if (k === today) return 'Today';
+  if (k === addDays(today, 1)) return 'Tomorrow';
+  if (k === addDays(today, -1)) return 'Yesterday';
+  const [y, m, d] = k.split('-').map(Number);
+  const sameYear = y === new Date().getFullYear();
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) });
+};
+const hasName = (a) => a && a.name && a.name.trim();
+const newId = () => `o-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+const TERMS = [
+  ['short', 'Short-Term'],
+  ['long', 'Long-Term'],
+];
+
+export default function OpportunitiesPage({ contacts = [], prospects = [] }) {
+  const navigate = useNavigate();
+  const today = keyOf(new Date());
+  const [opps, setOpps] = useState(loadOpportunities);
+  useCloudRefresh(() => setOpps(loadOpportunities())); // changes from your other device, re-read in place
+  const [title, setTitle] = useState('');
+  const [term, setTerm] = useState('short');
+  const [followUp, setFollowUp] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [closing, setClosing] = useState(null); // opportunity being marked Won / Lost
+  const [showWon, setShowWon] = useState(false);
+  const [showLost, setShowLost] = useState(false);
+  const [message, setMessage] = useState('');
+  const [undo, setUndo] = useState(null); // { opp, timer }
+
+  const save = (next) => {
+    setOpps(next);
+    storeOpportunities(next);
+  };
+  const change = (id, patch) => save(opps.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+
+  /* ---- the list ---- */
+  const open = opps.filter((o) => o && o.status !== 'won' && o.status !== 'lost');
+  const byFollowUp = (a, b) => (a.followUp || '9999').localeCompare(b.followUp || '9999') || (a.title || '').localeCompare(b.title || '');
+  const sections = TERMS.map(([t, label]) => ({ title: label, list: open.filter((o) => (o.term === 'long' ? 'long' : 'short') === t).sort(byFollowUp) }));
+  const byClosed = (a, b) => (Date.parse(b.closedAt) || 0) - (Date.parse(a.closedAt) || 0);
+  const won = opps.filter((o) => o && o.status === 'won').sort(byClosed);
+  const lost = opps.filter((o) => o && o.status === 'lost').sort(byClosed);
+
+  /* ---- changes ---- */
+  const add = () => {
+    const t = title.trim();
+    if (!t) return;
+    save([
+      ...opps,
+      { id: newId(), title: t, term, followUp, notes: '', status: 'open', closedAt: null, createdAt: new Date().toISOString(), accountType: null, accountId: null, accountName: '' },
+    ]);
+    setTitle('');
+    setFollowUp(null);
+  };
+  const close = (opp, status) => {
+    change(opp.id, { status, closedAt: new Date().toISOString() });
+    setClosing(null);
+  };
+  const reopen = (opp) => change(opp.id, { status: 'open', closedAt: null });
+  const remove = (opp) => {
+    save(opps.filter((o) => o.id !== opp.id));
+    if (undo && undo.timer) clearTimeout(undo.timer);
+    const timer = setTimeout(() => setUndo(null), 6000);
+    setUndo({ opp, timer });
+    setEditing(null);
+    return true;
+  };
+  const undoDelete = () => {
+    if (!undo) return;
+    clearTimeout(undo.timer);
+    save([...loadOpportunities(), undo.opp]);
+    setUndo(null);
+  };
+
+  const share = async () => {
+    const lines = ['Opportunities'];
+    sections.forEach((s) => {
+      if (!s.list.length) return;
+      lines.push('', s.title.toUpperCase());
+      s.list.forEach((o) => {
+        const extra = [o.accountName, o.followUp ? `Follow up ${niceDate(o.followUp, today)}` : ''].filter(Boolean).join(' · ');
+        lines.push(`• ${o.title}${extra ? ` (${extra})` : ''}`);
+      });
+    });
+    setMessage(await shareText('Opportunities', lines.join('\n')));
+  };
+
+  const renderRow = (o) => {
+    const closed = o.status === 'won' || o.status === 'lost';
+    const late = !closed && o.followUp && o.followUp < today;
+    return (
+      <SwipeRow key={o.id} wrapClassName="td-swipe" className={`td-row ${closed ? 'is-done' : ''}`} onDelete={() => remove(o)}>
+        <button
+          className={`td-check ${o.status === 'won' ? 'is-checked' : ''} ${o.status === 'lost' ? 'op-check-lost' : ''}`}
+          onClick={() => (closed ? reopen(o) : setClosing(o))}
+          aria-label={closed ? 'Reopen' : 'Mark Won or Lost'}
+        >
+          {o.status === 'won' ? '✓' : o.status === 'lost' ? '✕' : ''}
+        </button>
+        <button className="td-main" onClick={() => setEditing(o)}>
+          <span className="td-text">{o.title}</span>
+          <span className="td-meta">
+            {closed && <span className={`td-tag op-tag-${o.status}`}>{o.status === 'won' ? 'Won' : 'Lost'}</span>}
+            {o.accountName && <span className={`td-acct ${o.accountType}`}>{o.accountName}</span>}
+            {!closed && o.followUp && <span className={`td-due ${late ? 'is-late' : ''}`}>Follow Up {niceDate(o.followUp, today)}</span>}
+          </span>
+        </button>
+      </SwipeRow>
+    );
+  };
+
+  const closedSection = (label, list, shown, setShown) =>
+    list.length > 0 && (
+      <div className="td-section">
+        <button className="td-done-toggle" onClick={() => setShown(!shown)}>
+          {shown ? <IoChevronDown /> : <IoChevronForward />} {label} <span className="td-count">{list.length}</span>
+        </button>
+        {shown && <div className="td-list">{list.map(renderRow)}</div>}
+      </div>
+    );
+
+  return (
+    <div className="td-page op-page">
+      <header className="td-header">
+        <button className="td-icon-btn" onClick={() => navigate('/')} aria-label="Back">
+          <FaArrowLeft />
+        </button>
+        <span />
+        <span />
+      </header>
+
+      <div className="td-content">
+        <div className="td-title-row">
+          <h1 className="td-title">Opportunities</h1>
+          <button className="td-pill" disabled={!open.length} onClick={share}>
+            <IoShareOutline className="td-pill-icon" />
+            Share
+          </button>
+        </div>
+        {message && <div className="td-message">{message}</div>}
+
+        {/* Add an opportunity */}
+        <div className="td-add">
+          <input
+            className="td-add-input"
+            placeholder="Add an opportunity…"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && add()}
+          />
+          <div className="td-add-row">
+            {TERMS.map(([t, label]) => (
+              <button key={t} className={`td-chip ${term === t ? 'is-on' : ''}`} onClick={() => setTerm(t)}>
+                {label}
+              </button>
+            ))}
+            <label className={`td-chip td-chip-date ${followUp ? 'is-on' : ''}`}>
+              {followUp ? niceDate(followUp, today) : 'Follow Up'}
+              <input type="date" className="td-date-hidden" value={followUp || ''} onChange={(e) => setFollowUp(e.target.value || null)} />
+            </label>
+            <span className="td-spacer" />
+            <button className="td-add-btn" disabled={!title.trim()} onClick={add}>
+              Add
+            </button>
+          </div>
+        </div>
+
+        {open.length === 0 && <div className="td-empty">No open opportunities.</div>}
+
+        {sections.map((s) =>
+          s.list.length ? (
+            <div key={s.title} className="td-section">
+              <div className="td-section-title tone-blue">
+                {s.title} <span className="td-count">{s.list.length}</span>
+              </div>
+              <div className="td-list">{s.list.map(renderRow)}</div>
+            </div>
+          ) : null
+        )}
+
+        {closedSection('Won', won, showWon, setShowWon)}
+        {closedSection('Lost', lost, showLost, setShowLost)}
+        <div className="td-hint">Tap the circle for Won or Lost · Tap to change · Swipe left to delete</div>
+      </div>
+
+      {undo && (
+        <div className="td-undo">
+          <span>Opportunity deleted</span>
+          <button className="td-undo-btn" onClick={undoDelete}>
+            Undo
+          </button>
+        </div>
+      )}
+
+      {closing && (
+        <div className="td-sheet-backdrop" onClick={() => setClosing(null)}>
+          <div className="td-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="td-sheet-top">
+              <button className="td-link" onClick={() => setClosing(null)}>Cancel</button>
+              <div className="td-sheet-title">Close Out</div>
+              <span />
+            </div>
+            <div className="op-close-name">{closing.title}</div>
+            <div className="op-close-btns">
+              <button className="op-close-btn is-won" onClick={() => close(closing, 'won')}>Won</button>
+              <button className="op-close-btn is-lost" onClick={() => close(closing, 'lost')}>Lost</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <EditSheet
+          opp={editing}
+          accounts={[
+            ...contacts.filter(hasName).map((a) => ({ type: 'customer', id: a.id, name: a.name })),
+            ...prospects.filter(hasName).map((a) => ({ type: 'prospect', id: a.id, name: a.name })),
+          ]}
+          onSave={(patch) => {
+            change(editing.id, patch);
+            setEditing(null);
+          }}
+          onDelete={() => remove(editing)}
+          onOpenAccount={() =>
+            navigate(editing.accountType === 'prospect' ? `/prospects/${editing.accountId}` : `/customers/${editing.accountId}`)
+          }
+          onCancel={() => setEditing(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ---------- Change an opportunity ---------- */
+function EditSheet({ opp, accounts, onSave, onDelete, onOpenAccount, onCancel }) {
+  const [title, setTitle] = useState(opp.title || '');
+  const [term, setTerm] = useState(opp.term === 'long' ? 'long' : 'short');
+  const [followUp, setFollowUp] = useState(opp.followUp || '');
+  const [notes, setNotes] = useState(opp.notes || '');
+  const [status, setStatus] = useState(opp.status === 'won' || opp.status === 'lost' ? opp.status : 'open');
+  const [acct, setAcct] = useState(
+    opp.accountId != null && opp.accountType ? { type: opp.accountType, id: opp.accountId, name: opp.accountName } : null
+  );
+  const [search, setSearch] = useState('');
+  const matches = search.trim()
+    ? accounts.filter((a) => a.name.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 5)
+    : [];
+
+  const save = () => {
+    const wasClosed = opp.status === 'won' || opp.status === 'lost';
+    onSave({
+      title: title.trim() || opp.title,
+      term,
+      followUp: followUp || null,
+      notes: notes.trim(),
+      status,
+      closedAt: status === 'open' ? null : wasClosed && opp.status === status ? opp.closedAt : new Date().toISOString(),
+      accountType: acct ? acct.type : null,
+      accountId: acct ? acct.id : null,
+      accountName: acct ? acct.name : '',
+    });
+  };
+
+  return (
+    <div className="td-sheet-backdrop" onClick={onCancel}>
+      <div className="td-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="td-sheet-top">
+          <button className="td-link" onClick={onCancel}>Cancel</button>
+          <div className="td-sheet-title">Opportunity</div>
+          <button className="td-link td-bold" onClick={save}>Save</button>
+        </div>
+
+        <div className="td-sheet-group">
+          <textarea className="td-sheet-text" rows={2} value={title} onChange={(e) => setTitle(e.target.value)} />
+          <div className="td-sheet-row">
+            <span>Term</span>
+            <span className="op-seg">
+              {TERMS.map(([t, label]) => (
+                <button key={t} className={`td-chip ${term === t ? 'is-on' : ''}`} onClick={() => setTerm(t)}>
+                  {label}
+                </button>
+              ))}
+            </span>
+          </div>
+          <label className="td-sheet-row">
+            <span>Follow Up</span>
+            <span className="td-sheet-due">
+              {followUp && <button className="td-clear" onClick={() => setFollowUp('')}>Clear</button>}
+              <input type="date" className="td-sheet-date" value={followUp} onChange={(e) => setFollowUp(e.target.value)} />
+            </span>
+          </label>
+          <div className="td-sheet-row td-sheet-acct">
+            <span>Account</span>
+            {acct ? (
+              <span className="td-picked">
+                {acct.name}
+                <button className="td-picked-x" onClick={() => setAcct(null)} aria-label="Remove">×</button>
+              </span>
+            ) : (
+              <input className="td-acct-search" placeholder="Customer or prospect" value={search} onChange={(e) => setSearch(e.target.value)} />
+            )}
+          </div>
+          {!acct &&
+            matches.map((a) => (
+              <button
+                key={`${a.type}-${a.id}`}
+                className="td-match"
+                onClick={() => {
+                  setAcct(a);
+                  setSearch('');
+                }}
+              >
+                {a.name} <span className="td-match-kind">{a.type === 'prospect' ? 'Prospect' : 'Customer'}</span>
+              </button>
+            ))}
+          <div className="td-sheet-row">
+            <span>Status</span>
+            <span className="op-seg">
+              {[
+                ['open', 'Open'],
+                ['won', 'Won'],
+                ['lost', 'Lost'],
+              ].map(([s, label]) => (
+                <button key={s} className={`td-chip ${status === s ? 'is-on' : ''}`} onClick={() => setStatus(s)}>
+                  {label}
+                </button>
+              ))}
+            </span>
+          </div>
+          <textarea className="td-sheet-text op-notes" rows={3} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
+
+        <div className="td-sheet-actions">
+          {opp.accountId != null && opp.accountType && (
+            <button className="td-sheet-btn" onClick={onOpenAccount}>
+              Open {opp.accountName}
+            </button>
+          )}
+          <button className="td-sheet-btn is-danger" onClick={onDelete}>
+            Delete Opportunity
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
