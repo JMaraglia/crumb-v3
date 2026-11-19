@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { IoCameraOutline, IoShareOutline, IoTrashOutline, IoClose } from 'react-icons/io5';
 import { listPhotos, addPhotos, deletePhoto, photoKey, movePhotos } from './photos';
 import { shareFile, safeFileName } from './share';
-import { readSaved, PROSPECTS_KEY } from './store';
+import { readSaved, PROSPECTS_KEY, loadAppSettings, loadOpportunities, saveOpportunities } from './store';
 import './AccountPhotos.css';
 
 // iPhone sometimes won't show a photo straight from its storage (a blue "?" instead of the picture).
@@ -103,6 +103,7 @@ export default function AccountPhotos({ type, id, name }) {
   const [openUrl, setOpenUrl] = useState('');
   const fileRef = useRef(null);
   const [justTaken, setJustTaken] = useState([]); // photos taken with the camera just now (offer: save to camera roll)
+  const [linkOffer, setLinkOffer] = useState(null); // { ids, opps }: new photos + this customer's open opportunities
 
   // Customers converted before Nov 6 may still have photos filed under the old prospect.
   // If no prospect with that id still exists, bring them over (moved, never deleted).
@@ -144,8 +145,15 @@ export default function AccountPhotos({ type, id, name }) {
     setBusy(true);
     setMsg('');
     try {
-      await addPhotos(key, files);
+      const added = await addPhotos(key, files);
       await load();
+      // Customers with open opportunities (Nov 19): offer to link the new photo(s) to one
+      if (type === 'customer' && loadAppSettings().opportunities) {
+        const opps = loadOpportunities().filter(
+          (o) => o && o.accountType === 'customer' && String(o.accountId) === String(id) && o.status !== 'won' && o.status !== 'lost'
+        );
+        if (opps.length) setLinkOffer({ ids: added.map((p) => p.id), opps });
+      }
       // "Take Photo" pictures aren't in the camera roll; library picks have an older date.
       const fresh = files.filter((f) => !f.lastModified || Date.now() - f.lastModified < 2 * 60 * 1000);
       setJustTaken(fresh);
@@ -185,6 +193,33 @@ export default function AccountPhotos({ type, id, name }) {
         </div>
       ) : (
         <div className="ap-empty">Take a photo or pick one from your camera roll. It stays with {name || 'this account'}, dated.</div>
+      )}
+      {linkOffer && (
+        <div className="ap-saveroll ap-link">
+          <span>Link {linkOffer.ids.length === 1 ? 'it' : 'them'} to an opportunity?</span>
+          <span className="ap-link-list">
+            {linkOffer.opps.map((o) => (
+              <button
+                key={o.id}
+                className="ap-saveroll-yes ap-link-opp"
+                onClick={() => {
+                  saveOpportunities(
+                    loadOpportunities().map((x) =>
+                      x && x.id === o.id
+                        ? { ...x, photoIds: [...(Array.isArray(x.photoIds) ? x.photoIds : []), ...linkOffer.ids.filter((pid) => !(x.photoIds || []).includes(pid))] }
+                        : x
+                    )
+                  );
+                  setLinkOffer(null);
+                  setMsg(`Linked to ${o.title}.`);
+                }}
+              >
+                {o.title}
+              </button>
+            ))}
+            <button className="ap-saveroll-no" onClick={() => setLinkOffer(null)}>No</button>
+          </span>
+        </div>
       )}
       {justTaken.length > 0 && (
         <div className="ap-saveroll">

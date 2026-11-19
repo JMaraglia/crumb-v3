@@ -228,3 +228,19 @@
   color: var(--fg-8e8e93);
   background: var(--bg-f2f2f7);
 }
+
+/* After adding a photo to a customer with open opportunities: link it to one (Nov 19) */
+.ap-link-list {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.av-page .ap-link-opp {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
