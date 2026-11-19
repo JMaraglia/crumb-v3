@@ -1690,3 +1690,8 @@
   color: #ff3b30;
   font-weight: 600;
 }
+
+/* Opportunities on a customer's profile (Nov 19): follow-up date in red when it's past */
+.av-row-sub.av-opp-late {
+  color: var(--fg-d70015);
+}

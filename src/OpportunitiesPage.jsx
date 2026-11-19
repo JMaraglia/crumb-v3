@@ -4,8 +4,8 @@
 //   notes, status: 'open' | 'won' | 'lost', closedAt, createdAt, accountType, accountId, accountName }]
 // Industry-neutral on purpose: no product, quantity or dollar fields.
 // Every opportunity is linked to a customer (Nov 19: prospects don't have opportunities).
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoShareOutline, IoChevronDown, IoChevronForward } from 'react-icons/io5';
 import { shareText } from './share';
@@ -39,6 +39,11 @@ const TERMS = [
 
 export default function OpportunitiesPage({ contacts = [] }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Opened from a customer's profile: ?customer=<id> (add for that customer) or ?open=<id> (edit that one).
+  const params = new URLSearchParams(location.search);
+  const fromAccount = params.has('customer') || params.has('open');
+  const titleRef = useRef(null);
   const today = keyOf(new Date());
   const [opps, setOpps] = useState(loadOpportunities);
   useCloudRefresh(() => setOpps(loadOpportunities())); // changes from your other device, re-read in place
@@ -53,6 +58,21 @@ export default function OpportunitiesPage({ contacts = [] }) {
   const [showLost, setShowLost] = useState(false);
   const [message, setMessage] = useState('');
   const [undo, setUndo] = useState(null); // { opp, timer }
+
+  useEffect(() => {
+    const cid = params.get('customer');
+    const oid = params.get('open');
+    if (cid) {
+      const c = contacts.find((a) => hasName(a) && String(a.id) === cid);
+      if (c) setAcct({ type: 'customer', id: c.id, name: c.name });
+      if (titleRef.current) titleRef.current.focus();
+    }
+    if (oid) {
+      const o = loadOpportunities().find((x) => x && String(x.id) === oid);
+      if (o) setEditing(o);
+    }
+  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+  const goBack = () => (fromAccount ? navigate(-1) : navigate('/'));
 
   const save = (next) => {
     setOpps(next);
@@ -84,6 +104,7 @@ export default function OpportunitiesPage({ contacts = [] }) {
     setTitle('');
     setFollowUp(null);
     setAcct(null);
+    if (params.has('customer')) navigate(-1); // added from the customer's profile: back to it
   };
   const close = (opp, status) => {
     change(opp.id, { status, closedAt: new Date().toISOString() });
@@ -155,7 +176,7 @@ export default function OpportunitiesPage({ contacts = [] }) {
   return (
     <div className="td-page op-page">
       <header className="td-header">
-        <button className="td-icon-btn" onClick={() => navigate('/')} aria-label="Back">
+        <button className="td-icon-btn" onClick={goBack} aria-label="Back">
           <FaArrowLeft />
         </button>
         <span />
@@ -175,6 +196,7 @@ export default function OpportunitiesPage({ contacts = [] }) {
         {/* Add an opportunity */}
         <div className="td-add">
           <input
+            ref={titleRef}
             className="td-add-input"
             placeholder="Add an opportunity…"
             value={title}
@@ -272,12 +294,16 @@ export default function OpportunitiesPage({ contacts = [] }) {
           onSave={(patch) => {
             change(editing.id, patch);
             setEditing(null);
+            if (params.has('open')) navigate(-1); // opened from the customer's profile: back to it
           }}
           onDelete={() => remove(editing)}
           onOpenAccount={() =>
             navigate(editing.accountType === 'prospect' ? `/prospects/${editing.accountId}` : `/customers/${editing.accountId}`)
           }
-          onCancel={() => setEditing(null)}
+          onCancel={() => {
+            setEditing(null);
+            if (params.has('open')) navigate(-1);
+          }}
         />
       )}
     </div>

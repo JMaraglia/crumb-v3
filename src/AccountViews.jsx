@@ -15,7 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import SwipeRow from './SwipeRow';
 import AskSheet from './AskSheet';
 import AccountPhotos from './AccountPhotos';
-import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadAppSettings, loadDayMap, saveDayMap, REMOVED_KEY, HIDDEN_KEY } from './store';
+import { loadCustomers, loadProspects, loadEvents, saveEvents, loadStops, saveStops, loadTodos, saveTodos, newStopId, loadAppSettings, loadOpportunities, loadDayMap, saveDayMap, REMOVED_KEY, HIDDEN_KEY } from './store';
 import { lastContact, contactIndex, staleDays } from './lastContact';
 import { deleteAccountPhotos, photoKey } from './photos';
 import './AccountViews.css';
@@ -1554,6 +1554,47 @@ function Fold({ open, animate, children }) {
   );
 }
 
+// Opportunities for this customer (Nov 19, 2026). Opening or adding one goes to the Opportunities page.
+function AccountOpportunities({ accountId, navigate }) {
+  const mine = loadOpportunities().filter((o) => o && o.accountType === 'customer' && String(o.accountId) === String(accountId));
+  const open = mine
+    .filter((o) => o.status !== 'won' && o.status !== 'lost')
+    .sort((a, b) => (a.followUp || '9999').localeCompare(b.followUp || '9999'));
+  const won = mine.filter((o) => o.status === 'won').length;
+  const lost = mine.filter((o) => o.status === 'lost').length;
+  const today = keyOf(new Date());
+  const fmt = (k) => new Date(k + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return (
+    <>
+      <div className="av-section-title">Opportunities</div>
+      <div className="av-group">
+        {open.map((o) => (
+          <button key={o.id} className="av-row" onClick={() => navigate(`/opportunities?open=${encodeURIComponent(o.id)}`)}>
+            <span className="av-row-text">
+              <span className="av-row-value">{o.title}</span>
+              <span className={`av-row-sub ${o.followUp && o.followUp < today ? 'av-opp-late' : ''}`}>
+                {[o.term === 'long' ? 'Long-Term' : 'Short-Term', o.followUp ? `Follow Up ${fmt(o.followUp)}` : ''].filter(Boolean).join(' · ')}
+              </span>
+            </span>
+            <FaChevronRight className="av-row-chevron" />
+          </button>
+        ))}
+        {(won > 0 || lost > 0) && (
+          <button className="av-row" onClick={() => navigate('/opportunities')}>
+            <span className="av-row-text">
+              <span className="av-row-value">{[won ? `${won} Won` : '', lost ? `${lost} Lost` : ''].filter(Boolean).join(' · ')}</span>
+            </span>
+            <FaChevronRight className="av-row-chevron" />
+          </button>
+        )}
+        <button className="av-row" onClick={() => navigate(`/opportunities?customer=${encodeURIComponent(accountId)}`)}>
+          <span className="av-row-value av-blue">Add Opportunity</span>
+        </button>
+      </div>
+    </>
+  );
+}
+
 export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
   const navigate = useNavigate();
   const goBack = useGoBack();
@@ -1948,6 +1989,10 @@ export function AccountDetail({ config, accounts, setAccounts, onConvert }) {
             <FaChevronRight className="av-row-chevron" />
           </button>
         </div>
+
+        {typeOf(config) === 'customer' && loadAppSettings().opportunities && (
+          <AccountOpportunities accountId={account.id} navigate={navigate} />
+        )}
 
         <AccountPhotos type={typeOf(config)} id={account.id} name={displayName(account)} />
 
